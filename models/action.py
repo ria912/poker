@@ -51,6 +51,7 @@ class Action:
             player.stack -= amount
             player.current_bet += amount
             table.current_bet = amount
+            table.min_bet = amount
             table.pot += amount
 
         elif action == Action.CALL:
@@ -68,6 +69,7 @@ class Action:
                 total = player.stack  # オールインになる場合
             player.stack -= total
             player.current_bet += total
+            tabel.min_bet = raise_amount  #min_betの更新
             table.current_bet += raise_amount  # 現在のベット額にレイズ額を足す
             table.pot += total
 
@@ -76,6 +78,7 @@ class Action:
             player.current_bet += all_in_amount
             player.stack = 0
             if player.current_bet > table.current_bet:
+                table.min_bet = player.current_bet - table.current_bet  # ★オールインでも差分をmin_betに
                 table.current_bet = player.current_bet
             table.pot += all_in_amount
 
