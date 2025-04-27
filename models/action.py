@@ -46,13 +46,14 @@ class Action:
             pass
 
         elif action == Action.BET:
-            if amount > player.stack:
+            if BIG_BLINDS > player.stack:
                 amount = player.stack  # オールインになる
-            player.stack -= amount
-            player.current_bet += amount
-            table.current_bet = amount
-            table.min_bet = amount
-            table.pot += amount
+            bet_amount = min_bet + amount
+            player.stack -= bet_amount
+            player.current_bet += bet_amount
+            table.current_bet = bet_amount
+            table.min_bet = bet_amount
+            table.pot += bet_amount
 
         elif action == Action.CALL:
             call_amount = table.current_bet - player.current_bet
@@ -62,9 +63,9 @@ class Action:
             table.pot += actual_call
 
         elif action == Action.RAISE:
-            raise_amount = amount
+            raise_amount = min_bet + amount
             to_call = table.current_bet - player.current_bet
-            total = to_call + raise_amount
+            total = to_call + raie_amount
             if total > player.stack:
                 total = player.stack  # オールインになる場合
             player.stack -= total
