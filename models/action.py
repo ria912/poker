@@ -7,7 +7,7 @@ class Action:
     ALL_IN = 'all-in'
 
     @staticmethod
-    def get_legal_actions(player, current_bet, min_raise, pot):
+    def get_legal_actions(player, current_bet, min_bet, pot):
         actions = []
 
         if current_bet == 0:
@@ -15,9 +15,9 @@ class Action:
             actions.append(Action.CHECK)
             actions.append(Action.FOLD)
 
-            if player.stack > 0:
+            if player.stack > min_bet:
                 actions.append(Action.BET)
-                if player.stack <= min_raise:
+                if player.stack <= min_bet:
                     actions.append(Action.ALL_IN)
 
         else:
@@ -28,7 +28,7 @@ class Action:
                 actions.append(Action.ALL_IN)
             actions.append(Action.FOLD)
 
-            if player.stack > (current_bet - player.current_bet + min_raise):
+            if player.stack > (current_bet - player.current_bet + min_bet):
                 actions.append(Action.RAISE)
             elif player.stack > 0:
                 actions.append(Action.ALL_IN)
