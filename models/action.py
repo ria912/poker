@@ -1,85 +1,94 @@
-
 class Action:
     FOLD = 'fold'
     CALL = 'call'
     CHECK = 'check'
+    BET = 'bet'
     RAISE = 'raise'
     ALL_IN = 'all-in'
 
     @staticmethod
-    def get_legal_actions(player, current_bet, min_bet, pot):
+    def get_legal_actions(player, table):
+        """
+        プレイヤーに許可されているアクション一覧を返す
+        """
         actions = []
+        current_bet = table.current_bet
+        min_bet = table.min_bet
 
         if current_bet == 0:
-            # 誰もベットしてない場合
+            # 誰もベットしてない
             actions.append(Action.CHECK)
-            actions.append(Action.FOLD)
-
-            if player.stack > min_bet:
+            if player.stack >= min_bet:
                 actions.append(Action.BET)
-                if player.stack <= min_bet:
-                    actions.append(Action.ALL_IN)
-
-        else:
-            # 誰かがベットしている場合
-            if player.stack > (current_bet - player.current_bet):
-                actions.append(Action.CALL)
-            else:
+            if player.stack > 0:
                 actions.append(Action.ALL_IN)
             actions.append(Action.FOLD)
-
-            if player.stack > (current_bet - player.current_bet + min_bet):
-                actions.append(Action.RAISE)
-            elif player.stack > 0:
+        else:
+            # すでにベットされてる
+            to_call = current_bet - player.current_bet
+            if player.stack > to_call:
+                actions.append(Action.CALL)
+                if player.stack >= to_call + min_bet:
+                    actions.append(Action.RAISE)
+            if player.stack > 0:
                 actions.append(Action.ALL_IN)
+            actions.append(Action.FOLD)
 
         return actions
 
-        @staticmethod
+    @staticmethod
     def apply_action(player, action, table, amount=0):
-        """アクションを適用してプレイヤーとテーブルの状態を更新"""
+        """
+        プレイヤーのアクションを適用してテーブルの状態を更新
+        """
+        current_bet = table.current_bet
+        min_bet = table.min_bet
+
         if action == Action.FOLD:
             player.has_folded = True
 
         elif action == Action.CHECK:
-            # 何もしない
-            pass
+            pass  # 何もしない
 
         elif action == Action.BET:
-            if BIG_BLINDS > player.stack:
-                amount = player.stack  # オールインになる
-            bet_amount = min_bet + amount
-            player.stack -= bet_amount
-            player.current_bet += bet_amount
-            table.current_bet = bet_amount
-            table.min_bet = bet_amount
-            table.pot += bet_amount
+            if amount < min_bet:
+                raise ValueError(f"Bet must be at least {min_bet}")
+            if amount >= player.stack:
+                # オールイン扱い
+                amount = player.stack
+            player.stack -= amount
+            player.current_bet += amount
+            table.current_bet = amount
+            table.min_bet = amount
+            table.pot += amount
 
         elif action == Action.CALL:
-            call_amount = table.current_bet - player.current_bet
-            actual_call = min(player.stack, call_amount)
-            player.stack -= actual_call
-            player.current_bet += actual_call
-            table.pot += actual_call
+            to_call = current_bet - player.current_bet
+            call_amount = min(player.stack, to_call)
+            player.stack -= call_amount
+            player.current_bet += call_amount
+            table.pot += call_amount
 
         elif action == Action.RAISE:
-            raise_amount = min_bet + amount
-            to_call = table.current_bet - player.current_bet
-            total = to_call + raie_amount
-            if total > player.stack:
-                total = player.stack  # オールインになる場合
-            player.stack -= total
-            player.current_bet += total
-            tabel.min_bet = raise_amount  #min_betの更新
-            table.current_bet += raise_amount  # 現在のベット額にレイズ額を足す
-            table.pot += total
+            if amount < min_bet:
+                raise ValueError(f"Raise must be at least {min_bet}")
+            to_call = current_bet - player.current_bet
+            total_raise = to_call + amount
+            if total_raise >= player.stack:
+                # オールイン扱い
+                total_raise = player.stack
+                amount = total_raise - to_call  # 実際のraise幅を再計算
+            player.stack -= total_raise
+            player.current_bet += total_raise
+            table.current_bet += amount
+            table.min_bet = amount
+            table.pot += total_raise
 
         elif action == Action.ALL_IN:
             all_in_amount = player.stack
             player.current_bet += all_in_amount
             player.stack = 0
             if player.current_bet > table.current_bet:
-                table.min_bet = player.current_bet - table.current_bet  # ★オールインでも差分をmin_betに
+                table.min_bet = player.current_bet - table.current_bet
                 table.current_bet = player.current_bet
             table.pot += all_in_amount
-
