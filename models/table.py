@@ -1,78 +1,69 @@
 from models.card import Deck
 from models.position import rotate_players, assign_positions
+from models.player import Player
+from models.ai_player import AIPlayer
+
+def create_players():
+    """
+    プレイヤー1人とAI1〜5人を生成
+    """
+    players = [Player(name="YOU", is_human=True)]  # プレイヤー1人（人間）
+    player_names = ["AI1", "AI2", "AI3", "AI4", "AI5"]
+    
+    # AIプレイヤーの生成（5人）
+    for name in player_names:
+        players.append(AIPlayer(name=name))
+    
+    return players
+
 
 class Table:
-    
-    SMALL_BLIND = 50
-    BIG_BLIND =100
-    
-    def __init__(self, players):
-        self.players = players
+    def __init__(self, small_blind=50, big_blind=100):
+        self.players = create_players()
         self.deck = Deck()
         self.community_cards = []
         self.pot = 0
         self.current_bet = 0
-        self.min_bet = 20  # 初期ビッグブラインド
-        self.big_blind = 20  # （必要なら変数に持っておくと便利）
-
+        self.min_bet = big_blind
+        self.big_blind = big_blind
+        self.small_blind = small_blind
+    
     def start_hand(self):
-        """
-        新しいハンドを開始する処理
-        """
         self.deck.shuffle()
         self.reset_players()
-        self.rotate_players()
-        self.assign_positions()
+        rotate_players(self.players)
+        assign_positions(self.players)
+        self.post_blinds()
         self.deal_cards()
         self.pot = 0
         self.current_bet = 0
 
     def reset_players(self):
-        """
-        各プレイヤーの一時情報をリセットする
-        """
         for player in self.players:
-            player.hand = []
-            player.current_bet = 0
-            player.has_folded = False
-            player.position = None  # ハンドごとにポジションもリセット
-
-    def rotate_players(self):
-        """
-        プレイヤーの並びを時計回りに1つずらす（離席者も含む）
-        """
-        self.players.append(self.players.pop(0))
-
-    def assign_positions(self):
-        """
-        離席していないプレイヤーにポジションを割り当てる
-        """
-        full_positions = ['BTN', 'SB', 'BB', 'CO', 'HJ', 'LJ']
-        assignment_order = ['SB', 'BB', 'LJ', 'HJ', 'CO', 'BTN']
-
-        active_players = [p for p in self.players if not p.has_left]
-
-        available = full_positions[:len(active_players)]
-        assigned = [p for p in assignment_order if p in available]
-
+            player.reset_for_new_hand()
+    
+    def post_blinds(self, small_blind=50, big_blind=100):
         for player in self.players:
-            player.position = None  # 全員リセット
+            if player.position == 'SB':
+                blind = min(small_blind, player.stack)
+                player.stack -= blind
+                player.current_bet = blind
+                self.pot += blind
 
-        for player, pos in zip(active_players, assigned):
-            player.position = pos
+            elif player.position == 'BB':
+                blind = min(big_blind, player.stack)
+                player.stack -= blind
+                player.current_bet = blind
+                self.pot += blind
+                self.current_bet = big_blind
+                self.min_bet = big_blind
 
     def deal_cards(self):
-        """
-        各プレイヤーに2枚ずつ手札を配る
-        """
         for player in self.players:
             if not player.has_left:
                 player.hand = [self.deck.draw(), self.deck.draw()]
 
     def to_dict(self):
-        """
-        テーブルの状態を辞書で返す（セッション保存用など）
-        """
         return {
             "community_cards": self.community_cards,
             "pot": self.pot,
