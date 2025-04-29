@@ -26,6 +26,7 @@ class Player:
             "position": self.position,
             "has_folded": self.has_folded,
             "last_action": self.last_action
+            "has_left": self.has_left
         }
     
     def decide_action(self, legal_actions):
