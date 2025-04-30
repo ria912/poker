@@ -13,21 +13,19 @@ class Action:
         current_bet = table.current_bet
         min_bet = table.min_bet
 
-        if current_bet == 0:
-            # 誰もベットしてない
+        if current_bet == 0:# 誰もベットしてない
             actions.append(Action.CHECK)
             if player.stack >= min_bet:
                 actions.append(Action.BET)
             if player.stack > 0:
                 actions.append(Action.ALL_IN)
             actions.append(Action.FOLD)
-        else:
-            # すでにベットされてる
+        else:# すでにベットされてる
             to_call = current_bet - player.current_bet
             if player.stack > to_call:
                 actions.append(Action.CALL)
-                if player.stack >= to_call + min_bet:
-                    actions.append(Action.RAISE)
+            if player.stack >= to_call + min_bet:
+                actions.append(Action.RAISE)
             if player.stack > 0:
                 actions.append(Action.ALL_IN)
             actions.append(Action.FOLD)
@@ -56,8 +54,8 @@ class Action:
 
         elif action == Action.BET:
             if amount < min_bet:
-                raise ValueError(f"Bet must be at least {min_bet}")
                 amount = min_bet
+                raise ValueError(f"Bet must be at least {min_bet}")
             if amount >= player.stack:
                 # オールイン扱い
                 amount = player.stack
@@ -70,9 +68,10 @@ class Action:
         elif action == Action.CALL:
             to_call = current_bet - player.current_bet
             call_amount = min(player.stack, to_call)
-            player.stack -= call_amount
-            player.current_bet += call_amount
-            table.pot += call_amount
+            amount = call_amount
+            player.stack -= amount
+            player.current_bet += amount
+            table.pot += amount
 
         elif action == Action.RAISE:
             if amount < min_bet:

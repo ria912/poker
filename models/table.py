@@ -1,4 +1,4 @@
-from models.card import Deck
+from models.deck import Deck
 from models.position import rotate_players, assign_positions
 from models.player import Player
 from models.ai_player import AIPlayer
@@ -33,10 +33,11 @@ class Table:
         self.reset_players()
         rotate_players(self.players)
         assign_positions(self.players)
-        self.post_blinds()
-        self.deal_cards()
+        self.community_cards = []
         self.pot = 0
         self.current_bet = 0
+        self.post_blinds()
+        self.deal_cards()
 
     def reset_players(self):
         for player in self.players:
@@ -56,9 +57,9 @@ class Table:
                 blind = min(self.big_blind, player.stack)
                 player.stack -= blind
                 player.current_bet = blind
+                self.current_bet = blind
+                self.min_bet = blind
                 self.pot += blind
-                self.current_bet = self.big_blind
-                self.min_bet = self.big_blind
 
     def deal_cards(self):
         for player in self.players:

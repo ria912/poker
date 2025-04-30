@@ -1,6 +1,6 @@
 from models.player import Player
 from models.action import Action
-import random
+
 
 class AIPlayer(Player):
     def __init__(self, name, stack=10000):
