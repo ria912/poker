@@ -90,7 +90,7 @@ class Action:
             all_in_amount = player.stack
             player.current_bet += all_in_amount
             player.stack = 0
-            if player.current_bet > table.current_bet:
+            if player.current_bet > table.current_bet + min_bet:
                 table.min_bet = player.current_bet - table.current_bet
                 table.current_bet = player.current_bet
             table.pot += all_in_amount
