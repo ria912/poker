@@ -8,9 +8,7 @@ class Action:
 
     @staticmethod
     def get_legal_actions(player, table):
-        """
-        プレイヤーに許可されているアクション一覧を返す
-        """
+
         actions = []
         current_bet = table.current_bet
         min_bet = table.min_bet
@@ -34,7 +32,13 @@ class Action:
                 actions.append(Action.ALL_IN)
             actions.append(Action.FOLD)
 
-        return actions
+        return {
+            "actions": actions,
+            "current_bet": current_bet,
+            "min_bet": min_bet,
+            "player_bet": player.current_bet,
+            "pot": table.pot
+        }
 
     @staticmethod
     def apply_action(player, action, table, amount=0):
