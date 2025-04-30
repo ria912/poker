@@ -29,16 +29,39 @@ class Player:
             "has_left": self.has_left
         }
     
-    def decide_action(self, legal_actions):
-        """
-        人間プレイヤーのためにUIから入力を受け付ける（仮の実装）
-        """
-        if self.is_human:
-            action = input(f"{self.name}, choose your action: {legal_actions}")
+    def decide_action(self, legal_info):
+        legal_actions = legal_info["actions"]
+        current_bet = legal_info["current_bet"]
+        min_bet = legal_info["min_bet"]
+    
+        print(f"\n{self.name}, it's your turn!")
+        print(f"Pot: {legal_info['pot']}")
+        print(f"Your stack: {self.stack}")
+        print(f"Current bet: {current_bet}, Your bet: {self.current_bet}")
+        
+        print("Legal actions you can choose:")
+        for action in legal_actions:
+            print(f"- {action}")
+    
+        while True:
+            action = input("Choose your action: ").strip().lower()
+            if action not in legal_actions:
+                print("Invalid action. Try again.")
+                continue
+    
             amount = 0
-            if action in ['bet', 'raise', 'all-in']:
-                amount = int(input("Enter the amount: "))
+            if action in [Action.BET, Action.RAISE, Action.ALL_IN]:
+                try:
+                    amount = int(input("Enter the amount: "))
+                    if amount > self.stack:
+                        print("You don't have enough chips.")
+                        continue
+                    if action in [Action.BET, Action.RAISE] and amount < min_bet:
+                        print(f"Minimum {action} is {min_bet}.")
+                        continue
+                except ValueError:
+                    print("Invalid amount.")
+                    continue
+    
             self.last_action = action
             return action, amount
-        else:
-            raise NotImplementedError("AI logic not implemented yet.")
