@@ -45,12 +45,14 @@ class Table:
     def post_blinds(self):
         for player in self.players:
             if player.position == 'SB':
+                # チップが足りない場合は全額（オールイン）
                 blind = min(self.small_blind, player.stack)
                 player.stack -= blind
                 player.current_bet = blind
                 self.pot += blind
 
             elif player.position == 'BB':
+                # チップが足りない場合は全額（オールイン）
                 blind = min(self.big_blind, player.stack)
                 player.stack -= blind
                 player.current_bet = blind
