@@ -1,95 +1,89 @@
-from action import Action
 from collections import deque
+from models.action import Action
+from models.position import assignment_order
 
 class RoundManager:
     def __init__(self, table):
         self.table = table
-        self.players = [p for p in table.players if not p.has_folded and not p.has_left]
-        self.action_queue = deque()
+        self.phase = 'preflop'  # preflop, flop, turn, river, showdown
+        self.players_to_act = deque()
+        self.last_raiser = None
+
+    def start_new_round(self):
+        self.table.start_hand()
         self.phase = 'preflop'
-        self.community_index = 0  # 0: flop, 1: turn, 2: river
+        self.setup_action_queue()
 
-    def start_round(self):
-        self.update_action_order()
-        self.run_phase_loop()
+    def setup_action_queue(self):
+        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
+        ordered = sorted(active, key=lambda p: assignment_order.index(p.position))
 
-    def update_action_order(self):
-        """
-        現在のフェーズとポジションに応じて行動順を設定
-        """
-        if self.phase == 'preflop':
-            # プリフロップはBBの次から開始
-            bb_index = next((i for i, p in enumerate(self.players) if p.position == 'BB'), 0)
-            start_index = (bb_index + 1) % len(self.players)
-        else:
-            # フロップ以降はSBの次から
-            sb_index = next((i for i, p in enumerate(self.players) if p.position == 'SB'), 0)
-            start_index = (sb_index + 1) % len(self.players)
+        if self.phase == "preflop":
+            # BBの次からアクション開始
+            bb_index = next((i for i, p in enumerate(ordered) if p.position == "BB"), 0)
+            ordered = ordered[bb_index + 1:] + ordered[:bb_index + 1]
 
-        self.action_queue = deque(self.players[start_index:] + self.players[:start_index])
+        self.players_to_act = deque(ordered)
+        self.last_raiser = None
 
-    def run_phase_loop(self):
-        """
-        各フェーズ内のアクションループ（全員のアクションが終了するまで）
-        """
-        while True:
-            player = self.action_queue.popleft()
+    def proceed_action(self):
+        if not self.players_to_act:
+            return  # 念のため
 
-            if player.has_folded or player.stack == 0:
-                continue  # 行動できないプレイヤーはスキップ
-
-            legal_actions = Action.get_legal_actions(player, self.table)
-            action, amount = player.decide_action(legal_actions)  # AIまたはUI入力
-            Action.apply_action(player, action, self.table, amount)
-
-            self.print_action(player, action, amount)
-
-            if self.all_players_have_acted():
-                break
-            else:
-                self.action_queue.append(player)
-
-        self.advance_phase()
-
-    def all_players_have_acted(self):
-        """
-        全員が同額を出すか、フォールド済みかチェック
-        """
-        active = [p for p in self.players if not p.has_folded and p.stack > 0]
-        if len(active) <= 1:
-            return True  # 残り1人
-
-        highest_bet = max(p.current_bet for p in active)
-        return all(p.current_bet == highest_bet for p in active)
-
-    def advance_phase(self):
-        """
-        次のフェーズへ移行（カード公開とベットリセット）
-        """
-        self.table.current_bet = 0
-        for p in self.table.players:
-            p.current_bet = 0
-
-        if self.phase == 'preflop':
-            self.deal_community_cards(3)
-            self.phase = 'flop'
-        elif self.phase == 'flop':
-            self.deal_community_cards(1)
-            self.phase = 'turn'
-        elif self.phase == 'turn':
-            self.deal_community_cards(1)
-            self.phase = 'river'
-        elif self.phase == 'river':
-            self.phase = 'showdown'
+        player = self.players_to_act.popleft()
+        if player.has_folded or player.stack == 0:
             return
 
-        self.update_action_order()
-        self.run_phase_loop()
+        legal = Action.get_legal_actions(player, self.table)
 
-    def deal_community_cards(self, count):
-        for _ in range(count):
-            card = self.table.deck.draw()
-            self.table.community_cards.append(card)
+        if player.is_human:
+            action, amount = player.decide_action({
+                "actions": legal,
+                "pot": self.table.pot,
+                "current_bet": self.table.current_bet,
+                "min_bet": self.table.min_bet
+            })
+        else:
+            # AIはCALLまたはCHECK（テスト用）
+            if Action.CALL in legal:
+                action = Action.CALL
+            elif Action.CHECK in legal:
+                action = Action.CHECK
+            else:
+                action = Action.FOLD
+            amount = 0
 
-    def print_action(self, player, action, amount):
-        print(f"{player.name} -> {action} ({amount})")
+        before_bet = self.table.current_bet
+        Action.apply_action(player, action, self.table, amount)
+
+        # レイズ系アクションによって current_bet が更新された場合
+        if self.table.current_bet > before_bet and action in [Action.BET, Action.RAISE, Action.ALL_IN]:
+            self.last_raiser = player
+            self.reset_players_to_act_from(player)
+
+    def reset_players_to_act_from(self, raiser):
+        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
+        ordered = sorted(active, key=lambda p: assignment_order.index(p.position))
+
+        if raiser not in ordered:
+            return  # エラー防止（万が一）
+
+        start_index = ordered.index(raiser)
+        reordered = ordered[start_index + 1:] + ordered[:start_index + 1]
+        self.players_to_act = deque(reordered)
+
+    def should_advance_phase(self):
+        return not self.players_to_act
+
+    def advance_phase(self):
+        phase_order = ['preflop', 'flop', 'turn', 'river', 'showdown']
+        next_index = phase_order.index(self.phase) + 1
+        if next_index < len(phase_order):
+            self.phase = phase_order[next_index]
+            if self.phase == 'flop':
+                self.table.community_cards = [self.table.deck.draw() for _ in range(3)]
+            elif self.phase in ['turn', 'river']:
+                self.table.community_cards.append(self.table.deck.draw())
+            self.setup_action_queue()
+        else:
+            print("Showdown or hand is over")
