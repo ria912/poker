@@ -53,6 +53,7 @@ class Action:
         elif action == Action.BET:
             if amount < min_bet:
                 raise ValueError(f"Bet must be at least {min_bet}")
+                amount = min_bet
             if amount >= player.stack:
                 # オールイン扱い
                 amount = player.stack
@@ -67,6 +68,7 @@ class Action:
             call_amount = min(player.stack, to_call)
             player.stack -= call_amount
             player.current_bet += call_amount
+            table.current_bet = player.current_bet
             table.pot += call_amount
 
         elif action == Action.RAISE:
@@ -80,7 +82,7 @@ class Action:
                 amount = total_raise - to_call  # 実際のraise幅を再計算
             player.stack -= total_raise
             player.current_bet += total_raise
-            table.current_bet += amount
+            table.current_bet = player.current_bet
             table.min_bet = amount
             table.pot += total_raise
 
