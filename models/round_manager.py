@@ -1,6 +1,7 @@
 from collections import deque
 from models.action import Action
 from models.position import assignment_order
+import random
 
 class RoundManager:
     def __init__(self, table):
@@ -22,6 +23,10 @@ class RoundManager:
             # BBの次からアクション開始
             bb_index = next((i for i, p in enumerate(ordered) if p.position == "BB"), 0)
             ordered = ordered[bb_index + 1:] + ordered[:bb_index + 1]
+        else:
+            # プリフロップ以外はBTNの次から
+            btn_index = next((i for i, p in enumerate(ordered) if p.position == "BTN"), 0)
+            ordered = ordered[btn_index + 1:] + ordered[:btn_index + 1]
 
         self.players_to_act = deque(ordered)
         self.last_raiser = None
@@ -80,10 +85,27 @@ class RoundManager:
         next_index = phase_order.index(self.phase) + 1
         if next_index < len(phase_order):
             self.phase = phase_order[next_index]
+
             if self.phase == 'flop':
                 self.table.community_cards = [self.table.deck.draw() for _ in range(3)]
             elif self.phase in ['turn', 'river']:
                 self.table.community_cards.append(self.table.deck.draw())
+            elif self.phase == 'showdown':
+                self.handle_showdown()
+
             self.setup_action_queue()
         else:
             print("Showdown or hand is over")
+    
+    def handle_showdown(self):
+        active_players = [p for p in self.table.players if not p.has_folded]
+
+        if not active_players:
+            print("No players left for showdown.")
+            return
+
+        winner = random.choice(active_players)
+        print(f"Winner is: {winner.name}")
+
+        winner.stack += self.table.pot
+        self.table.pot = 0

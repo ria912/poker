@@ -1,4 +1,6 @@
 
+assignment_order = ['BTN', 'SB', 'BB', 'LJ', 'HJ', 'CO']
+
 def rotate_players(players):
     """
     プレイヤーの並びを時計回りに1つずらす（離席者も含む）
@@ -11,7 +13,6 @@ def assign_positions(players):
     離席していないプレイヤーにポジションを割り当てる
     """
     full_positions = ['BTN', 'SB', 'BB', 'CO', 'HJ', 'LJ']
-    assignment_order = ['SB', 'BB', 'LJ', 'HJ', 'CO', 'BTN']
 
     active_players = [p for p in players if not p.has_left]
 

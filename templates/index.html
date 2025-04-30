@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポーカーゲーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-4xl font-bold text-center text-blue-600 mb-8">ポーカーゲームへようこそ！</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <form action="/start_game" method="POST" class="space-y-4">
+                <div class="flex flex-col items-center">
+                    <label for="player_name" class="text-xl mb-2">プレイヤー名</label>
+                    <input type="text" id="player_name" name="player_name" class="border-2 p-2 rounded-md w-60" required>
+                </div>
+
+                <div class="flex justify-center">
+                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">ゲーム開始</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

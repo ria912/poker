@@ -29,7 +29,7 @@ class Table:
         self.small_blind = small_blind
     
     def start_hand(self):
-        self.deck.shuffle()
+        self.deck.deck_shuffle()
         self.reset_players()
         rotate_players(self.players)
         assign_positions(self.players)
@@ -57,8 +57,8 @@ class Table:
                 player.stack -= blind
                 player.current_bet = blind
                 self.pot += blind
-                self.current_bet = big_blind
-                self.min_bet = big_blind
+                self.current_bet = self.big_blind
+                self.min_bet = self.big_blind
 
     def deal_cards(self):
         for player in self.players:
@@ -69,5 +69,7 @@ class Table:
         return {
             "community_cards": self.community_cards,
             "pot": self.pot,
+            "current_bet": self.current_bet,
+            "min_bet": self.min_bet,
             "players": [p.to_dict() for p in self.players]
         }

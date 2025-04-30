@@ -1,3 +1,4 @@
+import models.action as Action
 class Player:
     def __init__(self, name="player", is_human=False, stack=10000):
         self.name = name
@@ -29,39 +30,38 @@ class Player:
             "has_left": self.has_left
         }
     
-    def decide_action(self, legal_info):
-        legal_actions = legal_info["actions"]
-        current_bet = legal_info["current_bet"]
-        min_bet = legal_info["min_bet"]
-    
-        print(f"\n{self.name}, it's your turn!")
-        print(f"Pot: {legal_info['pot']}")
-        print(f"Your stack: {self.stack}")
-        print(f"Current bet: {current_bet}, Your bet: {self.current_bet}")
-        
-        print("Legal actions you can choose:")
-        for action in legal_actions:
-            print(f"- {action}")
-    
+    def decide_action(self, context):
+        actions = context["actions"]["actions"]
+        pot = context["pot"]
+        current_bet = context["current_bet"]
+        min_bet = context["min_bet"]
+
+        print(f"\n{self.name}'s Turn!")
+        print(f"Your hand: {self.hand}")
+        print(f"Pot: {pot}, Current Bet: {current_bet}, Your Bet: {self.current_bet}, Your Stack: {self.stack}")
+        print("Available actions:")
+
+        for i, act in enumerate(actions):
+            print(f"{i}: {act}")
+
         while True:
-            action = input("Choose your action: ").strip().lower()
-            if action not in legal_actions:
-                print("Invalid action. Try again.")
-                continue
-    
-            amount = 0
-            if action in [Action.BET, Action.RAISE, Action.ALL_IN]:
+            choice = input("Choose action by number: ")
+            if choice.isdigit() and int(choice) in range(len(actions)):
+                selected = actions[int(choice)]
+                break
+            else:
+                print("Invalid input. Try again.")
+
+        amount = 0
+        if selected in ["bet", "raise"]:
+            while True:
                 try:
-                    amount = int(input("Enter the amount: "))
-                    if amount > self.stack:
-                        print("You don't have enough chips.")
-                        continue
-                    if action in [Action.BET, Action.RAISE] and amount < min_bet:
-                        print(f"Minimum {action} is {min_bet}.")
-                        continue
+                    amount = int(input(f"Enter amount to {selected} (min {min_bet}): "))
+                    if amount >= min_bet:
+                        break
+                    else:
+                        print(f"Amount must be at least {min_bet}")
                 except ValueError:
                     print("Invalid amount.")
-                    continue
-    
-            self.last_action = action
-            return action, amount
+
+        return selected, amount
