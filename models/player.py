@@ -25,7 +25,7 @@ class Player:
             "hand": self.hand if self.is_human else ["X", "X"],
             "position": self.position,
             "has_folded": self.has_folded,
-            "last_action": self.last_action
+            "last_action": self.last_action,
             "has_left": self.has_left
         }
     
