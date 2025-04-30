@@ -10,6 +10,7 @@ class AIPlayer(Player):
         """
         legal_actionsからコールまたはチェックを選択（ランダム）
         """
+        actions = legal_actions.get("actions", [])
         # コールまたはチェックが含まれているアクションリストを取得
         available_actions = [action for action in legal_actions if action in [Action.CALL, Action.CHECK]]
 
