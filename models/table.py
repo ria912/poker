@@ -42,16 +42,16 @@ class Table:
         for player in self.players:
             player.reset_for_new_hand()
     
-    def post_blinds(self, small_blind=50, big_blind=100):
+    def post_blinds(self):
         for player in self.players:
             if player.position == 'SB':
-                blind = min(small_blind, player.stack)
+                blind = min(self.small_blind, player.stack)
                 player.stack -= blind
                 player.current_bet = blind
                 self.pot += blind
 
             elif player.position == 'BB':
-                blind = min(big_blind, player.stack)
+                blind = min(self.big_blind, player.stack)
                 player.stack -= blind
                 player.current_bet = blind
                 self.pot += blind
