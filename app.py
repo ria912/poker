@@ -21,7 +21,7 @@ def action(action):
     amount = int(data['amount']) if 'amount' in data else 0
     # プレイヤーアクションの処理
     player = engine.table.players[0]  # 仮にプレイヤー1を使用
-    Action.apply_action(player, action, engine.table, amount)
+    action.apply_action(player, action, engine.table, amount)
     
     # ゲーム進行の更新
     engine.round_manager.proceed_round()

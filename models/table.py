@@ -1,25 +1,12 @@
 from models.deck import Deck
 from models.position import rotate_players, assign_positions
 from models.player import Player
+from models.human_player import HumanPlayer
 from models.ai_player import AIPlayer
-
-def create_players():
-    """
-    プレイヤー1人とAI1〜5人を生成
-    """
-    players = [Player(name="YOU", is_human=True)]  # プレイヤー1人（人間）
-    player_names = ["AI1", "AI2", "AI3", "AI4", "AI5"]
-    
-    # AIプレイヤーの生成（5人）
-    for name in player_names:
-        players.append(AIPlayer(name=name))
-    
-    return players
-
 
 class Table:
     def __init__(self, small_blind=50, big_blind=100):
-        self.players = create_players()
+        self.players = self.create_players()
         self.deck = Deck()
         self.community_cards = []
         self.pot = 0
@@ -28,6 +15,12 @@ class Table:
         self.big_blind = big_blind
         self.small_blind = small_blind
     
+    def create_players(self):
+        players = [HumanPlayer(name="YOU")]  # 人間プレイヤー
+        for i in range(1, 6):
+            players.append(AIPlayer(name=f"AI{i}"))
+        return players
+
     def start_hand(self):
         self.deck.deck_shuffle()
         self.reset_players()

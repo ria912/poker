@@ -4,7 +4,8 @@ from models.action import Action
 
 class AIPlayer(Player):
     def __init__(self, name, stack=10000):
-        super().__init__(name, is_human=False, stack=stack)
+        super().__init__(name, stack=stack)
+        self.is_human = False
 
     def decide_action(self, legal_info):
         legal_actions = legal_info["actions"]

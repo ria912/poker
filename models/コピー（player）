@@ -1,68 +1,110 @@
-import models.action as Action
-class Player:
-    def __init__(self, name="player", is_human=False, stack=10000):
-        self.name = name
-        self.is_human = is_human
-        self.stack = stack
-        self.hand = []
-        self.position = None
-        self.current_bet = 0
-        self.has_folded = False
-        self.last_action = None
-        self.has_left = False
+from collections import deque
+from models.action import Action
+from models.position import assignment_order
+import random
 
-    def reset_for_new_hand(self):
-        self.hand = []
-        self.current_bet = 0
-        self.has_folded = False
-        self.last_action = None
-        self.position = None
+class RoundManager:
+    def __init__(self, table):
+        self.table = table
+        self.phase = 'preflop'
+        self.players_to_act = deque()
+        self.last_raiser = None
 
-    def to_dict(self):
-        return {
-            "name": self.name,
-            "stack": self.stack,
-            "current_bet": self.current_bet,
-            "hand": self.hand if self.is_human else ["X", "X"],
-            "position": self.position,
-            "has_folded": self.has_folded,
-            "last_action": self.last_action,
-            "has_left": self.has_left
-        }
-    
-    def decide_action(self, legal_info):
-        legal_actions = legal_info["actions"]
-        current_bet = legal_info["current_bet"]
-        min_bet = legal_info["min_bet"]
-    
-        print(f"\n{self.name}, it's your turn!")
-        print(f"Pot: {legal_info['pot']}")
-        print(f"Your stack: {self.stack}")
-        print(f"Current bet: {current_bet}, Your bet: {self.current_bet}")
-        
-        print("Legal actions you can choose:")
-        for action in legal_actions:
-            print(f"- {action}")
-    
-        while True:
-            action = input("Choose your action: ").strip().lower()
-            if action not in legal_actions:
-                print("Invalid action. Try again.")
-                continue
-    
+    def start_new_round(self):
+        self.table.start_hand()
+        self.phase = 'preflop'
+        self.setup_action_queue()
+
+    def setup_action_queue(self):
+        all_active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
+        all_active_sorted = sorted(all_active, key=lambda p: assignment_order.index(p.position))
+
+        if self.phase == "preflop":
+            bb_index = next((i for i, p in enumerate(all_active_sorted) if p.position == "BB"), 0)
+            ordered = all_active_sorted[bb_index + 1:] + all_active_sorted[:bb_index + 1]
+        else:
+            btn_index = next((i for i, p in enumerate(all_active_sorted) if p.position == "BTN"), 0)
+            ordered = all_active_sorted[btn_index + 1:] + all_active_sorted[:btn_index + 1]
+
+        self.players_to_act = deque(ordered)
+        self.last_raiser = None
+
+    def proceed_action(self):
+        if not self.players_to_act:
+            return
+
+        player = self.players_to_act.popleft()
+        if player.has_folded or player.stack == 0:
+            return
+
+        legal = Action.get_legal_actions(player, self.table)
+
+        if player.is_human:
+            action, amount = player.decide_action({
+                "actions": legal,
+                "pot": self.table.pot,
+                "current_bet": self.table.current_bet,
+                "min_bet": self.table.min_bet
+            })
+        else:
+            if Action.CALL in legal:
+                action = Action.CALL
+            elif Action.CHECK in legal:
+                action = Action.CHECK
+            else:
+                action = Action.FOLD
             amount = 0
-            if action in [Action.BET, Action.RAISE, Action.ALL_IN]:
-                try:
-                    amount = int(input("Enter the amount: "))
-                    if amount > self.stack:
-                        print("You don't have enough chips.")
-                        continue
-                    if action in [Action.BET, Action.RAISE] and amount < min_bet:
-                        print(f"Minimum {action} is {min_bet}.")
-                        continue
-                except ValueError:
-                    print("Invalid amount.")
-                    continue
-    
-            self.last_action = action
-            return action, amount
+
+        before_bet = self.table.current_bet
+        Action.apply_action(player, action, self.table, amount)
+
+        if self.table.current_bet > before_bet and action in [Action.BET, Action.RAISE, Action.ALL_IN]:
+            self.last_raiser = player
+            self.reset_players_to_act_from(player)
+
+    def reset_players_to_act_from(self, raiser):
+        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
+        ordered = sorted(active, key=lambda p: assignment_order.index(p.position))
+        if raiser not in ordered:
+            return
+
+        start_index = ordered.index(raiser)
+        reordered = ordered[start_index + 1:] + ordered[:start_index]
+        self.players_to_act = deque(reordered)
+
+    def should_advance_phase(self):
+        return not self.players_to_act
+
+    def advance_phase(self):
+        phase_order = ['preflop', 'flop', 'turn', 'river', 'showdown']
+        next_index = phase_order.index(self.phase) + 1
+        if next_index < len(phase_order):
+            self.phase = phase_order[next_index]
+
+            if self.phase == 'flop':
+                self.table.community_cards = [self.table.deck.draw() for _ in range(3)]
+                self.table.current_bet = 0
+            elif self.phase in ['turn', 'river']:
+                self.table.community_cards.append(self.table.deck.draw())
+                self.table.current_bet = 0
+            elif self.phase == 'showdown':
+                self.handle_showdown()
+
+            for p in self.table.players:
+                p.current_bet = 0
+
+            self.setup_action_queue()
+        else:
+            print("Showdown or hand is over")
+
+    def handle_showdown(self):
+        # TODO: 最も強い役を持つプレイヤーを判定する（今はランダム）
+        active_players = [p for p in self.table.players if not p.has_folded]
+        if not active_players:
+            print("No players left for showdown.")
+            return
+
+        winner = random.choice(active_players)
+        print(f"Winner is: {winner.name}")
+        winner.stack += self.table.pot
+        self.table.pot = 0

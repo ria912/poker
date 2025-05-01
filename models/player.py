@@ -1,8 +1,7 @@
-import models.action as Action
+# models/player.py
 class Player:
-    def __init__(self, name="player", is_human=False, stack=10000):
+    def __init__(self, name="Player", stack=10000):
         self.name = name
-        self.is_human = is_human
         self.stack = stack
         self.hand = []
         self.position = None
@@ -10,6 +9,7 @@ class Player:
         self.has_folded = False
         self.last_action = None
         self.has_left = False
+        self.is_human = None
 
     def reset_for_new_hand(self):
         self.hand = []
@@ -23,45 +23,10 @@ class Player:
             "name": self.name,
             "stack": self.stack,
             "current_bet": self.current_bet,
-            "hand": self.hand if self.is_human else ["X", "X"],
+            "hand": self.hand,
             "position": self.position,
             "has_folded": self.has_folded,
             "last_action": self.last_action,
-            "has_left": self.has_left
+            "has_left": self.has_left,
+            "is_human": self.is_human
         }
-    
-    def decide_action(self, context):
-        actions = context["actions"]["actions"]
-        pot = context["pot"]
-        current_bet = context["current_bet"]
-        min_bet = context["min_bet"]
-
-        print(f"\n{self.name}'s Turn!")
-        print(f"Your hand: {self.hand}")
-        print(f"Pot: {pot}, Current Bet: {current_bet}, Your Bet: {self.current_bet}, Your Stack: {self.stack}")
-        print("Available actions:")
-
-        for i, act in enumerate(actions):
-            print(f"{i}: {act}")
-
-        while True:
-            choice = input("Choose action by number: ")
-            if choice.isdigit() and int(choice) in range(len(actions)):
-                selected = actions[int(choice)]
-                break
-            else:
-                print("Invalid input. Try again.")
-
-        amount = 0
-        if selected in ["bet", "raise"]:
-            while True:
-                try:
-                    amount = int(input(f"Enter amount to {selected} (min {min_bet}): "))
-                    if amount >= min_bet:
-                        break
-                    else:
-                        print(f"Amount must be at least {min_bet}")
-                except ValueError:
-                    print("Invalid amount.")
-
-        return selected, amount
