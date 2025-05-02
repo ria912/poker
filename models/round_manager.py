@@ -1,124 +1,97 @@
-# round_manager.py
-
 from models.action import Action
+
 
 class RoundManager:
     def __init__(self, table):
+        # RoundManagerは1ハンドの流れを管理する
         self.table = table
-        self.players = [p for p in table.players if not p.has_left]
-        self.active_players = [p for p in self.players if not p.has_folded and p.stack > 0]
-        self.phase = 'preflop'
+        self.stage = 'preflop'  # 現在のステージ（プリフロップ〜ショーダウン）
 
-    def play_round(self):
-        """
-        ラウンド全体を順に進行（プリフロップ→リバーまで）
-        """
-        self.betting_round()
-        if self.is_hand_over():
-            return
+    # 新しいハンドを開始し、プリフロップのベッティングラウンドを実行
+    def start_new_hand(self):
+        self.table.start_hand()
+        self.stage = 'preflop'
+        self.run_betting_round()
+        if self.more_than_one_active():
+            self.proceed_to_next_stage()
 
-        self.deal_community_cards(3)  # フロップ
-        self.betting_round()
-        if self.is_hand_over():
-            return
+    # ベッティングラウンドのロジック（レイズ対応・順番管理含む）
+    def run_betting_round(self):
+        players = self.table.get_action_order(self.stage)
+        last_raiser = None
 
-        self.deal_community_cards(1)  # ターン
-        self.betting_round()
-        if self.is_hand_over():
-            return
-
-        self.deal_community_cards(1)  # リバー
-        self.betting_round()
-        # ショーダウン処理は未実装
-
-    def betting_round(self):
-        """
-        1フェーズ内のベッティングラウンドを実行
-        """
-        self.reset_current_bets()
-        players_in_round = [p for p in self.players if not p.has_folded and p.stack > 0]
-        idx = self.get_first_to_act_index()
-
-        num_players = len(players_in_round)
-        acted = set()
         while True:
-            player = players_in_round[idx]
+            for player in players:
+                if player.has_folded or player.stack == 0:
+                    continue
+                if self.only_one_active():
+                    return
 
-            # AI or Human の処理
-            if player.is_human:
-                legal = Action.get_legal_actions(player, self.table)
-                print(f"\n{player.name}'s turn. Stack: {player.stack}")
-                print("Community Cards:", self.table.community_cards)
-                print("Your Hand:", player.hand)
-                print("Pot:", self.table.pot)
-                print("Legal Actions:", legal['actions'])
-                action = input("Choose action: ").strip().lower()
-                amount = 0
-                if action in [Action.BET, Action.RAISE]:
-                    amount = int(input("Enter amount: "))
+                context = Action.get_legal_actions(player, self.table)
+                action, amount = self.get_player_action(player, context)
                 Action.apply_action(player, action, self.table, amount)
-            else:
-                action, amount = player.decide_action(self.table)
-                Action.apply_action(player, action, self.table, amount)
-                print(f"{player.name} chooses {action} ({amount if amount else ''})")
 
-            acted.add(player)
-            idx = (idx + 1) % num_players
+                print(f"{player.name} -> {action.upper()} {f'({amount})' if amount else ''}")
 
-            # アクションが終わる条件：すべてのプレイヤーが同額ベットか、フォールド済み
-            if self.betting_complete(players_in_round, acted):
+                if action in [Action.BET, Action.RAISE, Action.ALL_IN]:
+                    last_raiser = player
+                    players = self.table.reorder_from(player)
+                    break  # レイズがあったので順番を再調整して再ループ
+
+            if self.betting_round_should_end(last_raiser):
                 break
 
-    def get_first_to_act_index(self):
-        """
-        プリフロップ：BBの左
-        以降：SBの左
-        """
-        positions = [p.position for p in self.players]
-        if self.phase == 'preflop':
-            try:
-                bb_index = positions.index('BB')
-                return (bb_index + 1) % len(self.players)
-            except ValueError:
-                return 0
+    # プレイヤーが人間かAIかに応じてアクションを取得（インターフェースを統一）
+    def get_player_action(self, player, context):
+        if player.is_human:
+            return player.decide_action({
+                "actions": context,
+                "pot": self.table.pot,
+                "current_bet": self.table.current_bet,
+                "min_bet": self.table.min_bet
+            })
         else:
-            try:
-                sb_index = positions.index('SB')
-                return (sb_index + 1) % len(self.players)
-            except ValueError:
-                return 0
+            return player.decide_action(context)
 
-    def reset_current_bets(self):
-        """
-        各プレイヤーのベット状態をリセット（次フェーズのため）
-        """
-        self.table.current_bet = 0
-        self.table.min_bet = self.table.big_blind
-        for player in self.players:
-            player.current_bet = 0
+    # 次のステージに進行し、必要なら新たなベッティングラウンドを開始
+    def proceed_to_next_stage(self):
+        for p in self.table.players:
+            p.current_bet = 0
 
-    def betting_complete(self, players, acted):
-        """
-        全員が同じ額までコール or オールイン or フォールドしているかどうか
-        """
-        active = [p for p in players if not p.has_folded and p.stack > 0]
+        if self.stage == 'preflop':
+            self.table.deal_community_cards(3)  # フロップ
+            self.stage = 'flop'
+        elif self.stage == 'flop':
+            self.table.deal_community_cards(1)  # ターン
+            self.stage = 'turn'
+        elif self.stage == 'turn':
+            self.table.deal_community_cards(1)  # リバー
+            self.stage = 'river'
+        elif self.stage == 'river':
+            self.stage = 'showdown'
+            self.showdown()
+            return
+
+        self.run_betting_round()
+        if self.more_than_one_active() and self.stage != 'showdown':
+            self.proceed_to_next_stage()
+
+    # ベッティングラウンドを終了してよいかを判定（全員がコールした場合など）
+    def betting_round_should_end(self, last_raiser):
+        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
         if len(active) <= 1:
             return True
-        target_bet = max(p.current_bet for p in active)
-        return all(p.current_bet == target_bet or p.stack == 0 for p in active)
+        return all(p.current_bet == self.table.current_bet for p in active)
 
-    def deal_community_cards(self, count):
-        for _ in range(count):
-            self.table.community_cards.append(self.table.deck.draw())
-        # 次のフェーズへ
-        if count == 3:
-            self.phase = 'flop'
-        elif self.phase == 'flop':
-            self.phase = 'turn'
-        elif self.phase == 'turn':
-            self.phase = 'river'
+    # アクティブなプレイヤーが1人だけか判定（ハンド終了の判定にも使う）
+    def only_one_active(self):
+        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
+        return len(active) <= 1
 
-    def is_hand_over(self):
-        remaining = [p for p in self.players if not p.has_folded]
-        return len(remaining) <= 1
-    
+    # アクティブプレイヤーが2人以上いるか（次フェーズに進むかどうか）
+    def more_than_one_active(self):
+        return not self.only_one_active()
+
+    # ショーダウン処理（現状は仮実装）
+    def showdown(self):
+        print("Showdown! (ハンド評価ロジックは未実装)")
