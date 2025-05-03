@@ -1,30 +1,64 @@
 # models/position.py
 
+# models/position.py
+
 ASSIGNMENT_ORDER = ['BTN', 'SB', 'BB', 'LJ', 'HJ', 'CO']
 FULL_POSITIONS = ['BTN', 'SB', 'BB', 'CO', 'HJ', 'LJ']
 
-def rotate_players(players):
-    """プレイヤーを1つ後ろに回して、BTNを進める"""
-    players.append(players.pop(0))
+def rotate_button(seats):
+    num_seats = len(seats)
 
-def assign_positions(players):
-    """
-    アクティブプレイヤーにポジションを割り当てる。
-    - FULL_POSITIONS の順に必要数だけポジションを切り出す。
-    - その中から ASSIGNMENT_ORDER の順で割り当てる。
-    """
-    active_players = [p for p in players if not p.has_left]
+    current_btn_index = None
+    for i, p in enumerate(seats):
+        if p and p.position == 'BTN':
+            current_btn_index = i
+            break
 
-    # アクティブプレイヤー数だけポジション候補を取り出す
+    start = (current_btn_index + 1) if current_btn_index is not None else 0
+    for offset in range(num_seats):
+        i = (start + offset) % num_seats
+        if seats[i] is not None:
+            new_btn_index = i
+            break
+
+    for p in seats:
+        if p:
+            p.position = None
+
+    seats[new_btn_index].position = 'BTN'
+
+
+def assign_positions(seats):
+    """
+    BTN を起点に時計回りにポジションを割り当てる。
+    空席（None）はスキップ。
+    """
+    # BTN位置を探す
+    btn_index = None
+    for i, p in enumerate(seats):
+        if p and p.position == 'BTN':
+            btn_index = i
+            break
+    if btn_index is None:
+        raise ValueError("No BTN assigned in seats.")
+
+    # アクティブプレイヤーをBTNから時計回りに取得
+    active_players = []
+    num_seats = len(seats)
+    for offset in range(num_seats):
+        idx = (btn_index + offset) % num_seats
+        player = seats[idx]
+        if player is not None:
+            active_players.append(player)
+
+    # 使用するポジションを決定
     available_positions = FULL_POSITIONS[:len(active_players)]
-
-    # assignment_order の優先順でポジションを並べ替える
     ordered_positions = [pos for pos in ASSIGNMENT_ORDER if pos in available_positions]
 
-    # 全プレイヤーのポジション初期化
-    for p in players:
-        p.position = None
+    # ポジションの割り当て
+    for p in seats:
+        if p:
+            p.position = None
 
-    # アクティブプレイヤーに順番にポジションを割り当てる
     for player, pos in zip(active_players, ordered_positions):
         player.position = pos
