@@ -1,7 +1,4 @@
 # models/position.py
-
-# models/position.py
-
 ASSIGNMENT_ORDER = ['BTN', 'SB', 'BB', 'LJ', 'HJ', 'CO']
 FULL_POSITIONS = ['BTN', 'SB', 'BB', 'CO', 'HJ', 'LJ']
 

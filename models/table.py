@@ -1,5 +1,5 @@
 from models.deck import Deck
-from models.position import rotate_players, assign_positions
+from models.position import rotate_button, assign_positions
 from models.player import Player
 from models.human_player import HumanPlayer
 from models.ai_player import AIPlayer
@@ -24,7 +24,7 @@ class Table:
     def start_hand(self):
         self.deck.deck_shuffle()
         self.reset_players()
-        rotate_players(self.players)
+        rotate_button(self.players)
         assign_positions(self.players)
         self.community_cards = []
         self.pot = 0

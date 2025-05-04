@@ -1,5 +1,6 @@
 #models/round_manager.py
 from models.action import Action
+from models.position import ASSIGNMENT_ORDER
 
 
 class RoundManager:
@@ -69,19 +70,31 @@ class RoundManager:
         if self.more_than_one_active() and self.stage != 'showdown':
             self.proceed_to_next_stage()
 
-    def get_action_order(self):
-        active = [p for p in self.table.players if not p.has_folded]
-        if self.stage == 'preflop':
-            bb_index = next(i for i, p in enumerate(self.table.players) if p.position == 'BB')
-            return self.table.players[bb_index + 1:] + self.table.players[:bb_index + 1]
-        else:
-            btn_index = next(i for i, p in enumerate(self.table.players) if p.position == 'BTN')
-            return self.table.players[btn_index + 1:] + self.table.players[:btn_index + 1]
 
-    def reorder_from(self, player):
-        """playerを先頭に順番を並べ替える（アクションがあった時に使う）"""
-        idx = self.table.players.index(player)
-        return self.table.players[idx:] + self.table.players[:idx]
+    def get_action_order(self):
+        """現在のステージに応じて正しいアクション順を返す"""
+        active_players = [p for p in self.table.players if not p.has_folded]
+
+        if self.stage == 'preflop':
+            # BBの次から始まるようにASSIGNMENT_ORDERを回転
+            order = self._rotate_assignment_order_from('BB')
+        else:
+            # BTNの次から始まる
+            order = self._rotate_assignment_order_from('BTN')
+
+        # 順番にプレイヤーを取得
+        ordered_players = []
+        for pos in order:
+            for p in active_players:
+                if p.position == pos:
+                    ordered_players.append(p)
+                    break  # 同じポジションが複数いない前提
+        return ordered_players
+
+    def _rotate_assignment_order_from(self, position):
+        """ASSIGNMENT_ORDERを指定位置の次から時計回りに回転させたリストを返す"""
+        idx = ASSIGNMENT_ORDER.index(position)
+        return ASSIGNMENT_ORDER[idx+1:] + ASSIGNMENT_ORDER[:idx+1]
 
     def betting_round_should_end(self, last_raiser):
         active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
