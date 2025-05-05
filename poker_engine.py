@@ -10,7 +10,7 @@ def main():
     while True:
         round_manager.start_new_hand()
 
-        again = input("\nPlay another hand? (y/n): ").lower()
+        again = input("\nPlay next hand? (y/n): ").lower()
         if again != 'y':
             break
 

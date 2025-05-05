@@ -26,14 +26,15 @@ class RoundManager:
                 if self.only_one_active():
                     return
 
+                # context にステージ情報を追加
                 context = Action.get_legal_actions(player, self.table)
+                context.update({
+                    "stage": self.stage,  # 現在のステージを追加
+                    "players": [p.to_dict() for p in self.table.players]  # プレイヤー情報
+                })
+
                 if player.is_human:
-                    action, amount = player.decide_action({
-                        "actions": context,
-                        "pot": self.table.pot,
-                        "current_bet": self.table.current_bet,
-                        "min_bet": self.table.min_bet
-                    })
+                    action, amount = player.decide_action(context)
                 else:
                     action, amount = player.decide_action(context)
 

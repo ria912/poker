@@ -8,15 +8,23 @@ class HumanPlayer(Player):
         self.is_human = True
 
     def decide_action(self, context):
-        actions = context["actions"]["actions"]
+        actions = context["actions"]
         pot = context["pot"]
         current_bet = context["current_bet"]
         min_bet = context["min_bet"]
+        stage = context["stage"]  # 現在のフェーズを受け取る
 
         print(f"\n{self.name}'s Turn!")
         print(f"Your hand: {self.hand}")
         print(f"Pot: {pot}, Current Bet: {current_bet}, Your Bet: {self.current_bet}, Your Stack: {self.stack}")
-        print("Available actions:")
+        print(f"Current Stage: {stage}")  # 現在のフェーズ表示
+
+        print("\nOther Players' Info:")
+        for player in context["players"]:
+            if player["name"] != self.name:  # 自分以外のプレイヤー情報
+                print(f"{player['name']} - Position: {player['position']}, Stack: {player['stack']}, Current Bet: {player['current_bet']}")
+
+        print("\nAvailable actions:")
         for i, act in enumerate(actions):
             print(f"{i}: {act}")
 
