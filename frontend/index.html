@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" x-data="gameApp()" x-init="init()">
+<head>
+    <meta charset="UTF-8">
+    <title>Texas Hold'em</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="/js/app.js" defer></script>
+</head>
+<body class="bg-green-700 text-white">
+    <div class="container mx-auto mt-10">
+        <h1 class="text-3xl mb-4">Texas Hold'em</h1>
+
+        <div x-text="JSON.stringify(game, null, 2)"></div>
+
+        <!-- アクションボタン、ハンド、ポジション表示などを追加予定 -->
+    </div>
+</body>
+</html>

@@ -1,43 +1,51 @@
 # Texas Hold'em Web Poker Practice App
-
-models/
-
-- player.py  
-  - プレイヤークラスを定義。人間／AIの区別、所持チップ、現在のベット額、フォールド状態などの状態を保持。  
-  - reset_for_new_hand() により毎ハンド初期化可能。
-
-- ai_player.py  
-  - Player を継承したAIプレイヤー。  
-  - 現在は CHECK > CALL > FOLD 優先の非常に簡易な決定ロジックを持つ（テスト用）。
-
-- action.py  
-  - ポーカーにおける行動（FOLD, CALL, CHECK, BET, RAISE, ALL-IN）を列挙。  
-  - get_legal_actions(): プレイヤーのスタックとテーブル状況から可能な行動一覧を生成。  
-  - apply_action(): 行動をテーブルとプレイヤーに適用し、スタックやポットを更新。
-
-- deck.py  
-  - トランプデッキを生成・シャッフル・ドローする Deck クラスを定義。
-
-- position.py  
-  - ポジションの割り当て順序を管理。  
-  - rotate_players(): プレイヤーの並び順を1つ回転（ボタンが移動）。  
-  - assign_positions(): 現在のアクティブプレイヤーに対して BTN→SB→BB→... の順でポジションを付与。
-
-- table.py  
-  - ゲームテーブルの全体的な状態（プレイヤー、ポット、コミュニティカード、ベット情報など）を管理。  
-  - start_hand(): 1ハンドの開始処理を包括（シャッフル、ポジション再設定、ブラインド投稿、配牌など）。
-
-- round_manager.py  
-  - ゲームの進行を管理する中心クラス。  
-  - 各フェーズ（preflop, flop, turn, river, showdown）を順に進めるロジックを含む。  
-  - proceed_action(): 現在のプレイヤーに行動させる。  
-  - advance_phase(): フェーズが進行し、必要に応じてカードが公開される。  
-  - handle_showdown(): 勝者をランダムに決定してポットを渡す（暫定実装）。
-
-
-💡 今後の拡張ポイント
-
-- showdown の判定ロジック（ハンド強さの比較）を実装  
-- AIプレイヤーに戦略を追加  
-- UIとの接続（Flask, Reactなど）による操作性向上  
-- プレイ履歴の保存と表示機能
+holdem_app/
+├── backend/
+│   ├── main.py
+│   │   └─ FastAPI アプリの起動ファイル。ルーティング設定と CORS 設定などを行う。
+│
+│   ├── api/
+│   │   └── endpoints.py
+│   │       └─ フロントエンドとのやり取りを担う API エンドポイント群。
+│   │          例：/start-hand, /player-action, /get-game-state など。
+│
+│   ├── core/
+│   │   └── game_manager.py
+│   │       └─ ゲームのセッション全体を制御。RoundManagerを使って進行を管理する。
+│
+│   ├── models/
+│   │   ├── player.py
+│   │   │   └─ プレイヤーの基本クラス（共通の属性：スタック、ハンド、状態など）。
+│   │   ├── human_player.py
+│   │   │   └─ 人間プレイヤー固有の処理（決定の待機など）。
+│   │   ├── ai_player.py
+│   │   │   └─ シンプルなAIによるアクション選択ロジック。
+│   │   ├── deck.py
+│   │   │   └─ トランプの生成・シャッフル・カード配布を担う。
+│   │   ├── action.py
+│   │   │   └─ fold, call, raise などのアクションルールや適用処理。
+│   │   ├── position.py
+│   │   │   └─ BTN（ボタン）を起点としたポジションの割り当て・回転ロジック。
+│   │   └── round_manager.py
+│   │       └─ ラウンド進行管理（プリフロップ、フロップ、ターン、リバー、ショーダウン）。
+│
+├── frontend/
+│   ├── index.html
+│   │   └─ メイン画面。プレイヤーの手札やボード、アクションボタンなどを表示。
+│
+│   ├── js/
+│   │   └── app.js
+│   │       └─ Alpine.js によるフロントエンドロジック。
+│   │          - サーバーからのデータ取得
+│   │          - アクション送信
+│   │          - UIのリアクティブ更新
+│
+│   ├── css/
+│   │   └── style.css
+│   │       └─ Tailwind CSS のカスタマイズや追加スタイルを記述（任意）。
+│
+├── requirements.txt
+│   └─ Python依存パッケージの一覧（例：fastapi, uvicorn, pydantic など）。
+│
+├── README.md
+│   └─ このプロジェクトの概要、構成、起動方法、今後の予定などを記述。
