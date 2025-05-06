@@ -56,12 +56,18 @@ class RoundManager:
         if self.stage == 'preflop':
             self.table.community_cards += [self.table.deck.draw() for _ in range(3)]
             self.stage = 'flop'
+            self.table.current_bet = 0
+            print(f"\nFlop: {self.table.community_cards}")
         elif self.stage == 'flop':
             self.table.community_cards.append(self.table.deck.draw())
             self.stage = 'turn'
+            self.table.current_bet = 0
+            print(f"\nTurn: {self.table.community_cards}")
         elif self.stage == 'turn':
             self.table.community_cards.append(self.table.deck.draw())
             self.stage = 'river'
+            self.table.current_bet = 0
+            print(f"\nRiver: {self.table.community_cards}")
         elif self.stage == 'river':
             self.stage = 'showdown'
             self.showdown()
