@@ -15,7 +15,7 @@ class Action:
 
         actions.append(Action.FOLD)
 
-        if current_bet == 0:
+        if current_bet == player.current_bet:
             actions.append(Action.CHECK)
             if player.stack >= min_bet:
                 actions.append(Action.BET)
@@ -64,6 +64,7 @@ class Action:
             call_amount = min(player.stack, to_call)
             player.stack -= call_amount
             player.current_bet += call_amount
+            table.current_bet = player.current_bet
             table.pot += call_amount
 
         elif action == Action.RAISE:
