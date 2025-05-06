@@ -2,19 +2,17 @@ from models.table import Table
 from models.round_manager import RoundManager
 
 def main():
-    print("=== Texas Hold'em Practice App ===\n")
+    print("Texas Hold'em - Practice Mode\n")
 
     table = Table()
-    round_manager = RoundManager(table)
+    manager = RoundManager(table)
 
-    while True:
-        round_manager.start_new_hand()
+    manager.play_hand()
 
-        again = input("\nPlay next hand? (y/n): ").lower()
-        if again != 'y':
-            break
-
-    print("Thanks for playing!")
+    print("\n--- Hand Summary ---")
+    for p in table.players:
+        print(f"{p.name} ({p.position}): Stack = {p.stack}, Hand = {p.hand}, Folded = {p.has_folded}")
+    print(f"Community Cards: {table.community_cards}")
 
 if __name__ == "__main__":
     main()

@@ -1,138 +1,103 @@
-#models/round_manager.py
+# round_manager.py
 from models.action import Action
-from models.position import ASSIGNMENT_ORDER
+from models.table import Table
 
 
 class RoundManager:
-    def __init__(self, table):
+    def __init__(self, table: Table):
         self.table = table
-        self.stage = 'preflop'  # preflop, flop, turn, river, showdown
+        self.players = table.players
+        self.active_players = []
+        self.last_raiser = None
+        self.action_index = 0
 
-    def start_new_hand(self):
+    def play_hand(self):
         self.table.start_hand()
-        self.stage = 'preflop'
-        self.run_betting_round()
-        if self.more_than_one_active():
-            self.proceed_to_next_stage()
+        self.active_players = [p for p in self.players if not p.has_folded and p.stack > 0]
 
-    def run_betting_round(self):
-        players = self.get_action_order()
-        last_raiser = None
-        action_occurred = False
+        self.betting_round("Preflop")
 
+        if len(self.active_players) > 1:
+            self.deal_community_cards(3)  # Flop
+            self.betting_round("Flop")
+
+        if len(self.active_players) > 1:
+            self.deal_community_cards(1)  # Turn
+            self.betting_round("Turn")
+
+        if len(self.active_players) > 1:
+            self.deal_community_cards(1)  # River
+            self.betting_round("River")
+
+        self.showdown()
+
+    def deal_community_cards(self, num_cards):
+        for _ in range(num_cards):
+            card = self.table.deck.draw()
+            self.table.community_cards.append(card)
+
+    def betting_round(self, round_name):
+        print(f"\n--- {round_name} ---")
+
+        # リセット
+        self.reset_bets()
+
+        self.active_players = [p for p in self.players if not p.has_folded and p.stack > 0]
+        self.last_raiser = None
+        self.action_index = self.get_starting_index(round_name)
+
+        # アクションループ
+        acted_players = set()
         while True:
-            for player in players:
-                if player.has_folded or player.stack == 0:
-                    continue
-                if self.only_one_active():
-                    return
+            player = self.active_players[self.action_index]
+            legal_info = Action.get_legal_actions(player, self.table)
+            action, amount = player.decide_action(legal_info)
 
-                # context にステージ情報を追加
-                context = Action.get_legal_actions(player, self.table)
-                context.update({
-                    "stage": self.stage,  # 現在のステージを追加
-                    "players": [p.to_dict() for p in self.table.players]  # プレイヤー情報
-                })
+            print(f"{player.name} ({player.position}) -> {action.upper()} {amount if amount else ''}")
 
-                action, amount = player.decide_action(context)
-                Action.apply_action(player, action, self.table, amount)
+            Action.apply_action(player, action, self.table, amount)
 
-                if player.is_human:
-                    action, amount = player.decide_action(context)
-                else:
-                    action, amount = player.decide_action(context)
-                    print(f"{player.name} chooses to {action.upper()} with amount {amount}")
-                    
-                Action.apply_action(player, action, self.table, amount)
+            if action in [Action.BET, Action.RAISE, Action.ALL_IN]:
+                self.last_raiser = player
+                acted_players = set([player])  # リセット
+            else:
+                acted_players.add(player)
 
-                if action in [Action.BET, Action.RAISE, Action.ALL_IN]:
-                    last_raiser = player
-                    players = self.reorder_from(player)
-                    break  # アクションがあったので再ループ
-                action_occurred = True
+            # 更新
+            self.active_players = [p for p in self.players if not p.has_folded and p.stack > 0]
 
-            if self.betting_round_should_end(last_raiser):
+            # 終了条件：1人以外全員が行動済み + last_raiserまで戻ったら
+            if len(self.active_players) == 1:
+                break
+            if self.last_raiser is None and len(acted_players) == len(self.active_players):
+                break
+            if self.last_raiser and self.active_players[self.action_index] == self.last_raiser and len(acted_players) == len(self.active_players) - 1:
                 break
 
-    def proceed_to_next_stage(self):
-        for p in self.table.players:
+            self.action_index = (self.action_index + 1) % len(self.active_players)
+
+    def get_starting_index(self, round_name):
+        # プリフロップはBBの次、それ以外はBTNの次
+        for i, p in enumerate(self.active_players):
+            if round_name == "Preflop" and p.position == 'BB':
+                return (i + 1) % len(self.active_players)
+            elif round_name != "Preflop" and p.position == 'BTN':
+                return (i + 1) % len(self.active_players)
+        return 0
+
+    def reset_bets(self):
+        self.table.current_bet = 0
+        for p in self.players:
             p.current_bet = 0
 
-        if self.stage == 'preflop':
-            self.table.community_cards += [self.table.deck.draw() for _ in range(3)]
-            self.stage = 'flop'
-            self.table.current_bet = 0
-            print(f"\nFlop: {self.table.community_cards}")
-
-        elif self.stage == 'flop':
-            self.table.community_cards.append(self.table.deck.draw())
-            self.stage = 'turn'
-            self.table.current_bet = 0
-            print(f"\nTurn: {self.table.community_cards}")
-
-        elif self.stage == 'turn':
-            self.table.community_cards.append(self.table.deck.draw())
-            self.stage = 'river'
-            self.table.current_bet = 0
-            print(f"\nRiver: {self.table.community_cards}")
-
-        elif self.stage == 'river':
-            self.stage = 'showdown'
-            self.showdown()
+    def showdown(self):
+        remaining = [p for p in self.players if not p.has_folded]
+        if not remaining:
+            print("No players remaining.")
             return
 
-        self.run_betting_round()
-        if self.more_than_one_active() and self.stage != 'showdown':
-            self.proceed_to_next_stage()
-
-
-    def get_action_order(self):
-        """現在のステージに応じて正しいアクション順を返す"""
-        active_players = [p for p in self.table.players if not p.has_folded]
-
-        if self.stage == 'preflop':
-            # BBの次から始まるようにASSIGNMENT_ORDERを回転
-            order = self._rotate_assignment_order_from('BB')
-        else:
-            # BTNの次から始まる
-            order = self._rotate_assignment_order_from('BTN')
-
-        # 順番にプレイヤーを取得
-        ordered_players = []
-        for pos in order:
-            for p in active_players:
-                if p.position == pos:
-                    ordered_players.append(p)
-                    break  # 同じポジションが複数いない前提
-        return ordered_players
-    
-    def reorder_from(self, starting_player):
-        """指定したプレイヤーから時計回りにアクション順を回転させたリストを返す"""
-        players = self.get_action_order()
-        if starting_player not in players:
-            return players  # 念のため（起こらないはず）
-
-        idx = players.index(starting_player)
-        return players[idx+1:] + players[:idx+1]
-
-
-    def _rotate_assignment_order_from(self, position):
-        """ASSIGNMENT_ORDERを指定位置の次から時計回りに回転させたリストを返す"""
-        idx = ASSIGNMENT_ORDER.index(position)
-        return ASSIGNMENT_ORDER[idx+1:] + ASSIGNMENT_ORDER[:idx+1]
-
-    def betting_round_should_end(self, last_raiser):
-        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
-        if len(active) <= 1:
-            return True
-        return all(p.current_bet == self.table.current_bet for p in active)
-
-    def only_one_active(self):
-        active = [p for p in self.table.players if not p.has_folded and p.stack > 0]
-        return len(active) <= 1
-
-    def more_than_one_active(self):
-        return not self.only_one_active()
-
-    def showdown(self):
-        print("Showdown! (ハンド評価ロジックは未実装)")
+        # 現段階では最初のプレイヤーにポットを渡す
+        winner = remaining[0]
+        print(f"\n🏆 Winner: {winner.name} wins pot of {self.table.pot}")
+        winner.stack += self.table.pot
+        self.table.pot = 0
