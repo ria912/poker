@@ -1,96 +1,84 @@
-# round_manager.py
-
+# models/round_manager.py
 from models.table import Table
-from models.action import get_legal_actions, apply_action
-from models.position import rotate_button, assign_positions
+from models.position import ASSIGNMENT_ORDER
 
 class RoundManager:
     def __init__(self, table: Table):
-        self.table = table
-        self.current_round = "pre_flop"  # 初期ラウンドはプリフロップ
-        self.pot = 0  # ポット額の初期化
-        self.community_cards = []  # コミュニティカードのリスト
-        self.current_bet = 0  # 現在のベット額
-        self.active_players = []  # アクティブなプレイヤーリスト
+        self.table = table  # テーブルの情報を保持
+        self.street = 'preflop'  # 最初はプリフロップ
+        self.action_index = 0  # アクションを開始するプレイヤーのインデックス
+        self.last_raiser = None  # 最後にレイズしたプレイヤー
 
-    def start_round(self):
-        """ラウンドを開始する処理"""
-        self.table.start_hand()
-        self.current_round = "pre_flop"
-        self.pot = 0
-        self.community_cards = []
-        self.current_bet = 0
-        self.active_players = [player for player in self.table.players if player.stack > 0]  # 残っているプレイヤーを選ぶ
+    def proceed(self):
+        """
+        現在のストリートにおけるプレイヤーのアクションを処理し、
+        次のストリートへ進む。
+        """
+        if self.street == 'preflop':
+            self._start_betting_round()
+        elif self.street == 'flop':
+            self._deal_flop()
+            self._start_betting_round()
+        elif self.street == 'turn':
+            self._deal_turn()
+            self._start_betting_round()
+        elif self.street == 'river':
+            self._deal_river()
+            self._start_betting_round()
+        elif self.street == 'showdown':
+            self._showdown()
 
-        # ボタンとポジションの割り当て
-        rotate_button(self.table.players)
-        assign_positions(self.table.players)
+    def get_action_order(street, seats):
+        # 起点ポジション
+        start_pos = 'BB' if street == 'preflop' else 'BTN'
+        # プレイヤーをポジションで辞書化（欠員対策）
+        pos_to_player = {
+            p.position: p for p in seats if p and not p.has_folded and not p.has_left and p.stack > 0
+        }
+        # 起点の次から1周分のアクション順を作成
+        start_index = ASSIGNMENT_ORDER.index(start_pos)
+        action_order = [
+            ASSIGNMENT_ORDER[(start_index + 1 + i) % len(ASSIGNMENT_ORDER)]
+            for i in range(len(ASSIGNMENT_ORDER))
+        ]
+        # 実際に存在するプレイヤーだけを返す
+        return [pos_to_player[pos] for pos in action_order if pos in pos_to_player]
 
-        # ブラインドを投稿
-        self.table.post_blinds()
+    def _start_betting_round(self):
+        action_order = self.get_action_order()
+        self.action_index = 0
 
-        # プレイヤーのアクションを決定（プリフロップ）
-        self.play_round()
+        while not self.is_betting_round_over():
+            current_player = action_order[self.action_index]
+            self.handle_player_action(current_player)
+            self.action_index = (self.action_index + 1) % len(action_order)
 
-    def play_round(self):
-        """各ラウンドごとの進行を管理"""
-        if self.current_round == "pre_flop":
-            self.deal_community_cards(3)  # フロップ（3枚）を配る
-            self.betting_round()
-            self.current_round = "post_flop"
-        elif self.current_round == "post_flop":
-            self.deal_community_cards(1)  # ターン（1枚）を配る
-            self.betting_round()
-            self.current_round = "post_turn"
-        elif self.current_round == "post_turn":
-            self.deal_community_cards(1)  # リバー（1枚）を配る
-            self.betting_round()
-            self.current_round = "post_river"
-        elif self.current_round == "post_river":
-            self.showdown()  # ショーダウンで勝者を決める
+    def handle_player_action(self, player):
+        """ プレイヤーのアクションを処理 """
+        # アクションの種類（チェック、コール、レイズ、フォールドなど）を決定
+        # ここでは簡単に仮のアクションを入れておきます。
+        pass
 
-    def deal_community_cards(self, num_cards: int):
-        """コミュニティカードを配る"""
-        for _ in range(num_cards):
-            card = self.table.deck.draw()
-            self.community_cards.append(card)
+    def is_betting_round_over(self):
+        """
+        ベッティングラウンドが終了したかを判断する条件を定義
+        例: すべてのプレイヤーがコールまたはフォールドした場合
+        """
+        pass
 
-    def betting_round(self):
-        """ベット、コール、レイズ、フォールドのラウンド"""
-        for player in self.active_players:
-            legal_actions = get_legal_actions(player, self.table)
-            action = player.decide_action(legal_actions)  # プレイヤーにアクションを決定させる
-            apply_action(player, action, self.table)
-            self.pot += action.amount  # ポットにアクション額を追加
+    def _deal_flop(self):
+        """ フロップを3枚配る """
+        for _ in range(3):
+            self.table.community_cards.append(self.table.deck.draw())
 
-        # 次のラウンドに進む条件（すべてのアクションが完了した場合など）
-        self.check_for_end_of_round()
+    def _deal_turn(self):
+        """ ターンカードを1枚配る """
+        self.table.community_cards.append(self.table.deck.draw())
 
-    def check_for_end_of_round(self):
-        """ラウンドが終了したかを確認"""
-        if len(self.active_players) == 1:
-            # プレイヤーが1人になった場合はラウンド終了
-            self.showdown()
-        else:
-            # すべてのアクションが完了した場合
-            # ここでポット額や最小ベット額の確認が必要
-            pass
+    def _deal_river(self):
+        """ リバーカードを1枚配る """
+        self.table.community_cards.append(self.table.deck.draw())
 
-    def showdown(self):
-        """ショーダウン処理：最終的に勝者を決める"""
-        # 勝者の判定処理をここに追加（プレイヤーの手札とコミュニティカードで比較）
-        winner = self.determine_winner()
-        print(f"Winner is {winner.name}!")
-        self.reset_for_new_round()
-
-    def determine_winner(self):
-        """勝者を決定するためのメソッド（仮実装）"""
-        # ここで手札とコミュニティカードを比較して勝者を決めるロジックを実装
-        return self.active_players[0]  # 仮実装：1人だけ残っているプレイヤーを勝者とする
-
-    def reset_for_new_round(self):
-        """次のラウンドのために状態をリセット"""
-        for player in self.table.players:
-            player.reset_for_new_hand()
-        self.start_round()  # 新しいラウンドを開始
-
+    def _showdown(self):
+        """ ショーダウンでの勝者を決定する処理 """
+        pass

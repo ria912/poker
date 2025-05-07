@@ -1,5 +1,7 @@
 # models/position.py
+# ポジション割り当ての順番
 ASSIGNMENT_ORDER = ['BTN', 'SB', 'BB', 'LJ', 'HJ', 'CO']
+# player数に応じて使用するポジションを決定するためのリスト
 FULL_POSITIONS = ['BTN', 'SB', 'BB', 'CO', 'HJ', 'LJ']
 
 def rotate_button(seats):
@@ -7,6 +9,7 @@ def rotate_button(seats):
 
     current_btn_index = None
     for i, p in enumerate(seats):
+        # playerが存在し、BTNポジションを持っている場合
         if p and p.position == 'BTN':
             current_btn_index = i
             break
@@ -17,6 +20,8 @@ def rotate_button(seats):
         if seats[i] is not None:
             new_btn_index = i
             break
+    else:
+        raise ValueError("No active player found to assign BTN.")        
 
     for p in seats:
         if p:
