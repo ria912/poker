@@ -6,9 +6,9 @@ class Player:
         self.hand = []
         self.position = None
         self.current_bet = 0
-        self.has_folded = False
         self.last_action = None
         self.has_acted = False
+        self.has_folded = False
         self.has_left = False
         self.is_human = None
 
@@ -18,18 +18,18 @@ class Player:
         self.has_folded = False
         self.last_action = None
         self.has_acted = False
-        
+
 
     def to_dict(self):
         return {
             "name": self.name,
             "stack": self.stack,
-            "current_bet": self.current_bet,
             "hand": self.hand,
             "position": self.position,
-            "has_folded": self.has_folded,
+            "current_bet": self.current_bet,
             "last_action": self.last_action,
-            "has_acted": self.has_acted,
+            "has_acted": self.has_acted,            
+            "has_folded": self.has_folded,
             "has_left": self.has_left,
             "is_human": self.is_human
         }
