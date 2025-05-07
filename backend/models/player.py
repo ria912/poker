@@ -8,6 +8,7 @@ class Player:
         self.current_bet = 0
         self.has_folded = False
         self.last_action = None
+        self.has_acted = False
         self.has_left = False
         self.is_human = None
 
@@ -16,7 +17,8 @@ class Player:
         self.current_bet = 0
         self.has_folded = False
         self.last_action = None
-        self.position = None
+        self.has_acted = False
+        
 
     def to_dict(self):
         return {
@@ -27,6 +29,7 @@ class Player:
             "position": self.position,
             "has_folded": self.has_folded,
             "last_action": self.last_action,
+            "has_acted": self.has_acted,
             "has_left": self.has_left,
             "is_human": self.is_human
         }

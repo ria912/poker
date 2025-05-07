@@ -1,6 +1,7 @@
 # models/round_manager.py
 from models.table import Table
 from models.position import ASSIGNMENT_ORDER
+from models.action import get_legal_actions, apply_action
 
 class RoundManager:
     def __init__(self, table: Table):
@@ -54,10 +55,16 @@ class RoundManager:
             self.action_index = (self.action_index + 1) % len(action_order)
 
     def handle_player_action(self, player):
-        """ プレイヤーのアクションを処理 """
-        # アクションの種類（チェック、コール、レイズ、フォールドなど）を決定
-        # ここでは簡単に仮のアクションを入れておきます。
-        pass
+        legal_actions = get_legal_actions(player, self.table)
+        action, amount = player.decide_action({
+            "legal_actions": legal_actions,
+            "table": self.table.to_dict()
+        })
+
+        apply_action(player, action, self.table, amount)
+
+        if action in ['bet', 'raise']:
+            self.last_raiser = player
 
     def is_betting_round_over(self):
         """
@@ -67,16 +74,13 @@ class RoundManager:
         pass
 
     def _deal_flop(self):
-        """ フロップを3枚配る """
         for _ in range(3):
             self.table.community_cards.append(self.table.deck.draw())
 
     def _deal_turn(self):
-        """ ターンカードを1枚配る """
         self.table.community_cards.append(self.table.deck.draw())
 
     def _deal_river(self):
-        """ リバーカードを1枚配る """
         self.table.community_cards.append(self.table.deck.draw())
 
     def _showdown(self):
