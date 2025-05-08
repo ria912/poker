@@ -1,7 +1,7 @@
 # models/round_manager.py
 from models.table import Table
 from models.position import ASSIGNMENT_ORDER
-from models.action import get_legal_actions, apply_action
+from models.action import Action
 
 class RoundManager:
     def __init__(self, table: Table):
@@ -60,14 +60,14 @@ class RoundManager:
 
     def handle_player_action(self, player):
         # プレイヤーのアクションを処理する
-        legal_actions = get_legal_actions(player, self.table)
+        legal_actions = Action.get_legal_actions(player, self.table)
         action, amount = player.decide_action({
             "legal_actions": legal_actions,
             "table": self.table.to_dict(),
             "has_acted": player.has_acted
         })
         # プレイヤーがアクションを選択したら、アクションを適用する
-        apply_action(player, action, self.table, amount)
+        Action.apply_action(player, action, self.table, amount)
         player.last_action = action
         player.has_acted = True
 
@@ -122,5 +122,26 @@ class RoundManager:
         self.table.community_cards.append(self.table.deck.draw())
 
     def _showdown(self):
-        """ ショーダウンでの勝者を決定する処理 """
-        pass
+        active_players = [p for p in self.table.seats
+                      if p and not p.has_folded and not p.has_left and p.stack >= 0]
+
+        # 勝者：常に人間プレイヤー
+        winner = next(p for p in active_players if p.name == "YOU")
+        winner.stack += self.table.pot
+        self.table.pot = 0
+
+        print("\n=== SHOWDOWN ===")
+        print(f"コミュニティカード: {self.table.community_cards}")
+        print(f"ポット: 0（{winner.name} が獲得）\n")
+
+        for p in self.table.seats:
+            if p is None:
+                continue
+
+            status = []
+            if p.has_folded:
+                status.append("フォールド")
+            if p.name == winner.name:
+                status.append("<<< 勝者")
+
+            print(f"{p.name} | スタック: {p.stack} | ハンド: {p.hand} | {' / '.join(status) or 'アクティブ'}")

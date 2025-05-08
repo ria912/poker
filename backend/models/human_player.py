@@ -1,4 +1,4 @@
-# models/human_player.py
+# backend/models/human_player.py
 from models.player import Player
 from models.action import Action
 
