@@ -64,6 +64,8 @@ class RoundManager:
         action, amount = player.decide_action({
             "legal_actions": legal_actions,
             "table": self.table.to_dict(),
+            "current_bet": self.table.current_bet,
+            "min_bet": self.table.min_bet,
             "has_acted": player.has_acted
         })
         # プレイヤーがアクションを選択したら、アクションを適用する
@@ -112,8 +114,10 @@ class RoundManager:
         return True
     
     def _deal_flop(self):
-        for _ in range(3):
-            self.table.community_cards.append(self.table.deck.draw())
+        # フロップの3枚を配る
+        flop_cards = [self.table.deck.draw() for _ in range(3)]
+        self.table.community_cards.extend(flop_cards)
+        print(f"フロップ: {flop_cards}")
 
     def _deal_turn(self):
         self.table.community_cards.append(self.table.deck.draw())

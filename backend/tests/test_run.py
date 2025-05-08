@@ -1,4 +1,4 @@
-# backend/tests/test_run.py
+# tests/test_run.py
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from models.table import Table
 from models.round_manager import RoundManager
 from models.ai_player import AIPlayer
-from auto_human_player import AutoHumanPlayer
+from models.auto_human_player import AutoHumanPlayer
 
 def _seat_assign_players(table):
     players = [AutoHumanPlayer(name="YOU")]
@@ -22,6 +22,7 @@ def main():
     round_manager = RoundManager(table)
 
     print("=== プリフロップ開始 ===")
+    from pprint import pprint
     print(table.to_dict())
 
     while round_manager.street != "showdown":

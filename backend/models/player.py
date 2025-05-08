@@ -7,7 +7,7 @@ class Player:
         self.position = None
         self.current_bet = 0
         self.last_action = None
-        self.has_acted = False
+        self.has_acted = False # アクション済みである
         self.has_folded = False
         self.has_left = False
         self.is_human = None
@@ -15,9 +15,9 @@ class Player:
     def reset_for_new_hand(self):
         self.hand = []
         self.current_bet = 0
-        self.has_folded = False
         self.last_action = None
         self.has_acted = False
+        self.has_folded = False
 
 
     def to_dict(self):

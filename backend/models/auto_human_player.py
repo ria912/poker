@@ -1,3 +1,4 @@
+# models/auto_human_player.py
 from models.player import Player
 
 class AutoHumanPlayer(Player):
