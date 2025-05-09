@@ -11,27 +11,23 @@ class RoundManager:
         self.last_raiser = None  # 最後にレイズしたプレイヤー
 
     def proceed(self):
-        """
-        現在のストリートにおけるプレイヤーのアクションを処理し、
-        次のストリートへ進む。
-        """
-        if self.street == 'preflop':
-            self._start_betting_round()
-            self.street = 'flop'
-        elif self.street == 'flop':
-            self._deal_flop()
-            self._start_betting_round()
-            self.street = 'turn'
-        elif self.street == 'turn':
-            self._deal_turn()
-            self._start_betting_round()
-            self.street = 'river'
-        elif self.street == 'river':
-            self._deal_river()
-            self._start_betting_round()
-            self.street = 'showdown'
-        elif self.street == 'showdown':
-            self._showdown()
+    if self.street == 'preflop':
+        self.street = 'flop'
+        self._deal_flop()
+        self._start_betting_round()
+    elif self.street == 'flop':
+        self.street = 'turn'
+        self._deal_turn()
+        self._start_betting_round()
+    elif self.street == 'turn':
+        self.street = 'river'
+        self._deal_river()
+        self._start_betting_round()
+    elif self.street == 'river':
+        self.street = 'showdown'
+        self._start_betting_round()
+    elif self.street == 'showdown':
+        self._showdown()
 
     def get_action_order(self):
         # 起点ポジション
