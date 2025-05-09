@@ -27,7 +27,7 @@ def main():
 
     while round_manager.street != "showdown":
         round_manager.proceed()
-        print(f"=== {round_manager.street.upper()} ===")
+        pprint(f"=== {round_manager.street.upper()} ===")
         print(table.to_dict())
 
     round_manager.proceed()
