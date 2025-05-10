@@ -66,6 +66,13 @@ class Table:
             if player and not player.has_left:
                 player.hand = [self.deck.draw(), self.deck.draw()]
 
+    def get_human_player(self):
+        for player in self.seats:
+            if player and player.name == "YOU":
+                return player
+        raise ValueError("Human player not found")
+
+
     def to_dict(self):
         return {
             "community_cards": self.community_cards,

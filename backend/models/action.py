@@ -20,11 +20,13 @@ class Action:
             actions.append(Action.CHECK)
             if player.stack >= min_bet:
                 actions.append(Action.BET)
+                
         else:
             if player.stack >= to_call:
                 actions.append(Action.CALL)
                 if player.stack >= to_call + min_bet:
                     actions.append(Action.RAISE)
+                
 
         if player.stack > 0:
             actions.append(Action.ALL_IN)
@@ -71,7 +73,7 @@ class Action:
             table.min_bet = total
 
     @staticmethod
-    def _apply_call(player, table):
+    def _apply_call(player, table, amount):
         if amount < 0:
             raise ValueError("Call must be a non-negative amount")
         
@@ -86,7 +88,7 @@ class Action:
     def _apply_raise(player, table, amount, min_bet):
         if amount < 0:
             raise ValueError("Bet/Raise must be a non-negative amount")
-        min_bet = table.minbet
+        min_bet = table.min_bet
         call_amount = table.current_bet - player.current_bet
         total = amount + min_bet + call_amount
         total = min(player.stack, total)

@@ -1,19 +1,99 @@
 <!DOCTYPE html>
-<html lang="en" x-data="gameApp()" x-init="init()">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Texas Hold'em</title>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="/js/app.js" defer></script>
+  <meta charset="UTF-8">
+  <title>Hold'em App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs" defer></script>
 </head>
-<body class="bg-green-700 text-white">
-    <div class="container mx-auto mt-10">
-        <h1 class="text-3xl mb-4">Texas Hold'em</h1>
+<body class="bg-green-900 text-white min-h-screen flex flex-col items-center p-6">
 
-        <div x-text="JSON.stringify(game, null, 2)"></div>
+  <div x-data="pokerGame()" class="w-full max-w-xl space-y-6">
+    <h1 class="text-3xl font-bold text-center">Texas Hold'em</h1>
 
-        <!-- アクションボタン、ハンド、ポジション表示などを追加予定 -->
+    <!-- コミュニティカード -->
+    <div class="flex justify-center space-x-2">
+      <template x-for="card in state.community_cards">
+        <div class="w-12 h-16 bg-white text-black flex items-center justify-center rounded">
+          <span x-text="card"></span>
+        </div>
+      </template>
     </div>
+
+    <!-- プレイヤー一覧 -->
+    <div class="grid grid-cols-2 gap-2">
+      <template x-for="player in state.players">
+        <div class="border p-2 rounded bg-green-700">
+          <div><strong x-text="player.name"></strong> (<span x-text="player.position"></span>)</div>
+          <div>Stack: <span x-text="player.stack"></span></div>
+          <div>Bet: <span x-text="player.current_bet"></span></div>
+          <div x-show="player.has_folded">(Folded)</div>
+        </div>
+      </template>
+    </div>
+
+    <!-- アクションボタン -->
+    <div class="space-x-2" x-show="waitingForHuman">
+      <button class="px-4 py-2 bg-yellow-500 rounded" @click="sendAction('check')">Check</button>
+      <button class="px-4 py-2 bg-blue-500 rounded" @click="sendAction('call')">Call</button>
+      <button class="px-4 py-2 bg-red-500 rounded" @click="sendAction('fold')">Fold</button>
+    </div>
+
+    <!-- 次のアクションへ進むボタン（AIターン） -->
+    <button class="mt-4 px-4 py-2 bg-white text-black rounded" @click="nextAction()" x-show="!waitingForHuman">
+      次のアクションへ
+    </button>
+  </div>
+
+  <script>
+    function pokerGame() {
+      return {
+        state: {
+          community_cards: [],
+          players: []
+        },
+        waitingForHuman: false,
+
+        async fetchState() {
+          const res = await fetch("/api/state");
+          this.state = await res.json();
+        },
+
+        async nextAction() {
+          const res = await fetch("/api/proceed-one", { method: "POST" });
+          const result = await res.text();
+
+          await this.fetchState();
+
+          if (result === "waiting_for_human") {
+            this.waitingForHuman = true;
+          }
+        },
+
+        async sendAction(action) {
+          await fetch("/api/player-action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action })
+          });
+
+          this.waitingForHuman = false;
+          await this.fetchState();
+          await this.nextAction();
+        },
+
+        async init() {
+          await fetch("/api/start-hand", { method: "POST" });
+          await this.fetchState();
+        }
+      }
+    }
+
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('pokerGame', pokerGame);
+      Alpine.store('pokerGame').init?.();
+    });
+  </script>
+
 </body>
 </html>
