@@ -17,26 +17,6 @@ class RoundManager:
         """ 外部（API）から人間プレイヤーのアクションをセットする """
         self.human_action = action_tuple
 
-    def proceed(self):
-        """ ストリートを進める（完全な進行用。今は使用されない）"""
-        if self.street == 'preflop':
-            self.street = 'flop'
-            self._deal_flop()
-            self._start_betting_round()
-        elif self.street == 'flop':
-            self.street = 'turn'
-            self._deal_turn()
-            self._start_betting_round()
-        elif self.street == 'turn':
-            self.street = 'river'
-            self._deal_river()
-            self._start_betting_round()
-        elif self.street == 'river':
-            self.street = 'showdown'
-            self._start_betting_round()
-        elif self.street == 'showdown':
-            self._showdown()
-
     def _start_betting_round(self):
         self.action_order = self.get_action_order()
         self.action_index = 0

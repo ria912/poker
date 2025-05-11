@@ -36,7 +36,11 @@ class Action:
             "current_bet": current_bet,
             "min_bet": min_bet,
             "player_bet": player.current_bet,
-            "pot": table.pot
+            "pot": table.pot,
+            "amount_ranges": {
+                "bet": [player.stack - min_bet],
+                "raise": [player.stack - to_call - min_bet],
+            }
         }
 
     @staticmethod
@@ -45,7 +49,7 @@ class Action:
         min_bet = table.min_bet
 
         if action == Action.FOLD:
-            player.has_folded = True
+            pass  # フォールドは何も変更なし(round_manager.py で処理)
         elif action == Action.CHECK:
             pass  # チェックは何も変更なし
         elif action == Action.BET:
