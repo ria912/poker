@@ -1,99 +1,55 @@
+<!-- frontend/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja" x-data="pokerApp()" x-init="init()">
 <head>
-  <meta charset="UTF-8">
-  <title>Hold'em App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/alpinejs" defer></script>
+    <meta charset="UTF-8">
+    <title>HOLDEM_APP</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="/js/app.js" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-green-900 text-white min-h-screen flex flex-col items-center p-6">
+<body class="bg-green-800 text-white p-4">
+    <div class="max-w-3xl mx-auto space-y-4">
+        <h1 class="text-3xl font-bold text-center">HOLDEM_APP</h1>
 
-  <div x-data="pokerGame()" class="w-full max-w-xl space-y-6">
-    <h1 class="text-3xl font-bold text-center">Texas Hold'em</h1>
-
-    <!-- コミュニティカード -->
-    <div class="flex justify-center space-x-2">
-      <template x-for="card in state.community_cards">
-        <div class="w-12 h-16 bg-white text-black flex items-center justify-center rounded">
-          <span x-text="card"></span>
+        <div class="flex justify-center">
+            <button @click="startGame" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">ゲーム開始</button>
         </div>
-      </template>
-    </div>
 
-    <!-- プレイヤー一覧 -->
-    <div class="grid grid-cols-2 gap-2">
-      <template x-for="player in state.players">
-        <div class="border p-2 rounded bg-green-700">
-          <div><strong x-text="player.name"></strong> (<span x-text="player.position"></span>)</div>
-          <div>Stack: <span x-text="player.stack"></span></div>
-          <div>Bet: <span x-text="player.current_bet"></span></div>
-          <div x-show="player.has_folded">(Folded)</div>
+        <div x-show="tableState">
+            <div class="text-center">
+                <p class="text-xl">ポット: ¥<span x-text="tableState.pot"></span></p>
+                <div class="my-2">
+                    <p>コミュニティカード:</p>
+                    <div class="flex justify-center space-x-2">
+                        <template x-for="card in tableState.community_cards">
+                            <div class="bg-white text-black px-2 py-1 rounded shadow" x-text="card"></div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mt-4">
+                <template x-for="player in tableState.players">
+                    <div class="border p-2 rounded bg-gray-900 text-sm" x-show="player">
+                        <p><strong x-text="player.name"></strong>（<span x-text="player.position"></span>）</p>
+                        <p>スタック: ¥<span x-text="player.stack"></span></p>
+                        <p>ベット: ¥<span x-text="player.current_bet"></span></p>
+                        <p x-show="player.hand.length">手札: <span x-text="player.hand.join(', ')"></span></p>
+                        <p x-text="'状態: ' + (player.has_folded ? 'フォールド' : player.last_action || '-')"></p>
+                    </div>
+                </template>
+            </div>
+
+            <div class="mt-4" x-show="humanPlayer">
+                <h2 class="text-xl mb-2">あなたのアクション:</h2>
+                <div class="space-x-2">
+                    <button @click="sendAction('fold')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">フォールド</button>
+                    <button @click="sendAction('call')" class="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded">コール</button>
+                    <button @click="sendAction('raise', 100)" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">レイズ ¥100</button>
+                </div>
+            </div>
         </div>
-      </template>
     </div>
-
-    <!-- アクションボタン -->
-    <div class="space-x-2" x-show="waitingForHuman">
-      <button class="px-4 py-2 bg-yellow-500 rounded" @click="sendAction('check')">Check</button>
-      <button class="px-4 py-2 bg-blue-500 rounded" @click="sendAction('call')">Call</button>
-      <button class="px-4 py-2 bg-red-500 rounded" @click="sendAction('fold')">Fold</button>
-    </div>
-
-    <!-- 次のアクションへ進むボタン（AIターン） -->
-    <button class="mt-4 px-4 py-2 bg-white text-black rounded" @click="nextAction()" x-show="!waitingForHuman">
-      次のアクションへ
-    </button>
-  </div>
-
-  <script>
-    function pokerGame() {
-      return {
-        state: {
-          community_cards: [],
-          players: []
-        },
-        waitingForHuman: false,
-
-        async fetchState() {
-          const res = await fetch("/api/state");
-          this.state = await res.json();
-        },
-
-        async nextAction() {
-          const res = await fetch("/api/proceed-one", { method: "POST" });
-          const result = await res.text();
-
-          await this.fetchState();
-
-          if (result === "waiting_for_human") {
-            this.waitingForHuman = true;
-          }
-        },
-
-        async sendAction(action) {
-          await fetch("/api/player-action", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action })
-          });
-
-          this.waitingForHuman = false;
-          await this.fetchState();
-          await this.nextAction();
-        },
-
-        async init() {
-          await fetch("/api/start-hand", { method: "POST" });
-          await this.fetchState();
-        }
-      }
-    }
-
-    document.addEventListener('alpine:init', () => {
-      Alpine.data('pokerGame', pokerGame);
-      Alpine.store('pokerGame').init?.();
-    });
-  </script>
-
 </body>
 </html>
