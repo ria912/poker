@@ -1,34 +1,50 @@
 from models.table import Table
 from models.round_manager import RoundManager
+from models.action import ActionType
 
-def run_full_hand_test():
-    table = Table()
+def test_hand():
+    # テーブルとラウンドマネージャの初期化
+    table = Table(small_blind=50, big_blind=100, seat_count=6)
+    round_manager = RoundManager(table)
+
+    # 1ハンド開始
     table.start_hand()
-    manager = RoundManager(table)
-
-    print("=== ハンド開始 ===")
-    print(f"プリフロップ開始 - ポット: {table.pot}")
-    print("プレイヤー情報:")
-    for i, player in enumerate(table.seats):
+    
+    # 初期状態でプレイヤーの手札とポットを確認
+    print("Community Cards:", table.community_cards)
+    print("Pot:", table.pot)
+    for player in table.seats:
         if player:
-            print(f"Seat {i+1} | {player.name} | Stack: {player.stack} | Pos: {player.position} | Hand: {player.hand}")
+            print(f"Player {player.name} - Hand: {player.hand} Stack: {player.stack}")
 
-    # 🔧 ベッティングラウンドを明示的に開始
-    manager._start_betting_round()
+    # 進行するアクションをシミュレート（人間のアクションは事前に設定）
+    human_player = table.get_human_player()
 
-    # アクション処理ループ
-    while True:
-        result = manager.proceed_one_action()
-        if result == "hand_over":
-            break
+    # 1st アクション（人間プレイヤーのターン）
+    round_manager.set_human_action(('call', 100))  # 人間プレイヤーがコール
+    result = round_manager.proceed_one_action()
+    print(result)
+    
+    # 2nd アクション（AIプレイヤーのターン）
+    result = round_manager.proceed_one_action()
+    print(result)
 
-    print("\n=== ショーダウン ===")
-    print(f"コミュニティカード: {table.community_cards}")
-    print(f"最終ポット: {table.pot}")
-    for i, player in enumerate(table.seats):
+    # 次のアクションを進める（フロップ、ターン、リバーの進行）
+    print("Advancing to next street...")
+    while result not in ["hand_over", "round_over"]:
+        result = round_manager.proceed_one_action()
+        print(result)
+        print("Pot:", table.pot)
+        print("Community Cards:", table.community_cards)
+        for player in table.seats:
+            if player:
+                print(f"Player {player.name} - Stack: {player.stack} Bet: {player.current_bet}")
+
+    # 最終結果の確認
+    print("Final Pot:", table.pot)
+    for player in table.seats:
         if player:
-            print(f"{player.name} | Stack: {player.stack} | Folded: {getattr(player, 'has_folded', False)} | Hand: {player.hand}")
+            print(f"Player {player.name} - Stack: {player.stack} Final Bet: {player.current_bet}")
 
-if __name__ == "__main__":
-    run_full_hand_test()
-
+# テストを実行
+test_hand()
