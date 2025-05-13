@@ -1,7 +1,7 @@
 # models/round_manager.py
 from models.table import Table
 from models.position import ASSIGNMENT_ORDER
-from models.action import ActionType
+from models.action import Action
 
 class RoundManager:
     def __init__(self, table: Table):
@@ -46,7 +46,7 @@ class RoundManager:
             action, amount = self.human_action
             self.human_action = None
         else:
-            legal_actions = ActionType.get_legal_actions(current_player, self.table)
+            legal_actions = Action.get_legal_actions(current_player, self.table)
             action, amount = current_player.decide_action({
                 "legal_actions": legal_actions,
                 "table": self.table.to_dict(),
@@ -55,14 +55,14 @@ class RoundManager:
                 "has_acted": current_player.has_acted
             })
 
-        ActionType.apply_action(current_player, action, self.table, amount)
+        Action.apply_action(current_player, action, self.table, amount)
         current_player.last_action = action
         current_player.has_acted = True
 
-        if action == ActionType.FOLD:
+        if action == Action.FOLD:
             current_player.has_folded = True
 
-        if action in [ActionType.BET, ActionType.RAISE]:
+        if action in [Action.BET, Action.RAISE]:
             self.last_raiser = current_player
             for p in self.table.seats:
                 if p and not p.has_folded and not p.has_all_in and not p.has_left and p != current_player:

@@ -1,50 +1,43 @@
+# run_one_hand.py
+import sys
+import os
+
+# "models" パッケージを解決するために、親ディレクトリを sys.path に追加
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from models.table import Table
 from models.round_manager import RoundManager
-from models.action import ActionType
 
-def test_hand():
-    # テーブルとラウンドマネージャの初期化
-    table = Table(small_blind=50, big_blind=100, seat_count=6)
-    round_manager = RoundManager(table)
-
-    # 1ハンド開始
+def run_one_hand():
+    # テーブルとラウンドマネージャーを作成
+    table = Table()
     table.start_hand()
-    
-    # 初期状態でプレイヤーの手札とポットを確認
-    print("Community Cards:", table.community_cards)
-    print("Pot:", table.pot)
-    for player in table.seats:
-        if player:
-            print(f"Player {player.name} - Hand: {player.hand} Stack: {player.stack}")
+    manager = RoundManager(table)
+    manager._start_betting_round()
 
-    # 進行するアクションをシミュレート（人間のアクションは事前に設定）
-    human_player = table.get_human_player()
+    print("=== Hand Start ===")
 
-    # 1st アクション（人間プレイヤーのターン）
-    round_manager.set_human_action(('call', 100))  # 人間プレイヤーがコール
-    result = round_manager.proceed_one_action()
-    print(result)
-    
-    # 2nd アクション（AIプレイヤーのターン）
-    result = round_manager.proceed_one_action()
-    print(result)
+    while True:
+        result = manager.proceed_one_action()
 
-    # 次のアクションを進める（フロップ、ターン、リバーの進行）
-    print("Advancing to next street...")
-    while result not in ["hand_over", "round_over"]:
-        result = round_manager.proceed_one_action()
-        print(result)
-        print("Pot:", table.pot)
-        print("Community Cards:", table.community_cards)
-        for player in table.seats:
-            if player:
-                print(f"Player {player.name} - Stack: {player.stack} Bet: {player.current_bet}")
+        # 人間のアクションを待つ段階
+        if result == "waiting_for_human":
+            # 人間のアクションはテスト用に自動化されているため、即座にシミュレーションして進める
+            human = table.get_human_player()
+            # 自動でdecide_actionが呼ばれるので、何もする必要なし
+            result = manager.resume_after_human_action()
 
-    # 最終結果の確認
-    print("Final Pot:", table.pot)
-    for player in table.seats:
-        if player:
-            print(f"Player {player.name} - Stack: {player.stack} Final Bet: {player.current_bet}")
+        if result == "hand_over":
+            print("=== Hand Over ===")
+            break
 
-# テストを実行
-test_hand()
+    # 最後の状態を出力
+    print("--- Final Result ---")
+    for p in table.seats:
+        if p:
+            print(f"{p.name} | Stack: {p.stack} | Folded: {p.has_folded} | Hand: {p.hand}")
+    print(f"Community Cards: {table.community_cards}")
+    print(f"Pot: {table.pot}")
+
+if __name__ == "__main__":
+    run_one_hand()

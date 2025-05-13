@@ -1,7 +1,7 @@
 # models/action.py
 from enum import Enum
 
-class ActionType(str, Enum):
+class Action(str, Enum):
     FOLD = 'fold'
     CALL = 'call'
     CHECK = 'check'
@@ -15,18 +15,18 @@ class ActionType(str, Enum):
         min_bet = table.min_bet
         to_call = current_bet - player.current_bet
 
-        actions.append(ActionType.FOLD)
+        actions.append(Action.FOLD)
 
         if current_bet == player.current_bet:
-            actions.append(ActionType.CHECK)
+            actions.append(Action.CHECK)
             if player.stack >= min_bet:
-                actions.append(ActionType.BET)
+                actions.append(Action.BET)
             if table.current_bet > 0:
-                actions.append(ActionType.RAISE)
+                actions.append(Action.RAISE)
         else:
-            actions.append(ActionType.CALL)
+            actions.append(Action.CALL)
             if player.stack >= to_call + min_bet:
-                actions.append(ActionType.RAISE)
+                actions.append(Action.RAISE)
 
         return {
             "actions": actions,
@@ -45,16 +45,16 @@ class ActionType(str, Enum):
         current_bet = table.current_bet
         min_bet = table.min_bet
 
-        if action == ActionType.FOLD:
+        if action == Action.FOLD:
             pass # 上位で処理
-        elif action == ActionType.CHECK:
+        elif action == Action.CHECK:
             pass
-        elif action == ActionType.BET:
-            ActionType._apply_bet(player, table, amount, min_bet)
-        elif action == ActionType.CALL:
-            ActionType._apply_call(player, table)
-        elif action == ActionType.RAISE:
-            ActionType._apply_raise(player, table, amount, min_bet)
+        elif action == Action.BET:
+            Action._apply_bet(player, table, amount, min_bet)
+        elif action == Action.CALL:
+            Action._apply_call(player, table)
+        elif action == Action.RAISE:
+            Action._apply_raise(player, table, amount, min_bet)
 
     @staticmethod
     def _apply_bet(player, table, amount, min_bet):

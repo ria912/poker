@@ -1,5 +1,6 @@
 # models/auto_human_player.py
 from models.player import Player
+from models.action import Action
 
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):
@@ -10,12 +11,12 @@ class HumanPlayer(Player):
         legal_actions = context["legal_actions"]
 
         if 'bet' in legal_actions:
-            return 'bet', 200
+            return Action.BET, 200
         elif 'raise' in legal_actions:
-            return 'raise', 200
+            return Action.RAISE, 200
         elif 'call' in legal_actions:
-            return 'call', 0
+            return Action.CALL, 0
         elif 'check' in legal_actions:
-            return 'check', 0
+            return Action.CHECK, 0
         else:
-            return 'fold', 0
+            return Action.FOLD, 0
