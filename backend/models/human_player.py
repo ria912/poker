@@ -1,4 +1,4 @@
-# models/auto_human_player.py
+# models/human_player.py
 from models.player import Player
 from models.action import Action
 
