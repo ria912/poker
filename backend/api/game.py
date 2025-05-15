@@ -1,8 +1,13 @@
 # api/game.py
 from fastapi import APIRouter
+from pydantic import BaseModel
 from state.game_state import game_state
 
 router = APIRouter()
+
+class ActionRequest(BaseModel):
+    action: str
+    amount: int = 0
 
 @router.post("/start")
 def start_new_hand():
@@ -10,8 +15,8 @@ def start_new_hand():
     return {"status": "new hand started", "state": game_state.table.to_dict()}
 
 @router.post("/action")
-def send_action(action: str, amount: int = 0):
-    game_state.round_manager.set_human_action((action, amount))
+def send_action(req: ActionRequest):
+    game_state.round_manager.set_human_action((req.action, req.amount))
     result = game_state.round_manager.resume_after_human_action()
     return {
         "result": result,

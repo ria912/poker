@@ -1,5 +1,6 @@
 // frontend/js/app.js
 function pokerApp() {
+    const API_BASE = "http://127.0.0.1:8000/api";
     return {
         tableState: null,
         humanPlayer: null,
@@ -9,7 +10,7 @@ function pokerApp() {
         },
 
         async startGame() {
-            const res = await fetch("/api/start", { method: "POST" });
+            const res = await fetch(`${API_BASE}/start`, { method: "POST" });
             const data = await res.json();
             this.tableState = data.state;
             this.updateHuman();
@@ -17,7 +18,7 @@ function pokerApp() {
         },
 
         async fetchState() {
-            const res = await fetch("/api/state");
+            const res = await fetch(`${API_BASE}/state`);
             const data = await res.json();
             this.tableState = data;
             this.updateHuman();
@@ -29,7 +30,7 @@ function pokerApp() {
         },
 
         async sendAction(action, amount = 0) {
-            const res = await fetch("/api/action", {
+            const res = await fetch(`${API_BASE}/action`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action, amount }),

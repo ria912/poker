@@ -1,22 +1,21 @@
 # main.py
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from api import game
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
+
+from api import game  # api/game.py にある router
 
 app = FastAPI()
 
-# フロントエンド（例えば localhost:3000）との通信を許可
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # 本番環境では限定した方がよい
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 静的ファイル（CSS, JSなど）を /static にマウント
+frontend_dir = Path(__file__).parent.parent / "frontend"
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
-# APIルーターを登録
+# APIルーターを /api にマウント
 app.include_router(game.router, prefix="/api")
 
+# フロントエンドの index.html をトップで返す
 @app.get("/")
-def root():
-    return {"message": "Poker API is running"}
+def serve_spa():
+    return FileResponse(frontend_dir / "index.html")

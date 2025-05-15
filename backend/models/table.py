@@ -68,7 +68,7 @@ class Table:
 
     def get_human_player(self):
         for player in self.seats:
-            if player and player.name == "YOU":
+            if player and player.is_human == True:
                 return player
         raise ValueError("Human player not found")
 
