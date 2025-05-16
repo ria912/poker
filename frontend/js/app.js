@@ -68,10 +68,17 @@ function pokerApp() {
             while (aiStillPlaying) {
                 await new Promise(r => setTimeout(r, 1000)); // AIの“思考時間”
                 await this.fetchState();
+                console.log("AIプレイヤー状態チェック:", this.tableState.players);
                 aiStillPlaying = this.tableState.players.some(
-                    p => p && p.name !== "YOU" && !p.has_folded
+                    p =>
+                        p &&
+                        p.name !== "YOU" &&
+                        !p.has_folded &&
+                        (p.last_action === null || p.last_action === "-")
                 );
             }
         }
     };
 }
+
+window.pokerApp = pokerApp;

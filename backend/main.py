@@ -11,8 +11,8 @@ app = FastAPI()
 # frontend ディレクトリのパス
 frontend_dir = Path(__file__).parent.parent / "frontend"
 
-# js フォルダだけを静的にマウント
-app.mount("/static/js", StaticFiles(directory=frontend_dir / "js"), name="js")
+# frontend フォルダ全体を /static にマウントする
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 # APIルーター
 app.include_router(game.router, prefix="/api")
