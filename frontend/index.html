@@ -10,46 +10,81 @@
 </head>
 <body class="bg-green-800 text-white p-4">
     <div class="max-w-3xl mx-auto space-y-4">
+
         <h1 class="text-3xl font-bold text-center">HOLDEM_APP</h1>
 
         <div class="flex justify-center">
-            <button @click="startGame" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">ゲーム開始</button>
+            <button 
+                @click="startGame" 
+                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded disabled:opacity-50"
+                :disabled="isActing"
+            >
+                ゲーム開始
+            </button>
         </div>
 
-        <div x-show="tableState">
-            <div class="text-center">
-                <p class="text-xl">ポット: ¥<span x-text="tableState.pot"></span></p>
-                <div class="my-2">
-                    <p>コミュニティカード:</p>
-                    <div class="flex justify-center space-x-2">
-                        <template x-for="card in tableState.community_cards">
-                            <div class="bg-white text-black px-2 py-1 rounded shadow" x-text="card"></div>
-                        </template>
+        <template x-if="tableState">
+            <div>
+                <div class="text-center">
+                    <p class="text-xl">ポット: ¥<span x-text="tableState.pot"></span></p>
+                    <div class="my-2">
+                        <p>コミュニティカード:</p>
+                        <div class="flex justify-center space-x-2">
+                            <template x-for="card in tableState.community_cards" :key="card">
+                                <div class="bg-white text-black px-2 py-1 rounded shadow" x-text="card"></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mt-4">
+                    <template x-for="player in tableState.players" :key="player?.name">
+                        <div 
+                            class="border p-2 rounded bg-gray-900 text-sm" 
+                            x-show="player"
+                        >
+                            <p><strong x-text="player.name"></strong>（<span x-text="player.position"></span>）</p>
+                            <p>スタック: ¥<span x-text="player.stack"></span></p>
+                            <p>ベット: ¥<span x-text="player.current_bet"></span></p>
+                            <p x-show="player.hand.length">手札: <span x-text="player.hand.join(', ')"></span></p>
+                            <p x-text="'状態: ' + (player.has_folded ? 'フォールド' : player.last_action || '-')"></p>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-4" x-show="humanPlayer">
+                    <h2 class="text-xl mb-2">あなたのアクション:</h2>
+                    <div class="space-x-2">
+                        <button 
+                            @click="sendAction('fold')" 
+                            class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded disabled:opacity-50"
+                            :disabled="isActing"
+                        >
+                            フォールド
+                        </button>
+                        <button 
+                            @click="sendAction('call')" 
+                            class="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded disabled:opacity-50"
+                            :disabled="isActing"
+                        >
+                            コール
+                        </button>
+                        <button 
+                            @click="sendAction('raise', 100)" 
+                            class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded disabled:opacity-50"
+                            :disabled="isActing"
+                        >
+                            レイズ ¥100
+                        </button>
+                    </div>
+
+                    <div class="mt-2" x-show="isActing">
+                        <p class="text-sm text-gray-300 animate-pulse">アクション処理中...</p>
                     </div>
                 </div>
             </div>
+        </template>
 
-            <div class="grid grid-cols-3 gap-2 mt-4">
-                <template x-for="player in tableState.players">
-                    <div class="border p-2 rounded bg-gray-900 text-sm" x-show="player">
-                        <p><strong x-text="player.name"></strong>（<span x-text="player.position"></span>）</p>
-                        <p>スタック: ¥<span x-text="player.stack"></span></p>
-                        <p>ベット: ¥<span x-text="player.current_bet"></span></p>
-                        <p x-show="player.hand.length">手札: <span x-text="player.hand.join(', ')"></span></p>
-                        <p x-text="'状態: ' + (player.has_folded ? 'フォールド' : player.last_action || '-')"></p>
-                    </div>
-                </template>
-            </div>
-
-            <div class="mt-4" x-show="humanPlayer">
-                <h2 class="text-xl mb-2">あなたのアクション:</h2>
-                <div class="space-x-2">
-                    <button @click="sendAction('fold')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">フォールド</button>
-                    <button @click="sendAction('call')" class="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded">コール</button>
-                    <button @click="sendAction('raise', 100)" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">レイズ ¥100</button>
-                </div>
-            </div>
-        </div>
     </div>
 </body>
 </html>

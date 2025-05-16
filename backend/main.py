@@ -8,14 +8,16 @@ from api import game  # api/game.py にある router
 
 app = FastAPI()
 
-# 静的ファイル（CSS, JSなど）を /static にマウント
+# frontend ディレクトリのパス
 frontend_dir = Path(__file__).parent.parent / "frontend"
-app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
-# APIルーターを /api にマウント
+# js フォルダだけを静的にマウント
+app.mount("/static/js", StaticFiles(directory=frontend_dir / "js"), name="js")
+
+# APIルーター
 app.include_router(game.router, prefix="/api")
 
-# フロントエンドの index.html をトップで返す
+# index.html を返す
 @app.get("/")
 def serve_spa():
     return FileResponse(frontend_dir / "index.html")
