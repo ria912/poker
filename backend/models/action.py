@@ -19,9 +19,9 @@ class Action(str, Enum):
 
         if current_bet == player.current_bet:
             actions.append(Action.CHECK)
-            if player.stack >= min_bet:
+            if current_bet == 0:
                 actions.append(Action.BET)
-            if table.current_bet > 0:
+            elif current_bet > 0:
                 actions.append(Action.RAISE)
         else:
             actions.append(Action.CALL)
@@ -41,25 +41,28 @@ class Action(str, Enum):
         }
 
     @staticmethod
-    def apply_action(player, action, table, amount=0):
-        current_bet = table.current_bet
-        min_bet = table.min_bet
-
+    def apply_action(player, table, action, amount=0):
         if action == Action.FOLD:
-            pass # 上位で処理
+            player.has_folded = True
         elif action == Action.CHECK:
             pass
         elif action == Action.BET:
-            Action._apply_bet(player, table, amount, min_bet)
+            Action._apply_bet(player, table, amount)
         elif action == Action.CALL:
             Action._apply_call(player, table)
         elif action == Action.RAISE:
-            Action._apply_raise(player, table, amount, min_bet)
+            Action._apply_raise(player, table, amount)
+        
+        player.has_acted = True
+        player.last_action = action
+
+        if player.stack == 0:
+            player.has_all_in = True
 
     @staticmethod
-    def _apply_bet(player, table, amount, min_bet):
+    def _apply_bet(player, table, amount):
         if amount < 0:
-            raise ValueError(f"Invalid Bet/Raise amount: {amount}. Must be >= 0.")
+            raise ValueError(f"Invalid Bet amount: {amount}. Must be >= 0.")
         min_bet = table.min_bet
         total = amount + min_bet
         total = min(player.stack, total)
@@ -68,24 +71,24 @@ class Action(str, Enum):
         player.current_bet += total
         table.current_bet = player.current_bet
         table.pot += total
-        if table.min_bet < total:
+
+        if total > table.min_bet:
             table.min_bet = total
-        if player.stack == 0:
-            player.has_all_in = True
 
     @staticmethod
     def _apply_call(player, table):      
         to_call = table.current_bet - player.current_bet
-        amount = min(player.stack, to_call)
-        player.stack -= amount
-        player.current_bet += amount
-        table.current_bet = player.current_bet
-        table.pot += amount
-        if player.stack == 0:
-            player.has_all_in = True
+        total = min(player.stack, to_call)
+
+        player.stack -= total
+        player.current_bet += total
+        table.pot += total
+
+        if player.current_bet > table.current_bet:
+            table.current_bet = player.current_bet
 
     @staticmethod
-    def _apply_raise(player, table, amount, min_bet):
+    def _apply_raise(player, table, amount):
         if amount < 0:
             raise ValueError(f"Invalid Bet/Raise amount: {amount}. Must be >= 0.")
         min_bet = table.min_bet
@@ -95,9 +98,9 @@ class Action(str, Enum):
 
         player.stack -= total
         player.current_bet += total
-        table.current_bet = player.current_bet
         table.pot += total
-        if min_bet < total - call_amount:
-            table.min_bet = total - call_amount
-        if player.stack == 0:
-            player.has_all_in = True
+        table.current_bet = player.current_bet
+
+        raise_amount = total - call_amount
+        if raise_amount > table.min_bet:
+            table.min_bet = raise_amount

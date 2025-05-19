@@ -48,12 +48,12 @@ class RoundManager:
         else:
             legal_actions = Action.get_legal_actions(current_player, self.table)
             action, amount = current_player.decide_action({
-                "legal_actions": legal_actions,
-                "table": self.table.to_dict(),
-                "current_bet": self.table.current_bet,
-                "min_bet": self.table.min_bet,
-                "has_acted": current_player.has_acted
-            })
+            "legal_actions": legal_actions,
+            "table": self.table.to_dict(),
+            "current_bet": self.table.current_bet,
+            "min_bet": self.table.min_bet,
+            "has_acted": current_player.has_acted
+    })
 
         Action.apply_action(current_player, action, self.table, amount)
         current_player.last_action = action

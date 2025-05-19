@@ -1,5 +1,4 @@
 # state/game_state.py
-
 from models.table import Table
 from models.round_manager import RoundManager
 
