@@ -29,43 +29,47 @@ class RoundManager:
         self.waiting_for_human = False
         for p in self.table.get_active_players():
             p.has_acted = False
-
+            
+    # 1アクション進める。人間の入力待ちなら 'waiting_for_human' を返す。
     def proceed_one_action(self):
-        """ 1アクション進める。人間の場合は 'waiting_for_human' を返す """
+        # ショーダウンなら終了
         if self.round == 'showdown':
             self._showdown()
             return "hand_over"
-
+        # ベッティングラウンドが終了していれば、次のストリートへ進む
         if self.is_betting_round_over():
             return self._advance_round()
-
+        # 行動順が一周した場合はリセット
         if self.action_index >= len(self.action_order):
-            self.action_index = 0  # 念のため保険
+            self.action_index = 0
 
         current_player = self.action_order[self.action_index]
 
-        try:
-            action, amount = current_player.decide_action(self.table)
-        except Exception as e:
-            if str(e) == "waiting_for_human_action":
-                # FastAPIやフロントエンドが入力待ちと分かるようにするため
+        # === 人間プレイヤーの場合 ===
+        if current_player.is_human:
+            result = current_player.decide_action(self.table)
+            if result is None:
                 self.waiting_for_human = True
                 return "waiting_for_human"
-            raise
-
+            action, amount = result
+        # === AIプレイヤーの場合 ===
+        else:
+            action, amount = current_player.decide_action(self.table)
+        # アクションを適用
         Action.apply_action(current_player, self.table, action, amount)
         current_player.has_acted = True
-
+        # レイズ時の処理
         if action in [Action.BET, Action.RAISE]:
             self.table.last_raiser = current_player
             for p in self.table.get_active_players():
                 if p != current_player:
                     p.has_acted = False
-
+        # 次のプレイヤーへ
         self.action_index += 1
-
+        # 再チェック：ベッティングラウンド終了？
         if self.is_betting_round_over():
             return self._advance_round()
+
         return "ai_acted"
     
     def is_betting_round_over(self):
