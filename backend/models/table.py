@@ -9,12 +9,14 @@ class Table:
         self.seats = [None] * seat_count  # プレイヤーの座席
         self.seat_assign_players()
         self.deck = Deck()
+        self.round = 'preflop'
         self.community_cards = []
         self.pot = 0
         self.current_bet = 0
         self.min_bet = big_blind
         self.big_blind = big_blind
         self.small_blind = small_blind
+        self.last_raiseer = None
 
     #プレイヤーを座席に割り当てる
     def seat_assign_players(self):
@@ -26,7 +28,6 @@ class Table:
         # プレイヤーを座席に割り当てる
         for i, p in enumerate(players):
             self.seats[i] = p
-
 
     def start_hand(self):
         self.deck.deck_shuffle()
@@ -66,18 +67,44 @@ class Table:
             if player and not player.has_left:
                 player.hand = [self.deck.draw(), self.deck.draw()]
 
+    def deal_flop(self):
+        self.community_cards.extend([self.deck.draw() for _ in range(3)])
+
+    def deal_turn(self):
+        self.community_cards.append(self.deck.draw())
+
+    def deal_river(self):
+        self.community_cards.append(self.deck.draw())
+
+    def award_pot_to_winner(self):
+        active_players = self.get_active_players()
+        if not active_players:
+            return
+        winner = next((p for p in active_players if p.name == "YOU"), active_players[0])
+        winner.stack += self.pot
+        self.pot = 0
+
     def get_human_player(self):
         for player in self.seats:
             if player and player.is_human == True:
                 return player
         raise ValueError("Human player not found")
+    
+    def get_active_players(self):
+        return [
+            player for player in self.seats
+            if player and not player.has_folded and not player.has_all_in and not player.has_left
+        ]
 
 
     def to_dict(self):
         return {
+            "round": self.round,
             "community_cards": self.community_cards,
             "pot": self.pot,
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
-            "players": [p.to_dict() if p else None for p in self.seats]
+            "last_raiseer": self.last_raiseer,
+            "players": [p.to_dict() if p else None for p in self.seats],
+            "active_players": [p.to_dict() if p else None for p in self.get_active_players()],
         }
