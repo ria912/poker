@@ -29,11 +29,7 @@ class Action(str, Enum):
                 actions.append(Action.RAISE)
 
         return {
-            "actions": actions,
-            "current_bet": current_bet,
-            "min_bet": min_bet,
-            "player_bet": player.current_bet,
-            "pot": table.pot,
+            "legal_actions": actions,
             "amount_ranges": {
                 "bet": [max(0,player.stack - min_bet)],
                 "raise": [max(0,player.stack - to_call - min_bet)],

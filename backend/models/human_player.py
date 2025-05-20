@@ -6,17 +6,14 @@ class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):
         super().__init__(name=name, stack=stack)
         self.is_human = True
-        # テスト用
-    def decide_action(self, context):
-        legal_actions = context["legal_actions"]
 
-        if 'bet' in legal_actions:
-            return Action.BET, 200
-        elif 'raise' in legal_actions:
-            return Action.RAISE, 200
-        elif 'call' in legal_actions:
+    def decide_action(self, table):
+        legal_actions = Action.get_legal_actions(self, table)
+
+        # automodeのアクションを取得
+        if table.street == 'preflop' and self.hand == []:
             return Action.CALL, 0
-        elif 'check' in legal_actions:
+        elif Action.CHECK in legal_actions:
             return Action.CHECK, 0
         else:
             return Action.FOLD, 0

@@ -7,11 +7,8 @@ class AIPlayer(Player):
         super().__init__(name, stack=stack)
         self.is_human = False
 
-    def decide_action(self, game_info):
-        legal_actions = game_info.get('legal_actions', [])
-        current_bet = game_info.get('current_bet', 0)
-        min_bet = game_info.get('min_bet', 0)
-        has_acted = game_info.get('has_acted', False)
+    def decide_action(self, table):
+        legal_actions = Action.get_legal_actions(self, table)
 
         # 簡単なAIロジック例：
         # フォールド可能なら20%でフォールド
@@ -24,9 +21,9 @@ class AIPlayer(Player):
 
         # ベットまたはレイズ可能なら最低額でベット/レイズ
         if Action.BET in legal_actions:
-            return Action.BET, min_bet
+            return Action.BET, 0
         if Action.RAISE in legal_actions:
-            return Action.RAISE, min_bet
+            return Action.RAISE, 0
 
         # その他はチェック
         if Action.CHECK in legal_actions:
