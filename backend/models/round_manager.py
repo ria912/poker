@@ -10,7 +10,6 @@ class RoundManager:
         self.action_index = 0
         self.action_order = self.get_action_order()
         self.waiting_for_human = False
-        self.human_action = None  # 人間プレイヤーのアクション（action, amount）
 
     def get_action_order(self):
         start_pos = 'BB' if self.round == 'preflop' else 'BTN'
@@ -45,14 +44,14 @@ class RoundManager:
 
         current_player = self.action_order[self.action_index]
 
-        if current_player.is_human:
-            if self.human_action is None:
+        try:
+            action, amount = current_player.decide_action(self.table)
+        except Exception as e:
+            if str(e) == "waiting_for_human_action":
+                # FastAPIやフロントエンドが入力待ちと分かるようにするため
                 self.waiting_for_human = True
                 return "waiting_for_human"
-            action, amount = self.human_action
-            self.human_action = None
-        else:
-            action, amount = current_player.decide_action(self.table)
+            raise
 
         Action.apply_action(current_player, self.table, action, amount)
         current_player.has_acted = True
@@ -66,9 +65,9 @@ class RoundManager:
         self.action_index += 1
 
         if self.is_betting_round_over():
-            return self._advance_street()
+            return self._advance_round()
         return "ai_acted"
-
+    
     def is_betting_round_over(self):
         active_players = self.table.get_active_players()
 

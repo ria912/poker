@@ -13,17 +13,8 @@ class HumanPlayer(Player):
         self.input_action = action_tuple
 
     def decide_action(self, table):
-        legal_actions = Action.get_legal_actions(self, table)
-
-        # input_action がセットされていない場合、まだ入力待ち
         if self.input_action is None:
             raise Exception("waiting_for_human_action")
-
-        action, amount = self.input_action
-        # セーフティチェック：合法手かどうか
-        if action not in legal_actions:
-            raise ValueError(f"Invalid action: {action}. Legal actions: {legal_actions}")
-
-        # 使い終わったら消す（1回限り）
+        action = self.input_action
         self.input_action = None
-        return action, amount
+        return action
