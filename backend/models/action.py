@@ -42,12 +42,14 @@ class Action(str, Enum):
             player.has_folded = True
         elif action == Action.CHECK:
             pass
-        elif action == Action.BET:
-            Action._apply_bet(player, table, amount)
         elif action == Action.CALL:
             Action._apply_call(player, table)
+        elif action == Action.BET:
+            Action._apply_bet(player, table, amount)
+            table.last_raiser = player
         elif action == Action.RAISE:
             Action._apply_raise(player, table, amount)
+            table.last_raiser = player
         
         player.has_acted = True
         player.last_action = action
@@ -98,5 +100,4 @@ class Action(str, Enum):
         table.current_bet = player.current_bet
 
         raise_amount = total - call_amount
-        if raise_amount > table.min_bet:
-            table.min_bet = raise_amount
+        table.min_bet = raise_amount

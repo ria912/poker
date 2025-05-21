@@ -1,5 +1,4 @@
 # models/round_manager.py
-
 from models.table import Table
 from models.position import ASSIGNMENT_ORDER
 from models.action import Action
@@ -58,7 +57,6 @@ class RoundManager:
                 raise  # その他の例外はそのまま再スロー
 
         Action.apply_action(current_player, self.table, action, amount)
-        current_player.has_acted = True
 
         if action in [Action.BET, Action.RAISE]:
             self.table.last_raiser = current_player
@@ -85,23 +83,24 @@ class RoundManager:
         return True
 
     def _advance_round(self):
-        if self.round == 'preflop':
-            self.round = 'flop'
+        if self.table.round == 'preflop':
+            self.table.round = 'flop'
             self.table.deal_flop()
-        elif self.round == 'flop':
-            self.round = 'turn'
+        elif self.table.round == 'flop':
+            self.table.round = 'turn'
             self.table.deal_turn()
-        elif self.round == 'turn':
-            self.round = 'river'
+        elif self.table.round == 'turn':
+            self.table.round = 'river'
             self.table.deal_river()
-        elif self.round == 'river':
-            self.round = 'showdown'
+        elif self.table.round == 'river':
+            self.table.round = 'showdown'
             self.table.award_pot_to_winner()
+            self.table.is_hand_in_progress = False  # ✅ 追加（状態フラグ反映）
             return "hand_over"
 
         self._start_betting_round()
         return "round_over"
-
+    
     # 人間アクション関連 -----------------------------------
 
     def resume_after_human_action(self):

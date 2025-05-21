@@ -8,9 +8,8 @@ class HumanPlayer(Player):
         self.is_human = True
         self.input_action = None
 
-    def set_action(self, action_tuple):
-        """外部（API）から人間のアクションを与える"""
-        self.input_action = action_tuple
+    def set_action(self, action_dict):
+        self.input_action = (action_dict["action"], action_dict.get("amount", 0))
 
     def decide_action(self, table):
         if self.input_action is None:

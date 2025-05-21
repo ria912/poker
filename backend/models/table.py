@@ -6,17 +6,22 @@ from models.ai_player import AIPlayer
 
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count=6):
-        self.seats = [None] * seat_count  # プレイヤーの座席
+        self.small_blind = small_blind
+        self.big_blind = big_blind
+        self.min_bet = big_blind
+
+        self.seats = [None] * seat_count
         self.seat_assign_players()
+
         self.deck = Deck()
-        self.round = 'preflop'
+        self.round = 'preflop'  # 表示では `.title()` で整形
         self.community_cards = []
         self.pot = 0
         self.current_bet = 0
-        self.min_bet = big_blind
-        self.big_blind = big_blind
-        self.small_blind = small_blind
-        self.last_raiser = None
+
+        self.last_raiser = None  # プレイヤーインスタンス or None
+        # 状態管理の補助（将来的な拡張用）
+        self.is_hand_in_progress = False  # フロントで判定用
 
     #プレイヤーを座席に割り当てる
     def seat_assign_players(self):
@@ -39,6 +44,7 @@ class Table:
         self.current_bet = 0
         self.post_blinds()
         self.deal_cards()
+        self.is_hand_in_progress = True
 
     def reset_players(self):
         for player in self.seats:
@@ -96,16 +102,33 @@ class Table:
             if player and not player.has_folded and not player.has_all_in and not player.has_left
         ]
 
+    def player_to_dict(self, p, seat_number=None):
+        data = {
+            "name": p.name,
+            "position": p.position,
+            "stack": p.stack,
+            "current_bet": p.current_bet,
+            "last_action": p.last_action,
+        }
+        if seat_number is not None:
+            data["seat_number"] = seat_number
+        return data
 
     def to_dict(self):
         return {
-            "round": self.round,
+            "round": self.round.title(),  # 'preflop' -> 'Preflop'
             "community_cards": self.community_cards,
             "pot": self.pot,
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
-            "last_raiser": self.last_raiser,
-            "seats": [p.to_dict() if p else None for p in self.seats],
-            "active_players": [p.to_dict() for p in self.get_active_players()],
-
+            "last_raiser": self.last_raiser.name if self.last_raiser else None,
+            "seats": [
+                self.player_to_dict(p, i + 1) if p else None
+                for i, p in enumerate(self.seats)
+            ],
+            "active_players": [
+                self.player_to_dict(p)
+                for p in self.get_active_players()
+            ],
+            "is_hand_in_progress": self.is_hand_in_progress  # フロントで判定用
         }
