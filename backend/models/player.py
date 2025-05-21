@@ -11,7 +11,6 @@ class Player:
         self.has_folded = False
         self.has_all_in = False
         self.has_left = False
-        self.is_human = None
 
     def reset_for_new_hand(self):
         self.hand = []

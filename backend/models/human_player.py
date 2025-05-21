@@ -15,6 +15,6 @@ class HumanPlayer(Player):
     def decide_action(self, table):
         if self.input_action is None:
             raise Exception("waiting_for_human_action")
-        action = self.input_action
+        action, amount = self.input_action
         self.input_action = None
-        return action
+        return action, amount

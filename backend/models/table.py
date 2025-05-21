@@ -16,7 +16,7 @@ class Table:
         self.min_bet = big_blind
         self.big_blind = big_blind
         self.small_blind = small_blind
-        self.last_raiseer = None
+        self.last_raiser = None
 
     #プレイヤーを座席に割り当てる
     def seat_assign_players(self):
@@ -86,7 +86,7 @@ class Table:
 
     def get_human_player(self):
         for player in self.seats:
-            if player and player.is_human == True:
+            if player and player.is_human:
                 return player
         raise ValueError("Human player not found")
     
@@ -104,7 +104,8 @@ class Table:
             "pot": self.pot,
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
-            "last_raiseer": self.last_raiseer,
-            "players": [p.to_dict() if p else None for p in self.seats],
-            "active_players": [p.to_dict() if p else None for p in self.get_active_players()],
+            "last_raiser": self.last_raiser,
+            "seats": [p.to_dict() if p else None for p in self.seats],
+            "active_players": [p.to_dict() for p in self.get_active_players()],
+
         }

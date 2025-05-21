@@ -2,89 +2,80 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>HOLDEM_APP</title>
-    <script src="/static/js/app.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Hold'em App</title>
+  <script defer src="https://unpkg.com/alpinejs" defer></script>
+  <script defer src="/js/app.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-green-800 text-white p-4" x-data="pokerApp()" x-init="init()">
-    <div class="max-w-3xl mx-auto space-y-4">
+<body class="bg-gray-100 p-6" x-data="pokerApp()" x-init="init()">
 
-        <h1 class="text-3xl font-bold text-center">HOLDEM_APP</h1>
+  <!-- Home 画面 -->
+  <div x-show="view === 'home'" class="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-xl font-bold mb-4">テーブル設定</h1>
 
-        <div class="flex justify-center">
-            <button 
-                @click="startGame" 
-                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded disabled:opacity-50"
-                :disabled="isActing"
-            >
-                ゲーム開始
-            </button>
+    <label class="block mb-2">席数（3〜6）</label>
+    <input type="number" x-model.number="seatCount" min="3" max="6" class="border rounded w-full p-2 mb-4" />
+
+    <label class="block mb-2">プレイヤースタック（初期チップ）</label>
+    <input type="number" x-model.number="initialStack" min="2500" max="15000" class="border rounded w-full p-2 mb-4" />
+
+    <button @click="startGame" class="bg-blue-500 text-white px-4 py-2 rounded w-full">
+      ゲーム開始
+    </button>
+  </div>
+
+  <!-- Game画面 -->
+  <div x-show="view === 'game'" class="max-w-xl mx-auto bg-white p-6 mt-4 rounded shadow space-y-6">
+    <h2 class="text-lg font-bold">ゲーム画面</h2>
+
+    <!-- テーブル情報 -->
+    <div>
+      <h3 class="font-semibold">プレイヤー一覧</h3>
+      <template x-for="player in state.players" :key="player.name">
+        <div class="border p-2 my-1 rounded"
+             :class="{'bg-yellow-100': player.name === state.current_player}">
+          <strong x-text="player.name"></strong> - スタック: <span x-text="player.stack"></span>
+          <span x-show="player.in_action">🟢</span>
         </div>
-
-        <template x-if="tableState">
-            <div>
-                <div class="text-center">
-                    <p class="text-xl">ポット: ¥<span x-text="tableState.pot"></span></p>
-                    <div class="my-2">
-                        <p>コミュニティカード:</p>
-                        <div class="flex justify-center space-x-2">
-                            <template x-for="card in tableState.community_cards" :key="card">
-                                <div class="bg-white text-black px-2 py-1 rounded shadow" x-text="card"></div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2 mt-4">
-                    <template x-for="player in tableState.players" :key="player?.name">
-                        <div 
-                            class="border p-2 rounded bg-gray-900 text-sm" 
-                            x-show="player"
-                        >
-                            <p><strong x-text="player.name"></strong>（<span x-text="player.position"></span>）</p>
-                            <p>スタック: ¥<span x-text="player.stack"></span></p>
-                            <p>ベット: ¥<span x-text="player.current_bet"></span></p>
-                            <p x-show="player.hand.length">手札: <span x-text="player.hand.join(', ')"></span></p>
-                            <p x-text="'状態: ' + (player.has_folded ? 'フォールド' : player.last_action || '-')"></p>
-                        </div>
-                    </template>
-                </div>
-
-                <div class="mt-4" x-show="humanPlayer">
-                    <h2 class="text-xl mb-2">あなたのアクション:</h2>
-                    <div class="space-x-2">
-                        <button 
-                            @click="sendAction('fold')" 
-                            class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded disabled:opacity-50"
-                            :disabled="isActing"
-                        >
-                            フォールド
-                        </button>
-                        <button 
-                            @click="sendAction('call')" 
-                            class="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded disabled:opacity-50"
-                            :disabled="isActing"
-                        >
-                            コール
-                        </button>
-                        <button 
-                            @click="sendAction('raise', 100)" 
-                            class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded disabled:opacity-50"
-                            :disabled="isActing"
-                        >
-                            レイズ ¥100
-                        </button>
-                    </div>
-
-                    <div class="mt-2" x-show="isActing">
-                        <p class="text-sm text-gray-300 animate-pulse">アクション処理中...</p>
-                    </div>
-                </div>
-            </div>
-        </template>
-
+      </template>
     </div>
+
+    <!-- アクションフォーム -->
+    <div x-show="state.awaiting_action">
+      <h3 class="font-semibold mb-2">あなたのアクション</h3>
+
+      <!-- 各アクションボタンをlegal_actionsに基づき制御 -->
+      <div class="grid grid-cols-2 gap-2">
+        <button x-show="state.legal_actions.includes('fold')" @click="submitAction('fold')"
+                class="bg-red-500 text-white px-4 py-2 rounded">フォールド</button>
+
+        <button x-show="state.legal_actions.includes('check')" @click="submitAction('check')"
+                class="bg-gray-500 text-white px-4 py-2 rounded">チェック</button>
+
+        <button x-show="state.legal_actions.includes('call')" @click="submitAction('call')"
+                class="bg-blue-500 text-white px-4 py-2 rounded">コール</button>
+      </div>
+
+      <!-- ベット -->
+      <div x-show="state.legal_actions.includes('bet')" class="mt-3 space-y-2">
+        <input type="number" x-model.number="amount" min="1"
+               class="border p-2 rounded w-full" placeholder="ベット額" />
+        <button @click="submitAction('bet')" class="bg-green-500 text-white px-4 py-2 rounded w-full">
+          ベット
+        </button>
+      </div>
+
+      <!-- レイズ -->
+      <div x-show="state.legal_actions.includes('raise')" class="mt-3 space-y-2">
+        <input type="number" x-model.number="amount" min="1"
+               class="border p-2 rounded w-full" placeholder="レイズ額" />
+        <button @click="submitAction('raise')" class="bg-yellow-500 text-white px-4 py-2 rounded w-full">
+          レイズ
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
