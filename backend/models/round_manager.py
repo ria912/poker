@@ -2,6 +2,7 @@
 from models.table import Table
 from models.position import ASSIGNMENT_ORDER
 from models.action import Action
+from models.human_player import WaitingForHumanAction
 
 class RoundManager:
     def __init__(self, table: Table):
@@ -48,11 +49,11 @@ class RoundManager:
 
         try:
             action, amount = current_player.decide_action(self.table)
-        except Exception as e:
-            if str(e) == "waiting_for_human_action":
-                self.waiting_for_human = True
-                raise  # 呼び出し元で "waiting_for_human" を返す
-            raise  # その他の例外はそのまま再スロー
+        except WaitingForHumanAction:
+            self.waiting_for_human = True
+            raise  # 呼び出し元で "waiting_for_human" を返す
+        except Exception:
+            raise  # その他の予期しない例外はそのまま投げる
 
         Action.apply_action(current_player, self.table, action, amount)
 
@@ -66,6 +67,7 @@ class RoundManager:
 
         if self.is_betting_round_over():
             return self._advance_round()
+        
         return "ai_acted"
 
     def is_betting_round_over(self):
@@ -106,8 +108,8 @@ class RoundManager:
         self.waiting_for_human = False
         try:
             return self.proceed_one_action()
-        except Exception as e:
-            if str(e) == "waiting_for_human_action":
-                self.waiting_for_human = True
-                return "waiting_for_human"
+        except WaitingForHumanAction:
+            self.waiting_for_human = True
+            return "waiting_for_human"
+        except Exception:
             raise

@@ -12,10 +12,14 @@ class HumanPlayer(Player):
 
     def decide_action(self, table):
         if self.input_action is None:
-            raise Exception("waiting_for_human_action")
+            raise WaitingForHumanAction()
         action, amount = self.input_action
         self.input_action = None
         return action, amount
 
     def to_dict(self, show_hand=True):
         return self.base_dict(show_hand=show_hand)
+    
+
+class WaitingForHumanAction(Exception):
+    pass
