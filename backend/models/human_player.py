@@ -1,6 +1,5 @@
 # models/human_player.py
 from models.player import Player
-from models.action import Action
 
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):
@@ -17,3 +16,6 @@ class HumanPlayer(Player):
         action, amount = self.input_action
         self.input_action = None
         return action, amount
+
+    def to_dict(self, show_hand=True):
+        return self.base_dict(show_hand=show_hand)

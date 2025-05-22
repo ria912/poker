@@ -6,13 +6,12 @@ from models.action import Action
 class RoundManager:
     def __init__(self, table: Table):
         self.table = table
-        self.round = self.table.round
         self.action_index = 0
         self.action_order = self.get_action_order()
         self.waiting_for_human = False
 
     def get_action_order(self):
-        start_pos = 'BB' if self.round == 'preflop' else 'BTN'
+        start_pos = 'BB' if self.table.round == 'preflop' else 'BTN'
         pos_to_player = {p.position: p for p in self.table.get_active_players()}
 
         # ポジションをスタート位置の次から時計回りに並べる
@@ -53,8 +52,7 @@ class RoundManager:
             if str(e) == "waiting_for_human_action":
                 self.waiting_for_human = True
                 raise  # 呼び出し元で "waiting_for_human" を返す
-            else:
-                raise  # その他の例外はそのまま再スロー
+            raise  # その他の例外はそのまま再スロー
 
         Action.apply_action(current_player, self.table, action, amount)
 

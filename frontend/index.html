@@ -4,35 +4,38 @@
 <head>
   <meta charset="UTF-8" />
   <title>Hold'em App</title>
-  <script defer src="https://unpkg.com/alpinejs" defer></script>
+  <script defer src="https://unpkg.com/alpinejs"></script> <!-- defer の重複削除 -->
   <script defer src="/js/app.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 p-6" x-data="pokerApp()" x-init="init()">
 
-  <!-- Home 画面 -->
-  <div x-show="view === 'home'" class="max-w-md mx-auto bg-white p-6 rounded shadow">
+  <!-- Home画面 -->
+  <div x-show="view === 'home'" x-transition class="max-w-md mx-auto bg-white p-6 rounded shadow">
     <h1 class="text-xl font-bold mb-4">テーブル設定</h1>
 
     <label class="block mb-2">席数（3〜6）</label>
-    <input type="number" x-model.number="seatCount" min="3" max="6" class="border rounded w-full p-2 mb-4" />
+    <input type="number" x-model.number="seatCount" min="3" max="6" required
+           class="border rounded w-full p-2 mb-4" />
 
     <label class="block mb-2">プレイヤースタック（初期チップ）</label>
-    <input type="number" x-model.number="initialStack" min="2500" max="15000" class="border rounded w-full p-2 mb-4" />
+    <input type="number" x-model.number="initialStack" min="2500" max="15000" required
+           class="border rounded w-full p-2 mb-4" />
 
-    <button @click="startGame" class="bg-blue-500 text-white px-4 py-2 rounded w-full">
+    <button @click="startGame"
+            class="bg-blue-500 text-white px-4 py-2 rounded w-full">
       ゲーム開始
     </button>
   </div>
 
   <!-- Game画面 -->
-  <div x-show="view === 'game'" class="max-w-xl mx-auto bg-white p-6 mt-4 rounded shadow space-y-6">
+  <div x-show="view === 'game'" x-transition class="max-w-xl mx-auto bg-white p-6 mt-4 rounded shadow space-y-6">
     <h2 class="text-lg font-bold">ゲーム画面</h2>
 
     <!-- テーブル情報 -->
     <div>
       <h3 class="font-semibold">プレイヤー一覧</h3>
-      <template x-for="player in state.players" :key="player.name">
+      <template x-for="player in state.players" :key="player.name"> <!-- player.nameのまま維持 -->
         <div class="border p-2 my-1 rounded"
              :class="{'bg-yellow-100': player.name === state.current_player}">
           <strong x-text="player.name"></strong> - スタック: <span x-text="player.stack"></span>
@@ -42,35 +45,45 @@
     </div>
 
     <!-- アクションフォーム -->
-    <div x-show="state.awaiting_action">
+    <div x-show="state.awaiting_action" x-transition>
       <h3 class="font-semibold mb-2">あなたのアクション</h3>
 
-      <!-- 各アクションボタンをlegal_actionsに基づき制御 -->
+      <!-- 各アクションボタン -->
       <div class="grid grid-cols-2 gap-2">
-        <button x-show="state.legal_actions.includes('fold')" @click="submitAction('fold')"
+        <button x-show="state.legal_actions.includes('fold')"
+                @click="submitAction('fold')"
+                :disabled="!state.awaiting_action"
                 class="bg-red-500 text-white px-4 py-2 rounded">フォールド</button>
 
-        <button x-show="state.legal_actions.includes('check')" @click="submitAction('check')"
+        <button x-show="state.legal_actions.includes('check')"
+                @click="submitAction('check')"
+                :disabled="!state.awaiting_action"
                 class="bg-gray-500 text-white px-4 py-2 rounded">チェック</button>
 
-        <button x-show="state.legal_actions.includes('call')" @click="submitAction('call')"
+        <button x-show="state.legal_actions.includes('call')"
+                @click="submitAction('call')"
+                :disabled="!state.awaiting_action"
                 class="bg-blue-500 text-white px-4 py-2 rounded">コール</button>
       </div>
 
       <!-- ベット -->
-      <div x-show="state.legal_actions.includes('bet')" class="mt-3 space-y-2">
+      <div x-show="state.legal_actions.includes('bet')" class="mt-3 space-y-2" x-transition>
         <input type="number" x-model.number="amount" min="1"
                class="border p-2 rounded w-full" placeholder="ベット額" />
-        <button @click="submitAction('bet')" class="bg-green-500 text-white px-4 py-2 rounded w-full">
+        <button @click="submitAction('bet')"
+                :disabled="!state.awaiting_action"
+                class="bg-green-500 text-white px-4 py-2 rounded w-full">
           ベット
         </button>
       </div>
 
       <!-- レイズ -->
-      <div x-show="state.legal_actions.includes('raise')" class="mt-3 space-y-2">
+      <div x-show="state.legal_actions.includes('raise')" class="mt-3 space-y-2" x-transition>
         <input type="number" x-model.number="amount" min="1"
                class="border p-2 rounded w-full" placeholder="レイズ額" />
-        <button @click="submitAction('raise')" class="bg-yellow-500 text-white px-4 py-2 rounded w-full">
+        <button @click="submitAction('raise')"
+                :disabled="!state.awaiting_action"
+                class="bg-yellow-500 text-white px-4 py-2 rounded w-full">
           レイズ
         </button>
       </div>

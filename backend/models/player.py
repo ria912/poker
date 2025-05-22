@@ -5,6 +5,7 @@ class Player:
         self.stack = stack
         self.hand = []
         self.position = None
+        self.seat_number = None
         self.current_bet = 0
         self.last_action = None
         self.has_acted = False # アクション済みである
@@ -20,13 +21,17 @@ class Player:
         self.has_folded = False
         self.has_all_in = False
 
+    def reset_for_new_round(self):
+        self.current_bet = 0
+        self.last_action = None
+        self.has_acted = False
 
-    def to_dict(self):
-        return {
+    def base_dict(self, show_hand=False):
+        data = {
             "name": self.name,
             "stack": self.stack,
-            "hand": self.hand,
             "position": self.position,
+            "seat_number": self.seat_number,
             "current_bet": self.current_bet,
             "last_action": self.last_action,
             "has_acted": self.has_acted,            
@@ -35,3 +40,8 @@ class Player:
             "has_left": self.has_left,
             "is_human": self.is_human
         }
+        
+        if show_hand:
+            data["hand"] = self.hand
+
+        return data

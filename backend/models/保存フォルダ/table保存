@@ -15,11 +15,11 @@ class Table:
 
         self.deck = Deck()
         self.round = 'preflop'  # 表示用に .title() で整形
-        self.board = []
+        self.community_cards = []
         self.pot = 0
         self.current_bet = 0
-        
-        self.last_raiser = None  # 最後にベットしたプレイヤー
+
+        self.last_raiser = None
         self.is_hand_in_progress = False  # フロントでの状態判定に利用
 
     def seat_assign_players(self):
@@ -30,20 +30,15 @@ class Table:
         for i, p in enumerate(players):
             p.seat_number = i + 1
             self.seats[i] = p
-    
-    def reset_for_new_hand(self):
-        self.round = 'preflop'
-        self.community_cards = []
-        self.pot = 0
-        self.current_bet = 0
-        self.min_bet = self.big_blind
-        self.last_raiser = None
-        self._reset_players()
 
     def start_hand(self):
         self.deck.deck_shuffle()
+        self._reset_players()
         rotate_button(self.seats)
         assign_positions(self.seats)
+        self.community_cards = []
+        self.pot = 0
+        self.current_bet = 0
         self._post_blinds()
         self._deal_cards()
         self.is_hand_in_progress = True
@@ -83,6 +78,20 @@ class Table:
 
     def deal_river(self):
         self.community_cards.append(self.deck.draw())
+
+    def award_pot_to_winner(self):
+        active_players = self.get_active_players()
+        if not active_players:
+            return
+        winner = next((p for p in active_players if p.name == "YOU"), active_players[0])
+        winner.stack += self.pot
+        self.pot = 0
+
+    def get_human_player(self):
+        for player in self.seats:
+            if player and player.is_human:
+                return player
+        raise ValueError("Human player not found")
 
     def get_active_players(self):
         return [
