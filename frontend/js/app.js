@@ -1,84 +1,88 @@
-// frontend/js/app.js
 function pokerApp() {
-    const API_BASE = `${location.origin}/api`;  // 開発・本番両対応
-    return {
-        tableState: null,
-        humanPlayer: null,
-        isActing: false,
+  return {
+    statusMessage: 'ゲームを開始してください。',
+    isMyTurn: false,
+    actionList: [],
+    selectedAction: null,
+    amount: 0,
 
-        async init() {
-            await this.fetchState();
-        },
+    async startGame() {
+      try {
+        const res = await fetch('/api/game/start', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        this.updateState(data);
+      } catch (e) {
+        this.statusMessage = 'ゲーム開始時にエラーが発生しました。';
+        console.error(e);
+      }
+    },
 
-        async startGame() {
-            try {
-                const res = await fetch(`${API_BASE}/start`, { method: "POST" });
-                if (!res.ok) throw new Error("startGame: API error");
-                const data = await res.json();
-                this.tableState = data.state;
-                this.updateHuman();
-                this.pollAI();
-            } catch (error) {
-                console.error("ゲーム開始エラー:", error);
-            }
-        },
+    async sendAction() {
+      try {
+        const res = await fetch('/api/game/action', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: this.selectedAction,
+            amount: this.amount
+          })
+        });
 
-        async fetchState() {
-            try {
-                const res = await fetch(`${API_BASE}/state`);
-                if (!res.ok) throw new Error("fetchState: API error");
-                const data = await res.json();
-                this.tableState = data;
-                this.updateHuman();
-            } catch (error) {
-                console.error("状態取得エラー:", error);
-            }
-        },
+        const data = await res.json();
+        this.selectedAction = null;
+        this.amount = 0;
+        this.updateState(data);
+      } catch (e) {
+        this.statusMessage = 'アクション送信時にエラーが発生しました。';
+        console.error(e);
+      }
+    },
 
-        updateHuman() {
-            if (!this.tableState) return;
-            this.humanPlayer = this.tableState.players.find(
-                p => p && p.name === "YOU"
-            );
-        },
+    async fetchState() {
+      try {
+        const res = await fetch('/api/game/state');
+        const data = await res.json();
+        this.updateState(data);
+      } catch (e) {
+        this.statusMessage = '状態の取得に失敗しました。';
+        console.error(e);
+      }
+    },
 
-        async sendAction(action, amount = 0) {
-            if (this.isActing) return;
-            this.isActing = true;
-            try {
-                const res = await fetch(`${API_BASE}/action`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action, amount }),
-                });
-                if (!res.ok) throw new Error("sendAction: API error");
-                const data = await res.json();
-                this.tableState = data.state;
-                this.updateHuman();
-                this.pollAI();
-            } catch (error) {
-                console.error("アクション送信エラー:", error);
-            } finally {
-                this.isActing = false;
-            }
-        },
+    updateState(data) {
+      this.statusMessage = this.formatStatus(data);
+      this.actionList = data.valid_actions || [];
+      this.isMyTurn = data.waiting_for_human === true;
+    },
 
-        async pollAI() {
-            let aiStillPlaying = true;
-            while (aiStillPlaying) {
-                await new Promise(r => setTimeout(r, 1000)); // AIの“思考時間”
-                await this.fetchState();
-                console.log("AIプレイヤー状態チェック:", this.tableState.players);
-                aiStillPlaying = this.tableState.players.some(
-                    p =>
-                        p &&
-                        p.name !== "YOU" &&
-                        !p.has_folded &&
-                        (p.last_action === null || p.last_action === "-")
-                );
-            }
-        }
-    };
+    formatStatus(data) {
+      let s = `Pot: ${data.pot}\n`;
+      s += `Board: ${data.board?.join(' ') || '---'}\n`;
+      s += `Players:\n`;
+
+      for (const p of data.players) {
+        const hand = p.hand?.join(' ') || '?? ??';
+        s += ` - ${p.name} (${p.stack}) ${p.folded ? '[FOLD]' : ''}`;
+        if (p.is_human) s += ' ← YOU';
+        if (p.hand) s += ` | Hand: ${hand}`;
+        s += '\n';
+      }
+
+      s += `\nTurn: ${data.current_player_name}`;
+      return s;
+    },
+
+    selectAction(name) {
+      this.selectedAction = name;
+      this.amount = 0;
+    },
+
+    get selectedActionRequiresAmount() {
+      return this.selectedAction === 'raise' || this.selectedAction === 'bet';
+    }
+  };
 }
-
-window.pokerApp = pokerApp;
