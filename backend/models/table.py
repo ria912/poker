@@ -12,7 +12,7 @@ class Table:
         self.min_bet = big_blind
 
         self.seats = [None] * seat_count
-        self.btn_index = 0
+        self.btn_index = None
 
         self.deck = Deck()
         self.round = 'preflop'  # 表示用に .title() で整形
@@ -31,10 +31,27 @@ class Table:
         for i, p in enumerate(players):
             p.seat_number = i + 1
             self.seats[i] = p
-    
+
+    def get_player_summary(self):
+        return [
+            {
+                "seat_number": player.seat_number,
+                "name": player.name,
+                "position": player.position
+            }
+            for player in self.seats
+            if player is not None
+        ]
+
+    def get_active_players(self):
+            return [
+                player for player in self.seats
+                if player and not player.has_folded and not player.has_all_in and not player.has_left
+            ]
+
     def reset_for_new_hand(self):
         self.round = 'preflop'
-        self.community_cards = []
+        self.board = []
         self.pot = 0
         self.current_bet = 0
         self.min_bet = self.big_blind
@@ -43,8 +60,11 @@ class Table:
 
     def start_hand(self):
         self.deck.deck_shuffle()
-        rotate_button(self.seats)
-        assign_positions(self.seats)
+        # BTNのローテーション
+        self.btn_index = rotate_button(self)
+        active_players = self.get_active_players()
+        assign_positions(self, active_players)
+        # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
         self.is_hand_in_progress = True
@@ -77,19 +97,13 @@ class Table:
                 player.hand = [self.deck.draw(), self.deck.draw()]
 
     def deal_flop(self):
-        self.community_cards.extend([self.deck.draw() for _ in range(3)])
+        self.board.extend([self.deck.draw() for _ in range(3)])
 
     def deal_turn(self):
-        self.community_cards.append(self.deck.draw())
+        self.board.append(self.deck.draw())
 
     def deal_river(self):
-        self.community_cards.append(self.deck.draw())
-
-    def get_active_players(self):
-        return [
-            player for player in self.seats
-            if player and not player.has_folded and not player.has_all_in and not player.has_left
-        ]
+        self.board.append(self.deck.draw())
 
     def to_dict(self, show_all_hands=False):
         return {
@@ -98,8 +112,8 @@ class Table:
             "pot": self.pot,
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
+            "btn_index": self.btn_index,
             "last_raiser": self.last_raiser.name if self.last_raiser else None,
-            "btn_index": self.btn_index
             "seats": [
                 p.to_dict(show_hand=(show_all_hands or p.is_human)) if p else None
                 for p in self.seats
