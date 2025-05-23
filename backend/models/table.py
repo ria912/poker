@@ -12,6 +12,7 @@ class Table:
         self.min_bet = big_blind
 
         self.seats = [None] * seat_count
+        self.btn_index = 0
 
         self.deck = Deck()
         self.round = 'preflop'  # 表示用に .title() で整形
@@ -98,6 +99,7 @@ class Table:
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
             "last_raiser": self.last_raiser.name if self.last_raiser else None,
+            "btn_index": self.btn_index
             "seats": [
                 p.to_dict(show_hand=(show_all_hands or p.is_human)) if p else None
                 for p in self.seats
