@@ -1,6 +1,5 @@
 # models/round_manager.py
 from models.table import Table
-from models.position import ACTION_ORDER
 from models.action import Action
 from models.human_player import WaitingForHumanAction
 from models.utils import get_active_players, get_ordered_active_players
@@ -100,7 +99,6 @@ class RoundManager:
 
         self._start_betting_round()
         return "round_over"
-    
     # 仮置き
     def log_action(self, player, action, amount):
         self.table.action_log.append({
