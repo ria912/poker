@@ -12,7 +12,7 @@ def set_btn_index(table):
     active_players = utils.get_active_players(seats)
 
     if not active_players:
-        raise ValueError("No active player to assign BTN.")
+        return None  # アクティブプレイヤーがいない場合は None を返す
 
     start = (table.btn_index + 1) if table.btn_index is not None else 0
     

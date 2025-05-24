@@ -1,6 +1,5 @@
 # models/table.py
 from models.deck import Deck
-from models.position import rotate_button, assign_positions
 from models.human_player import HumanPlayer
 from models.ai_player import AIPlayer
 from models.position import set_btn_index, assign_positions
@@ -48,7 +47,7 @@ class Table:
     def start_hand(self):
         self.deck.deck_shuffle()
         # BTNのローテーション
-        self.btn_index = set_btn_index(self.btn_index)
+        self.btn_index = set_btn_index(self)
         active_players = get_active_players(self.seats)
         assign_positions(self, active_players)
         # ブラインドとカードの配布

@@ -4,20 +4,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-from api import game  # api/game.py にある router
+from api import game  # ゲーム用APIを登録
 
 app = FastAPI()
 
-# frontend ディレクトリのパス
+# フロントエンド（HTML, JS, CSS）を /static に公開
 frontend_dir = Path(__file__).parent.parent / "frontend"
-
-# frontend フォルダ全体を /static にマウントする
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
-# APIルーター
+# ゲームAPIのルーターを /api にまとめて登録
 app.include_router(game.router, prefix="/api")
 
-# index.html を返す
+# ブラウザで "/" にアクセスすると index.html を返す
 @app.get("/")
 def serve_spa():
     return FileResponse(frontend_dir / "index.html")

@@ -34,6 +34,9 @@ def get_ordered_active_players(seats, btn_index):
     Returns:
         list: アクティブプレイヤー（Playerオブジェクト）の順序付きリスト
     """
+    if btn_index is None:
+        btn_index = 0  # BTNが未設定の場合は0にする
+        
     active_players = get_active_players(seats)
     if not active_players:
         return []
