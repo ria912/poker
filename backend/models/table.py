@@ -13,6 +13,7 @@ class Table:
         self.min_bet = big_blind
 
         self.seats = [None] * seat_count
+        self.seat_assign_players()  # プレイヤーを割り当てる
         self.btn_index = None
 
         self.deck = Deck()
@@ -42,14 +43,13 @@ class Table:
         self.current_bet = 0
         self.min_bet = self.big_blind
         self.last_raiser = None
-        self._reset_players()
+        self.seats = self._reset_players()
 
     def start_hand(self):
         self.deck.deck_shuffle()
-        # BTNのローテーション
+        # BTNのローテーション・ポジションの割り当て
         self.btn_index = set_btn_index(self)
-        active_players = get_active_players(self.seats)
-        assign_positions(self, active_players)
+        assign_positions(self)
         # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
@@ -59,6 +59,7 @@ class Table:
         for player in self.seats:
             if player:
                 player.reset_for_new_hand()
+                return self.seats
 
     def _post_blinds(self):
         for player in self.seats:
@@ -103,10 +104,6 @@ class Table:
             "seats": [
                 p.to_dict(show_hand=(show_all_hands or p.is_human)) if p else None
                 for p in self.seats
-            ],
-            "active_players": [
-                p.to_dict(show_hand=(show_all_hands or p.is_human))
-                for p in self.get_active_players()
             ],
             "is_hand_in_progress": self.is_hand_in_progress
         }

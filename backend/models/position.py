@@ -21,6 +21,7 @@ def set_btn_index(table):
         if seats[i] in active_players: # アクティブプレイヤーが見つかったら
             table.btn_index = i
             break # ループを抜ける
+    return table.btn_index
 
 def assign_positions(table):
     seats = table.seats
@@ -29,7 +30,7 @@ def assign_positions(table):
     if btn_index is None:
         raise ValueError("table.btn_index is not set.")
     
-    # 一旦全員の position を None にリセット（BTN含めてリセットしてから再設定でもOK）
+    # 一旦全員の position を None にリセット
     for p in seats:
         if p:
             p.position = None
