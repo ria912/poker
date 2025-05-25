@@ -55,6 +55,7 @@ class RoundManager:
             raise  # その他の予期しない例外はそのまま投げる
 
         Action.apply_action(current_player, self.table, action, amount)
+        self.log_action(current_player, action, amount)
 
         if action in [Action.BET, Action.RAISE]:
             self.table.last_raiser = current_player

@@ -10,7 +10,6 @@ class GameState:
     """
     def __init__(self):
         self.table = Table()  # プレイヤー・山札などを持つテーブル
-        self.table.seat_assign_players()
         self.round_manager = RoundManager(self.table)
         self.is_hand_started = False
 
