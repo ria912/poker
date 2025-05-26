@@ -1,23 +1,27 @@
 # models/round_manager.py
-from models.table import Table
 from models.action import Action
 from models.human_player import WaitingForHumanAction
-from models.utils import get_active_players, get_ordered_active_players
+from models.position import ACTION_ORDER
 
 class RoundManager:
-    def __init__(self, table: Table):
+    def __init__(self, table):
         self.table = table
         self.action_index = 0
-        self.action_order = self.get_action_order()
         self.waiting_for_human = False
+        self.action_order = self.get_action_order()  # 初期順番
 
     def get_action_order(self):
-        # アクティブプレイヤーをBTNの次から取得
-        players_in_order = get_ordered_active_players(self.table.seats, self.table.btn_index)
-        # 
+        """ポジション順にアクティブプレイヤーを並べる。プリフロップのみBTNの次から。"""
+        players = [p for p in self.table.seats if p and p.is_active]
+        # アクション順に並び替え
+        ordered = sorted(players, key=lambda p: ACTION_ORDER.index(p.position))
+        
         if self.table.round == 'preflop':
-            return players_in_order[2:] + players_in_order[:2]  # BBの次から回す
-        return players_in_order
+            btn_index = ACTION_ORDER.index('BTN')
+            # BTNの次（SB）から始めるため、BTNを基点にローテート
+            rotated = ACTION_ORDER[btn_index+1:] + ACTION_ORDER[:btn_index+1]
+            ordered = sorted(players, key=lambda p: rotated.index(p.position))
+        return ordered
 
     def _start_betting_round(self):
         self.action_order = self.get_action_order()
@@ -27,10 +31,7 @@ class RoundManager:
             p.has_acted = False
 
     def proceed_one_action(self):
-        """
-        1アクション進行する。
-        人間プレイヤーの入力待ちになる場合は Exception を投げる。
-        """
+        """1アクション進行。人間入力待ちの場合は例外で返す。"""
         if self.table.round == 'showdown':
             self._showdown()
             return "hand_over"
@@ -38,48 +39,51 @@ class RoundManager:
         if self.is_betting_round_over():
             return self._advance_round()
 
+        if not self.action_order:
+            return "round_over"  # アクティブプレイヤーがいない
+
         if self.action_index >= len(self.action_order):
-            if self.is_betting_round_over():
-                return self._advance_round()
-            else:
-                raise RuntimeError("アクションインデックスが範囲外だがラウンドが終了していない")
+            self.action_index = 0  # 巻き戻し
 
         current_player = self.action_order[self.action_index]
+
+        if not current_player.is_active:
+            self.action_index += 1
+            return self.proceed_one_action()  # スキップ
 
         try:
             action, amount = current_player.decide_action(self.table)
         except WaitingForHumanAction:
             self.waiting_for_human = True
-            raise  # 呼び出し元で "waiting_for_human" を返す
+            raise
         except Exception:
-            raise  # その他の予期しない例外はそのまま投げる
+            raise
 
         Action.apply_action(current_player, self.table, action, amount)
         self.log_action(current_player, action, amount)
 
         if action in [Action.BET, Action.RAISE]:
             self.table.last_raiser = current_player
-            for p in get_active_players(self.table.seats):
+            for p in self.action_order:
                 if p != current_player:
                     p.has_acted = False
 
+        current_player.has_acted = True
         self.action_index += 1
 
         if self.is_betting_round_over():
             return self._advance_round()
-        
+
         return "ai_acted"
 
     def is_betting_round_over(self):
-        active_players = get_active_players(self.table.seats)
-
-        if len(active_players) <= 1:
+        """全員がコールorフォールド済みなら終了"""
+        active = [p for p in self.table.seats if p and p.is_active]
+        if len(active) <= 1:
             return True
-
-        for p in active_players:
+        for p in active:
             if not p.has_acted or p.current_bet != self.table.current_bet:
                 return False
-
         return True
 
     def _advance_round(self):
@@ -95,29 +99,24 @@ class RoundManager:
         elif self.table.round == 'river':
             self.table.round = 'showdown'
             self.table.award_pot_to_winner()
-            self.table.is_hand_in_progress = False # 状態反映フラグ
+            self.table.is_hand_in_progress = False
             return "hand_over"
 
         self._start_betting_round()
         return "round_over"
-    # 仮置き
+
     def log_action(self, player, action, amount):
         self.table.action_log.append({
             "player": player.name,
             "action": action,
             "amount": amount,
             "round": self.table.round
-    })
-
-    # 人間アクション関連 -----------------------------------
+        })
 
     def resume_after_human_action(self):
-        """人間アクションを受け取ったあと再開"""
         self.waiting_for_human = False
         try:
             return self.proceed_one_action()
         except WaitingForHumanAction:
             self.waiting_for_human = True
             return "waiting_for_human"
-        except Exception:
-            raise
