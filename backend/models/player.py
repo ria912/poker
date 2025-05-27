@@ -9,22 +9,26 @@ class Player:
         self.current_bet = 0
         self.last_action = None
         self.has_acted = False # アクション済みである
-        self.has_folded = False
-        self.has_all_in = False
-        self.has_left = False
+        self.folded = False
+        self.all_in = False
+        self.sitting_out = False
 
     def reset_for_new_hand(self):
         self.hand = []
         self.current_bet = 0
         self.last_action = None
         self.has_acted = False
-        self.has_folded = False
-        self.has_all_in = False
+        self.folded = False
+        self.all_in = False
 
     def reset_for_new_round(self):
         self.current_bet = 0
         self.last_action = None
         self.has_acted = False
+    
+    @property
+    def is_active(self):
+        return not self.folded and not self.all_in and not self.sitting_out
 
     def base_dict(self, show_hand=False):
         data = {
@@ -35,9 +39,9 @@ class Player:
             "current_bet": self.current_bet,
             "last_action": self.last_action,
             "has_acted": self.has_acted,            
-            "has_folded": self.has_folded,
-            "has_all_in": self.has_all_in,
-            "has_left": self.has_left,
+            "folded": self.folded,
+            "all_in": self.all_in,
+            "sitting_out": self.sitting_out,
             "is_human": self.is_human
         }
         
