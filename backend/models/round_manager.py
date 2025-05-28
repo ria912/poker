@@ -14,79 +14,76 @@ class Round(str, Enum):
 class RoundManager:
     def __init__(self, table):
         self.table = table
+        self.action_order = []
         self.action_index = 0
         self.waiting_for_human = False
-        self.action_order = self.get_action_order()  # 初期順番
 
-    def get_action_order(self):
-        """ポジション順にアクティブプレイヤーを並べる。プリフロップのみBTNの次から。"""
-        players = [p for p in self.table.seats if p and p.is_active]
-        # アクション順に並び替え
-        ordered = sorted(players, key=lambda p: ACTION_ORDER.index(p.position))
-        
-        if self.table.round == 'preflop':
-            btn_index = ACTION_ORDER.index('BTN')
-            # BTNの次（SB）から始めるため、BTNを基点にローテート
-            rotated = ACTION_ORDER[btn_index+1:] + ACTION_ORDER[:btn_index+1]
-            ordered = sorted(players, key=lambda p: rotated.index(p.position))
-        return ordered
-
-    def _start_betting_round(self):
+    def start_new_betting_round(self):
         self.action_order = self.get_action_order()
         self.action_index = 0
-        self.waiting_for_human = False
         for p in self.action_order:
             p.has_acted = False
 
-    def proceed_one_action(self):
-        """1アクション進行。人間入力待ちの場合は例外で返す。"""
-        if self.table.round == 'showdown':
-            self._showdown()
-            return "hand_over"
+    def get_action_order(self):
+        players = [p for p in self.table.seats if p.is_active]
+        return sorted(players, key=lambda p: ACTION_ORDER.index(p.position))
 
-        if self.is_betting_round_over():
-            return self._advance_round()
+    def step_ai_actions(self):
+        """AIが行動し、人間の番になるまで繰り返す"""
+        while self.action_index < len(self.action_order):
+            player = self.action_order[self.action_index]
 
-        if not self.action_order:
-            return "round_over"  # アクティブプレイヤーがいない
+            if player.is_human:
+                self.waiting_for_human = True
+                return "waiting_for_human"
 
-        if self.action_index >= len(self.action_order):
-            self.action_index = 0  # 巻き戻し
+            # AIアクション
+            action, amount = player.decide_action(self.table)
+            Action.apply_action(player, self.table, action, amount)
+            self.log_action(player, action, amount)
 
-        current_player = self.action_order[self.action_index]
+            if action in [Action.BET, Action.RAISE]:
+                self.table.last_raiser = player
+                for p in self.action_order:
+                    if p != player:
+                        p.has_acted = False
 
-        if not current_player.is_active:
             self.action_index += 1
-            return self.proceed_one_action()  # スキップ
 
-        try:
-            action, amount = current_player.decide_action(self.table)
-        except WaitingForHumanAction:
-            self.waiting_for_human = True
-            raise
-        except Exception:
-            raise
+            if self.action_index >= len(self.action_order):
+                if self.is_betting_round_over():
+                    return self.advance_round()
+                else:
+                    self.action_order = self.get_action_order()
+                    self.action_index = 0
 
-        Action.apply_action(current_player, self.table, action, amount)
-        self.log_action(current_player, action, amount)
+        return "ai_done"
+
+    def receive_human_action(self, action, amount):
+        player = self.action_order[self.action_index]
+        Action.apply_action(player, self.table, action, amount)
+        self.log_action(player, action, amount)
 
         if action in [Action.BET, Action.RAISE]:
-            self.table.last_raiser = current_player
+            self.table.last_raiser = player
             for p in self.action_order:
-                if p != current_player:
+                if p != player:
                     p.has_acted = False
 
-        current_player.has_acted = True
         self.action_index += 1
+        self.waiting_for_human = False
 
-        if self.is_betting_round_over():
-            return self._advance_round()
+        if self.action_index >= len(self.action_order):
+            if self.is_betting_round_over():
+                return self.advance_round()
+            else:
+                self.action_order = self.get_action_order()
+                self.action_index = 0
 
-        return "ai_acted"
+        return self.step_ai_actions()
 
     def is_betting_round_over(self):
-        """全員がコールorフォールド済みなら終了"""
-        active = [p for p in self.table.seats if p and p.is_active]
+        active = [p for p in self.table.seats if p.is_active]
         if len(active) <= 1:
             return True
         for p in active:
@@ -94,23 +91,23 @@ class RoundManager:
                 return False
         return True
 
-    def _advance_round(self):
-        if self.table.round == 'preflop':
-            self.table.round = 'flop'
+    def advance_round(self):
+        # Round enum に基づく遷移
+        if self.table.round == Round.PREFLOP:
             self.table.deal_flop()
-        elif self.table.round == 'flop':
-            self.table.round = 'turn'
+            self.table.round = Round.FLOP
+        elif self.table.round == Round.FLOP:
             self.table.deal_turn()
-        elif self.table.round == 'turn':
-            self.table.round = 'river'
+            self.table.round = Round.TURN
+        elif self.table.round == Round.TURN:
             self.table.deal_river()
-        elif self.table.round == 'river':
-            self.table.round = 'showdown'
+            self.table.round = Round.RIVER
+        elif self.table.round == Round.RIVER:
+            self.table.round = Round.SHOWDOWN
             self.table.award_pot_to_winner()
-            self.table.is_hand_in_progress = False
             return "hand_over"
 
-        self._start_betting_round()
+        self.start_new_betting_round()
         return "round_over"
 
     def log_action(self, player, action, amount):
@@ -120,11 +117,3 @@ class RoundManager:
             "amount": amount,
             "round": self.table.round
         })
-
-    def resume_after_human_action(self):
-        self.waiting_for_human = False
-        try:
-            return self.proceed_one_action()
-        except WaitingForHumanAction:
-            self.waiting_for_human = True
-            return "waiting_for_human"
