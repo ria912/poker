@@ -2,6 +2,14 @@
 from models.action import Action
 from models.human_player import WaitingForHumanAction
 from models.position import ACTION_ORDER
+from enum import Enum
+
+class Round(str, Enum):
+    PREFLOP = "preflop"
+    FLOP = "flop"
+    TURN = "turn"
+    RIVER = "river"
+    SHOWDOWN = "showdown"
 
 class RoundManager:
     def __init__(self, table):
