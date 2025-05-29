@@ -25,9 +25,23 @@ class RoundManager:
             p.has_acted = False
 
     def get_action_order(self):
-        players = [p for p in self.table.seats if p.is_active]
-        return sorted(players, key=lambda p: ACTION_ORDER.index(p.position))
-
+        active_players = [p for p in self.table.seats if p.is_active]
+        
+        if self.table.round == Round.PREFLOP:
+            start_index = 2  # UTGから
+        else:
+            start_index = 0  # SBから
+    
+        ordered_positions = ACTION_ORDER[start_index:] + ACTION_ORDER[:start_index]
+    
+        # ポジション順でアクティブプレイヤーを並べ替え
+        ordered_players = [
+            p for pos in ordered_positions
+            for p in active_players if p.position == pos
+        ]
+    
+        return ordered_players
+    
     def step_ai_actions(self):
         """AIが行動し、人間の番になるまで繰り返す"""
         while self.action_index < len(self.action_order):
