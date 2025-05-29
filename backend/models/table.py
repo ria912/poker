@@ -17,7 +17,7 @@ class Table:
         self.btn_index = None
 
         self.deck = Deck()
-        self.round = 'preflop'  # 表示用に .title() で整形
+        self.round = Round.PREFLOP
         self.board = []
         self.pot = 0
         self.current_bet = 0
@@ -37,7 +37,7 @@ class Table:
             self.seats[i] = p
 
     def reset_for_new_hand(self):
-        self.round = Round.PREFROP
+        self.round = Round.PREFLOP
         self.board = []
         self.pot = 0
         self.current_bet = 0
