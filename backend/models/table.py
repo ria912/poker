@@ -37,7 +37,7 @@ class Table:
             self.seats[i] = p
 
     def reset_for_new_hand(self):
-        self.round = 'preflop'
+        self.round = Round.PREFROP
         self.board = []
         self.pot = 0
         self.current_bet = 0
