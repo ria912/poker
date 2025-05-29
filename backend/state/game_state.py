@@ -1,65 +1,34 @@
 # state/game_state.py
+
 from models.table import Table
-from models.round_manager import RoundManager
+from models.round_manager import RoundManager, Round
+from models.action import Action
 from models.human_player import WaitingForHumanAction
 
 class GameState:
-    """
-    ゲームの進行と状態を管理するクラス。
-    外部からはこのクラス経由で操作する。
-    """
     def __init__(self):
-        self.table = Table()  # プレイヤー・山札などを持つテーブル
+        self.table = Table()
         self.round_manager = RoundManager(self.table)
-        self.is_hand_started = False
 
     def start_new_hand(self):
-        """新しい手札を開始する"""
         self.table.reset_for_new_hand()
         self.table.start_hand()
-        self.round_manager._start_betting_round()
-        self.is_hand_started = True
+        self.round_manager.start_new_betting_round()
+        return self.round_manager.step_ai_actions()
 
-    def get_state(self, show_all_hands=False):
-        """現在のゲーム状態を辞書形式で取得"""
-        state = self.table.to_dict(show_all_hands=show_all_hands)
-        state.update({
-            "round": self.table.round.title() if self.table.round else None,
-            "waiting_for_human": self.round_manager.waiting_for_human,
-            "hand_started": self.is_hand_started,
-        })
-        return state
-
-    def proceed_game(self):
-        """
-        ゲームを1手分進める。
-        AIのアクション → 次のプレイヤーへ。
-        人間の番なら WaitingForHumanAction を投げる。
-        """
-        if not self.is_hand_started:
-            self.start_new_hand()
+    def receive_human_action(self, action: str, amount: int):
+        """人間のアクションを適用し、次のAIへ進める"""
         try:
-            return self.round_manager.proceed_one_action()
-        except WaitingForHumanAction:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"AI進行エラー: {e}")
+            action_enum = Action(action)
+        except ValueError:
+            raise ValueError(f"無効なアクション: {action}")
+        return self.round_manager.receive_human_action(action_enum, amount)
 
-    def human_action(self, action_dict):
-        """人間プレイヤーのアクションを受け取ってゲームを進める"""
-        try:
-            human = next(
-                p for p in self.table.seats
-                if p and getattr(p, 'is_human', False) and not getattr(p, 'has_left', False)
-            )
-        except StopIteration:
-            raise RuntimeError("人間プレイヤーが見つかりません")
+    def get_state(self):
+        return self.table.to_dict()
 
-        human.set_action(action_dict)
+    def get_action_log(self):
+        return self.table.action_log
 
-        try:
-            return self.round_manager.resume_after_human_action()
-        except WaitingForHumanAction:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"人間アクション処理エラー: {e}")
+# グローバルなゲーム状態（FastAPIエンドポイントで利用）
+game_state = GameState()
