@@ -3,6 +3,7 @@ from models.deck import Deck
 from models.human_player import HumanPlayer
 from models.ai_player import AIPlayer
 from models.position import set_btn_index, assign_positions
+from models.round_manager import Round
 from models.utils import get_active_players
 
 
@@ -13,7 +14,7 @@ class Table:
         self.min_bet = big_blind
 
         self.seats = [None] * seat_count
-        self.seat_assign_players()  # プレイヤーを割り当てる
+        self.seat_assign_players()
         self.btn_index = None
 
         self.deck = Deck()
@@ -22,8 +23,8 @@ class Table:
         self.pot = 0
         self.current_bet = 0
         
-        self.action_log = []  # アクションログ
-        self.last_raiser = None  # 最後にベットしたプレイヤー
+        self.action_log = []
+        self.last_raiser = None
         
         self.is_hand_in_progress = False  # フロントでの状態判定に利用
 
@@ -59,7 +60,7 @@ class Table:
         for player in self.seats:
             if player:
                 player.reset_for_new_hand()
-                return self.seats
+        return self.seats
 
     def _post_blinds(self):
         for player in self.seats:
