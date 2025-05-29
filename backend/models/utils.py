@@ -10,16 +10,15 @@ def get_seat_summary(seats):
         {
             "seat_number": player.seat_number,
             "name": player.name,
-            "position": player.position
+            "position": player.position,
+            "stack": player.stack,
+            "current_bet": player.current_bet,
+            "last_action": player.last_action,
+            "allin": player.all_in,
+            "sitting_out": player.sitting_out,
         }
         for player in seats
         if player is not None
-    ]
-
-def get_active_players(seats):
-    return [
-        player for player in seats
-        if player and not player.has_folded and not player.has_all_in and not player.has_left
     ]
 
 # position関連
@@ -36,10 +35,11 @@ def get_ordered_active_players(seats, btn_index):
     """
     if btn_index is None:
         btn_index = 0  # BTNが未設定の場合は0にする
-        
-    active_players = get_active_players(seats)
+
+    active_players = [
+        player for player in seats if player.is_active]
     if not active_players:
-        return []
+        return None
 
     seat_count = len(seats)
     ordered = []
@@ -64,7 +64,7 @@ def find_next_active_index(seats, start_index):
     Returns:
         アクティブプレイヤーのインデックス（int） or None（いなければ）
     """
-    active_players = get_active_players(seats)
+    active_players = [player for player in seats if player.is_active]
     if not active_players:
         return None
 

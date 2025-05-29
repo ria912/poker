@@ -3,8 +3,7 @@ from models.deck import Deck
 from models.human_player import HumanPlayer
 from models.ai_player import AIPlayer
 from models.position import set_btn_index, assign_positions
-from models.round_manager import Round
-from models.utils import get_active_players
+from models.enum import Round
 
 
 class Table:
@@ -80,9 +79,9 @@ class Table:
                 self.pot += blind
 
     def _deal_cards(self):
-        for player in self.seats:
-            if player and not player.has_left:
-                player.hand = [self.deck.draw(), self.deck.draw()]
+        for p in self.seats:
+            if p and not p.sitting_out:
+                p.hand = [self.deck.draw(), self.deck.draw()]
 
     def deal_flop(self):
         self.board.extend([self.deck.draw() for _ in range(3)])
@@ -92,6 +91,10 @@ class Table:
 
     def deal_river(self):
         self.board.append(self.deck.draw())
+
+    def showdown(self):
+        self.is_hand_in_progress = False
+        # 勝者の決定とポットの配分は、RoundManagerで行う
 
     def to_dict(self, show_all_hands=False):
         return {

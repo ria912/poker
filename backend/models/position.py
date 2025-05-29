@@ -1,10 +1,10 @@
 # models/position.py
-# ポジション割り当ての順番（アクション順）
-ACTION_ORDER = ['SB', 'BB', 'LJ', 'HJ', 'CO', 'BTN']
-# player数に応じて使用するポジションを決定するためのリスト
-FULL_POSITIONS = ['BTN', 'SB', 'BB', 'CO', 'HJ', 'LJ']
-
+from models.enum import Position
 from models import utils
+# ポジション割り当ての順番（アクション順）
+ACTION_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN]
+# player数に応じて使用するポジションを決定するためのリスト
+FULL_POSITIONS = [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ]
 
 def set_btn_index(table):
     seats = table.seats
