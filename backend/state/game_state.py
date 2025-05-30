@@ -1,6 +1,6 @@
 # state/game_state.py
 from models.table import Table
-from backend.models.round import RoundManager
+from models.round import RoundManager
 from models.enum import State, Action
 from fastapi import HTTPException
 
