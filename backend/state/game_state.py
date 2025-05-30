@@ -1,7 +1,8 @@
 # state/game_state.py
 from models.table import Table
 from models.round import RoundManager
-from models.enum import State, Action
+from models.action import Action
+from models.enum import State
 from fastapi import HTTPException
 
 class GameState:
@@ -31,6 +32,13 @@ class GameState:
         if result == State.WAITING_FOR_HUMAN:
             return self._make_waiting_response()
         return {"status": result, "state": self.table.to_dict()}
+    
+    def _make_waiting_response(self):
+        return {
+            "status": State.WAITING_FOR_HUMAN,
+            "state": self.table.to_dict(),
+            "legal_actions": Action.get_legal_actions(self.table.human_player, self.table),
+        }
 
     def get_state(self):
         return self.table.to_dict()

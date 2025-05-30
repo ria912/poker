@@ -8,13 +8,10 @@ class RoundManager:
         self.table = table
         self.action_order = []
         self.action_index = 0
-        self.waiting_for_human = False
 
     def start_round(self):
         self.action_order = self.get_action_order()
         self.action_index = 0
-
-        self.waiting_for_human = False
 
     def reset_for_new_round(self):
         self.action_order = self.get_action_order()
@@ -24,7 +21,6 @@ class RoundManager:
             p.reset_for_new_round()
 
         self.table.last_raiser = None
-        self.waiting_for_human = False
 
     def get_action_order(self):
         active_players = [p for p in self.table.seats if p.is_active and not p.has_acted]
@@ -49,8 +45,11 @@ class RoundManager:
             current_player = self.action_order[self.action_index]
 
             if current_player.is_human:
-                self.waiting_for_human = True
-                return State.WAITING_FOR_HUMAN
+
+                return {
+                    "status": State.WAITING_FOR_HUMAN,
+                    "legal_actions": Action.get_legal_actions(current_player, self.table)
+                }
 
             # AIアクション
             try:
@@ -73,6 +72,10 @@ class RoundManager:
                 else:
                     self.action_order = self.get_action_order()
                     self.action_index = 0
+            return {
+                "status": State.RUNNING,
+                "next_actions": self.step_ai_actions()
+            }
 
     def receive_human_action(self, action, amount):
         current_player = self.action_order[self.action_index]
@@ -87,7 +90,6 @@ class RoundManager:
             self.reset_has_acted_except(current_player)
 
         self.action_index += 1
-        self.waiting_for_human = False
 
         return self.step_ai_actions()
 
