@@ -93,7 +93,7 @@ class RoundManager:
 
     def reset_has_acted_except(self, current_player):
         for p in self.action_order:
-            if p != current_player:
+            if p != current_player and p.is_active:
                 p.has_acted = False
 
     def is_betting_round_over(self):
