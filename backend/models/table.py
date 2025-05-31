@@ -103,11 +103,9 @@ class Table:
             "pot": self.pot,
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
-            "btn_index": self.btn_index,
+            "btn_player": self.seats[self.btn_index]
             "last_raiser": self.last_raiser.name if self.last_raiser else None,
             "seats": [
                 p.to_dict(show_hand=(show_all_hands or p.is_human)) if p else None
                 for p in self.seats
             ],
-            "is_hand_in_progress": self.is_hand_in_progress
-        }
