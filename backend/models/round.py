@@ -6,6 +6,7 @@ from models.enum import Round, State
 class RoundManager:
     def __init__(self, table):
         self.table = table
+        self.action_log = []
         self.action_order = []
         self.action_index = 0
 
@@ -40,42 +41,46 @@ class RoundManager:
         return ordered_players
     
     def step_ai_actions(self):
-        # AIが行動し、人間の番になるまで繰り返す
         while self.action_index < len(self.action_order):
             current_player = self.action_order[self.action_index]
-
+    
             if current_player.is_human:
-
                 return {
                     "status": State.WAITING_FOR_HUMAN,
-                    "legal_actions": Action.get_legal_actions(current_player, self.table)
+                    "legal_actions": Action.get_legal_actions(current_player, self.table),
+                    "action_log": self.table.action_log
                 }
-
-            # AIアクション
+    
             try:
                 action, amount = current_player.decide_action(self.table)
             except Exception as e:
                 raise RuntimeError(f"AIアクション失敗: {e}")
-
+    
             Action.apply_action(current_player, self.table, action, amount)
             self.log_action(current_player, action, amount)
-
+    
             if action in [Action.BET, Action.RAISE] and current_player.current_bet == self.table.current_bet:
-                self.table.last_raiser = current_player
+                self.table.last_raiser = current_player.name
                 self.reset_has_acted_except(current_player)
-
+    
             self.action_index += 1
-
+    
             if self.action_index >= len(self.action_order):
                 if self.is_betting_round_over():
-                    return self.advance_round()
+                    result = self.advance_round()
+                    return {
+                        "status": State.ROUND_OVER,
+                        "result": result,
+                        "action_log": self.table.action_log
+                    }
                 else:
                     self.action_order = self.get_action_order()
                     self.action_index = 0
-            return {
-                "status": State.RUNNING,
-                "next_actions": self.step_ai_actions()
-            }
+    
+        return {
+            "status": State.AI_DONE,
+            "log": self.table.action_log
+        }
 
     def receive_human_action(self, action, amount):
         current_player = self.action_order[self.action_index]
