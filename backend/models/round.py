@@ -37,43 +37,60 @@ class RoundManager:
         ]
         return ordered_players
     
-    def step_ai_actions(self):
-        # AIが行動し、人間の番になるまで繰り返す
-        while self.action_index < len(self.action_order):
+    def step_ai_action_once(self):
+        # 全アクション済み or ハンド終了
+        if self.table.round == Round.SHOWDOWN:
+            return {"status": State.HAND_OVER}
+
+        # まだアクション順がない（ラウンド開始直後）
+        if not self.action_order or self.action_index >= len(self.action_order):
+            self.action_order = self.get_action_order()
+            self.action_index = 0
+
+        # 次のプレイヤーを取得
+        if self.action_index < len(self.action_order):
             current_player = self.action_order[self.action_index]
+        else:
+            # ラウンド終了チェックと進行
+            if self.is_betting_round_over():
+                return self.advance_round()
+            else:
+                self.action_order = self.get_action_order()
+                self.action_index = 0
+                return {"status": State.RUNNING}
 
-            if current_player.is_human:
-
-                return {
-                    "status": State.WAITING_FOR_HUMAN,
-                    "legal_actions": Action.get_legal_actions(current_player, self.table)
-                }
-
-            # AIアクション
-            try:
-                action, amount = current_player.decide_action(self.table)
-            except Exception as e:
-                raise RuntimeError(f"AIアクション失敗: {e}")
-
-            Action.apply_action(current_player, self.table, action, amount)
-            self.log_action(current_player, action, amount)
-
-            if action in [Action.BET, Action.RAISE] and current_player.current_bet == self.table.current_bet:
-                self.table.last_raiser = current_player
-                self.reset_has_acted_except(current_player)
-
-            self.action_index += 1
-
-            if self.action_index >= len(self.action_order):
-                if self.is_betting_round_over():
-                    return self.advance_round()
-                else:
-                    self.action_order = self.get_action_order()
-                    self.action_index = 0
+        # 人間の番なら処理を止める
+        if current_player.is_human:
             return {
-                "status": State.RUNNING,
-                "next_actions": self.step_ai_actions()
+                "status": State.WAITING_FOR_HUMAN,
+                "legal_actions": Action.get_legal_actions(current_player, self.table)
             }
+
+        # AIがアクションを選択して適用
+        try:
+            action, amount = current_player.decide_action(self.table)
+        except Exception as e:
+            raise RuntimeError(f"AIアクション失敗: {e}")
+
+        Action.apply_action(current_player, self.table, action, amount)
+        self.log_action(current_player, action, amount)
+
+        # レイズした場合、他プレイヤーの has_acted をリセット
+        if action in [Action.BET, Action.RAISE] and current_player.current_bet == self.table.current_bet:
+            self.table.last_raiser = current_player
+            self.reset_has_acted_except(current_player)
+
+        self.action_index += 1
+
+        return {
+            "status": State.RUNNING,
+            "action": {
+                "player": current_player.name,
+                "action": action,
+                "amount": amount,
+                "round": self.table.round.title(),
+            }
+        }
 
     def receive_human_action(self, action, amount):
         current_player = self.action_order[self.action_index]
