@@ -19,7 +19,6 @@ class HumanPlayer(Player):
 
     def to_dict(self, show_hand=True):
         return self.base_dict(show_hand=show_hand)
-    
 
 class WaitingForHumanAction(Exception):
     pass

@@ -6,7 +6,6 @@ import random
 class AIPlayer(Player):
     def __init__(self, name):
         super().__init__(name=f"{name}AI", stack=10000)
-        self.is_human = False
 
     def decide_action(self, table):
         legal_actions = Action.get_legal_actions(self, table)
@@ -29,3 +28,4 @@ class AIPlayer(Player):
     
     def to_dict(self, show_hand=False):
         return self.base_dict(show_hand=show_hand)
+    

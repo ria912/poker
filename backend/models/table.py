@@ -1,5 +1,6 @@
 # models/table.py
 from models.deck import Deck
+from models.player import Player
 from models.human_player import HumanPlayer
 from models.ai_player import AIPlayer
 from models.position import set_btn_index, assign_positions
@@ -13,7 +14,6 @@ class Table:
         self.min_bet = big_blind
 
         self.seats = [None] * seat_count
-        self.seat_assign_players()
         self.btn_index = None
 
         self.deck = Deck()
@@ -25,16 +25,9 @@ class Table:
         self.action_log = []
         self.last_raiser = None
         
-        self.is_hand_in_progress = False  # フロントでの状態判定に利用
-
-    def seat_assign_players(self):
-        players = [HumanPlayer(name="YOU")]
-        for i in range(1, len(self.seats)):
-            players.append(AIPlayer(name=f"AI{i}"))
-
-        for i, p in enumerate(players):
-            p.seat_number = i + 1
-            self.seats[i] = p
+    def seat_assign_players(self, human_names=["YOU"], ai_count=5):
+        players = [HumanPlayer(name=n) for n in human_names]
+        players += [AIPlayer(name=f"AI{i+1}") for i in range(ai_count)]
 
     def reset_for_new_hand(self):
         self.round = Round.PREFLOP
@@ -43,7 +36,17 @@ class Table:
         self.current_bet = 0
         self.min_bet = self.big_blind
         self.last_raiser = None
-        self.seats = self._reset_players()
+        for p in self.seats:
+            if p:
+                Player.reset_for_new_hand(p)
+
+    def reset_for_next_round(self):
+        self.current_bet = 0
+        self.min_bet = self.big_blind
+        self.last_raiser = None
+        for p in self.seats:
+            if p and p.is_active:
+                Player.reset_for_next_round(p)
 
     def start_hand(self):
         self.deck.deck_shuffle()
@@ -53,27 +56,20 @@ class Table:
         # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
-        self.is_hand_in_progress = True
-
-    def _reset_players(self):
-        for player in self.seats:
-            if player:
-                player.reset_for_new_hand()
-        return self.seats
 
     def _post_blinds(self):
-        for player in self.seats:
-            if not player:
+        for p in self.seats:
+            if not p:
                 continue
-            if player.position == 'SB':
-                blind = min(self.small_blind, player.stack)
-                player.stack -= blind
-                player.current_bet = blind
+            if p.position == 'SB':
+                blind = min(self.small_blind, p.stack)
+                p.stack -= blind
+                p.current_bet = blind
                 self.pot += blind
-            elif player.position == 'BB':
-                blind = min(self.big_blind, player.stack)
-                player.stack -= blind
-                player.current_bet = blind
+            elif p.position == 'BB':
+                blind = min(self.big_blind, p.stack)
+                p.stack -= blind
+                p.current_bet = blind
                 self.current_bet = blind
                 self.min_bet = blind
                 self.pot += blind
@@ -109,5 +105,5 @@ class Table:
                 p.to_dict(show_hand=(show_all_hands or p.is_human)) if p else None
                 for p in self.seats
             ],
-            "is_hand_in_progress": self.is_hand_in_progress
+            "action_log": self.action_log,
         }

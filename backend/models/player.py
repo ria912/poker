@@ -11,7 +11,9 @@ class Player:
         self.has_acted = False # アクション済みである
         self.folded = False
         self.all_in = False
-        self.sitting_out = False
+        self.is_human = False # AIで初期化
+
+        self.sitting_out = False # 離席中かどうか
 
     def reset_for_new_hand(self):
         self.hand = []
@@ -21,7 +23,7 @@ class Player:
         self.folded = False
         self.all_in = False
 
-    def reset_for_new_round(self):
+    def reset_for_next_round(self):
         self.current_bet = 0
         self.last_action = None
         self.has_acted = False
@@ -42,7 +44,6 @@ class Player:
             "folded": self.folded,
             "all_in": self.all_in,
             "sitting_out": self.sitting_out,
-            "is_human": self.is_human
         }
         
         if show_hand:
