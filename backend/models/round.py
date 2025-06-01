@@ -150,7 +150,7 @@ class RoundManager:
         return State.ROUND_OVER
 
     def log_action(self, current_player, action, amount):
-        self.table.action_log.append({
+        self.action_log.append({
             "player": current_player.name,
             "action": action,
             "amount": amount,
