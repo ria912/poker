@@ -22,7 +22,6 @@ class Table:
         self.pot = 0
         self.current_bet = 0
         
-        self.action_log = []
         self.last_raiser = None
         
     def seat_assign_players(self, human_names=["YOU"], ai_count=5):
