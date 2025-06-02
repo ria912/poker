@@ -45,7 +45,7 @@ class GameState:
         return self.table.to_dict()
 
     def get_action_log(self):
-        return self.table.action_log
+        return self.round_manager.action_log
 
 # グローバルなゲーム状態（FastAPIエンドポイントで利用）
 game_state = GameState()
