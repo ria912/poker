@@ -35,6 +35,7 @@ class GameState:
         return {"status": result, "state": self.table.to_dict()}
     
     def _make_waiting_response(self):
+        human = next(p for p in self.table.seats if p and p.is_human)
         return {
             "status": State.WAITING_FOR_HUMAN,
             "state": self.table.to_dict(),
