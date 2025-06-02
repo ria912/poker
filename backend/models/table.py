@@ -27,7 +27,10 @@ class Table:
     def seat_assign_players(self, human_names=["YOU"], ai_count=5):
         players = [HumanPlayer(name=n) for n in human_names]
         players += [AIPlayer(name=f"AI{i+1}") for i in range(ai_count)]
-
+        
+        for i, player in enumerate(players[:len(self.seats)]):
+        self.seats[i] = player
+        
     def reset_for_new_hand(self):
         self.round = Round.PREFLOP
         self.board = []
