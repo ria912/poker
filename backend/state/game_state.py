@@ -8,6 +8,7 @@ from fastapi import HTTPException
 class GameState:
     def __init__(self):
         self.table = Table()
+        self.table.assign_players()
         self.round_manager = RoundManager(self.table)
         self.state = State.RUNNING
 
