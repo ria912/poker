@@ -10,15 +10,12 @@ class HumanPlayer(Player):
     def set_action(self, action_dict):
         self.input_action = (action_dict["action"], action_dict.get("amount", 0))
 
-    def decide_action(self, table):
+    def decide_action(self):
         if self.input_action is None:
-            raise WaitingForHumanAction()
+            raise RuntimeError("waiting for action input.")
         action, amount = self.input_action
         self.input_action = None
         return action, amount
 
     def to_dict(self, show_hand=True):
         return self.base_dict(show_hand=show_hand)
-
-class WaitingForHumanAction(Exception):
-    pass

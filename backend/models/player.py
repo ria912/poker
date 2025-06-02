@@ -44,6 +44,7 @@ class Player:
             "folded": self.folded,
             "all_in": self.all_in,
             "sitting_out": self.sitting_out,
+            "is_human": self.is_human,
         }
         
         if show_hand:

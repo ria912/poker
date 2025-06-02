@@ -1,7 +1,7 @@
 # models/round_manager.py
 from models.action import Action
 from models.position import ACTION_ORDER
-from models.enum import Round, State
+from models.enum import Round, Status
 
 class RoundManager:
     def __init__(self, table):
@@ -37,10 +37,10 @@ class RoundManager:
         ]
         return ordered_players
     
-    def step_ai_action(self):
+    def step_one_action(self):
         # 全アクション済み or ハンド終了
         if self.table.round == Round.SHOWDOWN:
-            return {"status": State.HAND_OVER}
+            return {"status": Status.HAND_OVER}
 
         # まだアクション順がない（ラウンド開始直後）
         if not self.action_order or self.action_index >= len(self.action_order):
@@ -57,20 +57,22 @@ class RoundManager:
             else:
                 self.action_order = self.get_action_order()
                 self.action_index = 0
-                return {"status": State.RUNNING}
+                return {"status": Status.RUNNING}
 
         # 人間の番なら処理を止める
         if current_player.is_human:
             return {
-                "status": State.WAITING_FOR_HUMAN,
+                "status": Status.WAITING_FOR_HUMAN,
                 "legal_actions": Action.get_legal_actions(current_player, self.table)
             }
+        else:
+            return self.step_apply_action(current_player)
 
-        # AIがアクションを選択して適用
+    def step_apply_action(self, current_player):
         try:
             action, amount = current_player.decide_action(self.table)
         except Exception as e:
-            raise RuntimeError(f"AIアクション失敗: {e}")
+            raise RuntimeError(f"アクション取得失敗: {e}")
 
         Action.apply_action(current_player, self.table, action, amount)
         self.log_action(current_player, action, amount)
@@ -78,40 +80,21 @@ class RoundManager:
         # レイズした場合、他プレイヤーの has_acted をリセット
         if action in [Action.BET, Action.RAISE] and current_player.current_bet == self.table.current_bet:
             self.table.last_raiser = current_player
-            self.reset_has_acted_except(current_player)
+            for p in self.table.seats:
+                if p and p.is_active and p != current_player:
+                    p.has_acted = False
 
         self.action_index += 1
 
         return {
-            "status": State.RUNNING,
+            "status": Status.RUNNING,
             "action": {
                 "player": current_player.name,
                 "action": action,
                 "amount": amount,
-                "round": self.table.round.title(),
+                "round": self.table.round.name,
             }
         }
-
-    def receive_human_action(self, action, amount):
-        current_player = self.action_order[self.action_index]
-        if not current_player.is_human:
-            raise RuntimeError("receive_human_action内でAIを検出しました。")
-
-        Action.apply_action(current_player, self.table, action, amount)
-        self.log_action(current_player, action, amount)
-
-        if action in [Action.BET, Action.RAISE] and current_player.current_bet == self.table.current_bet:
-            self.table.last_raiser = current_player
-            self.reset_has_acted_except(current_player)
-
-        self.action_index += 1
-
-        return self.step_ai_actions()
-
-    def reset_has_acted_except(self, current_player):
-        for p in self.action_order:
-            if p != current_player and p.is_active:
-                p.has_acted = False
 
     def is_betting_round_over(self):
         active = [p for p in self.table.seats if p.is_active]
@@ -128,26 +111,26 @@ class RoundManager:
             self.table.deal_flop()
             self.table.round = Round.FLOP
             self.reset_for_next_round()
-            return self.step_ai_actions()
+            return self.step_one_action()
 
         elif self.table.round == Round.FLOP:
             self.table.deal_turn()
             self.table.round = Round.TURN
             self.reset_for_next_round()
-            return self.step_ai_actions()
+            return self.step_one_action()
 
         elif self.table.round == Round.TURN:
             self.table.deal_river()
             self.table.round = Round.RIVER
             self.reset_for_next_round()
-            return self.step_ai_actions()
+            return self.step_one_action()
 
         elif self.table.round == Round.RIVER:
             self.table.round = Round.SHOWDOWN
             self.table.award_pot_to_winner()
-            return State.HAND_OVER
+            return {"status": Status.HAND_OVER}
 
-        return State.ROUND_OVER
+        return {"status": Status.ROUND_OVER}
 
     def log_action(self, current_player, action, amount):
         self.action_log.append({

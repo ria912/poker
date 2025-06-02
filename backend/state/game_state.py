@@ -2,23 +2,25 @@
 from models.table import Table
 from models.round import RoundManager
 from models.action import Action
-from models.enum import State
+from models.enum import Status
 from fastapi import HTTPException
 
 class GameState:
     def __init__(self):
         self.table = Table()
-        self.table.assign_players()
         self.round_manager = RoundManager(self.table)
-        self.state = State.RUNNING
+        self.state = Status.RUNNING
 
     def start_new_hand(self):
+        if self.table.seats is None:
+            self.table.seat_assign_players()
+
         self.table.reset_for_new_hand()
         self.table.start_hand()
         self.round_manager.start_round()
         result = self.round_manager.step_ai_actions()
 
-        if result == State.WAITING_FOR_HUMAN:
+        if result == Status.WAITING_FOR_HUMAN:
             return self._make_waiting_response()
         return {"status": result, "state": self.table.to_dict()}
 
@@ -30,16 +32,16 @@ class GameState:
             raise HTTPException(status_code=400, detail="無効なアクション")
         result = self.round_manager.receive_human_action(action_enum, amount)
 
-        if result == State.WAITING_FOR_HUMAN:
+        if result == Status.WAITING_FOR_HUMAN:
             return self._make_waiting_response()
         return {"status": result, "state": self.table.to_dict()}
-    
+
     def _make_waiting_response(self):
         human = next(p for p in self.table.seats if p and p.is_human)
         return {
-            "status": State.WAITING_FOR_HUMAN,
+            "status": Status.WAITING_FOR_HUMAN,
             "state": self.table.to_dict(),
-            "legal_actions": Action.get_legal_actions(self.table.human_player, self.table),
+            "legal_actions": Action.get_legal_actions(human, self.table),
         }
 
     def get_state(self):

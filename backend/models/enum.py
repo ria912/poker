@@ -23,7 +23,7 @@ class Round(str, Enum):
     RIVER = "river"
     SHOWDOWN = "showdown"
 
-class State(str, Enum):
+class Status(str, Enum):
     RUNNING = "running"
     WAITING_FOR_HUMAN = "waiting_for_human"
     ROUND_OVER = "round_over"
