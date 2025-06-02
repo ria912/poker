@@ -18,20 +18,19 @@ class GameState:
         self.table.reset_for_new_hand()
         self.table.start_hand()
         self.round_manager.start_round()
-        result = self.round_manager.step_ai_actions()
+        while True:
+            result = self.round_manager.step_one_action()
+            if result == Status.WAITING_FOR_HUMAN:
+                return self._make_waiting_response()
+            elif result == Status.HAND_OVER:
+                break
 
-        if result == Status.WAITING_FOR_HUMAN:
-            return self._make_waiting_response()
         return {"status": result, "state": self.table.to_dict()}
 
     def receive_human_action(self, action: str, amount: int):
-        """人間のアクションを適用し、次のAIへ進める"""
-        try:
-            action_enum = Action(action)
-        except HTTPException:
-            raise HTTPException(status_code=400, detail="無効なアクション")
-        result = self.round_manager.receive_human_action(action_enum, amount)
-
+        human = next(p for p in self.table.seats if p and p.is_human)
+        human.set_pending_action(Action(action), amount)  # アクションセット
+        result = self.round_manager.step_one_action()  # step_one_actionで decide_action 呼び出し
         if result == Status.WAITING_FOR_HUMAN:
             return self._make_waiting_response()
         return {"status": result, "state": self.table.to_dict()}

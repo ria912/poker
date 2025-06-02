@@ -4,18 +4,24 @@ from models.player import Player
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):
         super().__init__(name=name, stack=stack)
+        self.pending_action = None
+        self.pending_amount = None
         self.is_human = True
-        self.input_action = None
 
-    def set_action(self, action_dict):
-        self.input_action = (action_dict["action"], action_dict.get("amount", 0))
+    def set_pending_action(self, action, amount):
+        self.pending_action = action
+        self.pending_amount = amount
 
     def decide_action(self):
-        if self.input_action is None:
-            raise RuntimeError("waiting for action input.")
-        action, amount = self.input_action
-        self.input_action = None
-        return action, amount
+        if self.pending_action is not None:
+            action = self.pending_action
+            amount = self.pending_amount
+            
+            self.pending_action = None
+            self.pending_amount = None
+            return action, amount
+        else:
+            raise ValueError("No pending action set for HumanPlayer.")
 
     def to_dict(self, show_hand=True):
         return self.base_dict(show_hand=show_hand)

@@ -40,7 +40,7 @@ class RoundManager:
     def step_one_action(self):
         # 全アクション済み or ハンド終了
         if self.table.round == Round.SHOWDOWN:
-            return {"status": Status.HAND_OVER}
+            return Status.HAND_OVER
 
         # まだアクション順がない（ラウンド開始直後）
         if not self.action_order or self.action_index >= len(self.action_order):
@@ -57,14 +57,11 @@ class RoundManager:
             else:
                 self.action_order = self.get_action_order()
                 self.action_index = 0
-                return {"status": Status.RUNNING}
+                return Status.RUNNING
 
         # 人間の番なら処理を止める
         if current_player.is_human:
-            return {
-                "status": Status.WAITING_FOR_HUMAN,
-                "legal_actions": Action.get_legal_actions(current_player, self.table)
-            }
+            return Status.WAITING_FOR_HUMAN
         else:
             return self.step_apply_action(current_player)
 
@@ -86,15 +83,7 @@ class RoundManager:
 
         self.action_index += 1
 
-        return {
-            "status": Status.RUNNING,
-            "action": {
-                "player": current_player.name,
-                "action": action,
-                "amount": amount,
-                "round": self.table.round.name,
-            }
-        }
+        return Status.RUNNING
 
     def is_betting_round_over(self):
         active = [p for p in self.table.seats if p.is_active]
@@ -128,9 +117,9 @@ class RoundManager:
         elif self.table.round == Round.RIVER:
             self.table.round = Round.SHOWDOWN
             self.table.award_pot_to_winner()
-            return {"status": Status.HAND_OVER}
+            return Status.HAND_OVER
 
-        return {"status": Status.ROUND_OVER}
+        return Status.ROUND_OVER
 
     def log_action(self, current_player, action, amount):
         self.action_log.append({
