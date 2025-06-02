@@ -37,7 +37,7 @@ class RoundManager:
         ]
         return ordered_players
     
-    def step_ai_action_once(self):
+    def step_ai_action(self):
         # 全アクション済み or ハンド終了
         if self.table.round == Round.SHOWDOWN:
             return {"status": State.HAND_OVER}
