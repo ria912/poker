@@ -2,66 +2,62 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HOLDEM_APP</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/alpinejs" defer></script>
+  <script defer src="js/app.js"></script>
 </head>
-<body class="bg-gray-900 text-white p-4">
+<body class="bg-green-900 text-white p-4" x-data="pokerApp()">
 
-  <div x-data="pokerApp()" class="max-w-3xl mx-auto space-y-6">
-
-    <!-- ゲーム開始 -->
-    <div class="text-center">
-      <button @click="startGame"
-              class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
-        ゲーム開始
-      </button>
-    </div>
-
-    <!-- ステータス表示 -->
-    <div class="text-center space-y-1">
-      <div>Round: <span x-text="state.round"></span></div>
-      <div>Pot: <span x-text="state.pot + ' BB'"></span></div>
-      <div>Board: <span x-text="formatBoard(state.board)"></span></div>
-    </div>
-
-    <!-- プレイヤー表示 -->
-    <div class="relative w-full h-[400px] bg-green-800 rounded-xl mx-auto">
-      <template x-for="(player, i) in state.seats" :key="i">
-        <div x-show="player"
-             :class="seatPositionClass(player.seat_number)"
-             class="absolute text-xs bg-white text-black p-2 rounded shadow w-24 text-center">
-          <p class="font-bold" x-text="player.name"></p>
-          <p x-text="player.stack + ' BB'"></p>
-          <p x-text="'Pos: ' + player.position"></p>
-          <p x-text="player.is_turn ? '👉 Turn' : ''"></p>
-        </div>
-      </template>
-    </div>
-
-    <!-- アクション選択 -->
-    <div x-show="isMyTurn" class="text-center space-y-2">
-      <template x-for="action in actionList" :key="action.name">
-        <button @click="selectAction(action.name)"
-                class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded mx-1">
-          <span x-text="action.name.toUpperCase()"></span>
-        </button>
-      </template>
-
-      <div x-show="selectedActionRequiresAmount" class="mt-2">
-        <input type="number" x-model.number="amount" placeholder="金額"
-               class="text-black px-2 py-1 rounded border w-24" />
-        <button @click="submitAction(selectedAction)"
-                class="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">
-          実行
-        </button>
-      </div>
-    </div>
-
+  <!-- ✅ ゲーム開始 -->
+  <div class="mb-4">
+    <button @click="startGame" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+      ゲーム開始
+    </button>
   </div>
 
-  <!-- JavaScript -->
-  <script src="/js/app.js"></script>
+  <!-- ✅ テーブル情報 -->
+  <div class="mb-4 border border-white p-4 rounded">
+    <div>ラウンド: <span x-text="state.round"></span></div>
+    <div>ポット: <span x-text="state.pot"></span></div>
+    <div>ボード: <span x-text="formatBoard(state.board)"></span></div>
+  </div>
+
+  <!-- ✅ プレイヤー一覧 -->
+  <div class="grid grid-cols-3 gap-2 mb-6">
+    <template x-for="seat in state.seats" :key="seat?.name">
+      <div x-show="seat" class="bg-gray-800 p-2 rounded border border-gray-500">
+        <div class="font-bold" x-text="seat.name"></div>
+        <div x-text="'Stack: ' + seat.stack"></div>
+        <div x-text="'Bet: ' + seat.current_bet"></div>
+        <div x-text="'Position: ' + seat.position"></div>
+        <template x-if="seat.is_human">
+          <div class="mt-2 text-yellow-400">← あなた</div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <!-- ✅ アクション選択 -->
+  <div x-show="isMyTurn" class="p-4 bg-gray-900 border border-white rounded">
+    <div class="mb-2 font-bold">アクションを選んでください:</div>
+    <div class="flex gap-2 flex-wrap mb-2">
+      <template x-for="a in actionList" :key="a.action">
+        <button
+          class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700"
+          @click="selectAction(a.action)"
+          x-text="a.action.toUpperCase()"
+        ></button>
+      </template>
+    </div>
+
+    <div x-show="selectedActionRequiresAmount" class="mb-2">
+      <input type="number" x-model="amount" class="text-black px-2 py-1 rounded" placeholder="金額" />
+    </div>
+
+    <button @click="submitAction" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+      送信
+    </button>
+  </div>
+
 </body>
 </html>

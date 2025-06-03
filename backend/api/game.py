@@ -2,39 +2,47 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from state.game_state import game_state
-from models.enum import Action
+from models.enum import Status
 
 router = APIRouter()
 
-# アクション用リクエストボディ
+
+# ----- リクエスト用モデル -----
 class ActionRequest(BaseModel):
     action: str
-    amount: int = 0  # raise/betの場合のみ使用
+    amount: int = 0  # チェックやフォールドなど、amount不要なケースを考慮
 
-# 新しいハンドを開始
-@router.post("/api/game/start")
+
+# ----- POST /api/game/start -----
+@router.post("/game/start")
 def start_game():
     try:
-        return game_state.start_new_hand()
+        result = game_state.start_new_hand()
+        return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"ゲーム開始エラー: {str(e)}")
 
-# 人間のアクションを受け取る
-@router.post("/api/game/action")
-def submit_action(req: ActionRequest):
+
+# ----- POST /api/game/action -----
+@router.post("/game/action")
+def post_action(request: ActionRequest):
     try:
-        return game_state.receive_human_action(req.action, req.amount)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        result = game_state.receive_human_action(request.action, request.amount)
+        return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"アクションエラー: {str(e)}")
 
-# ゲーム状態を取得（SPAの定期ポーリング用など）
-@router.get("/api/game/state")
-def get_game_state():
-    return game_state.get_state()
 
-# アクションログを取得（リプレイ・履歴表示などに使える）
-@router.get("/api/game/log")
+# ----- GET /api/game/state -----
+@router.get("/game/state")
+def get_state():
+    return {
+        "status": game_state.state,
+        "state": game_state.get_state()
+    }
+
+
+# ----- GET /api/game/log -----
+@router.get("/game/log")
 def get_action_log():
     return game_state.get_action_log()

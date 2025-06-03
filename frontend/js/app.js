@@ -1,76 +1,70 @@
 function pokerApp() {
   return {
+    // --- 状態 ---
     state: {
-      round: '',
+      round: "",
       pot: 0,
       board: [],
-      seats: []
+      seats: [],
     },
     isMyTurn: false,
     actionList: [],
-    selectedAction: '',
-    amount: null,
+    selectedAction: "",
+    amount: 0,
 
-    startGame() {
-      fetch("/api/game/start", { method: "POST" })
-        .then(() => this.fetchState());
+    // --- 初期化 ---
+    async startGame() {
+      try {
+        const res = await fetch("/api/game/start", {
+          method: "POST",
+        });
+        const data = await res.json();
+        this.updateState(data);
+      } catch (err) {
+        console.error("ゲーム開始エラー:", err);
+      }
     },
 
-    fetchState() {
-      fetch("/api/game/state")
-        .then(res => res.json())
-        .then(data => this.updateState(data));
+    // --- アクション送信 ---
+    async submitAction() {
+      try {
+        const res = await fetch("/api/game/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: this.selectedAction,
+            amount: parseInt(this.amount) || 0,
+          }),
+        });
+        const data = await res.json();
+        this.updateState(data);
+      } catch (err) {
+        console.error("アクション送信エラー:", err);
+      }
     },
 
+    // --- ステート更新 ---
     updateState(data) {
-      this.state = data;
-      const human = data.seats.find(p => p && p.is_human);
-      this.isMyTurn = human?.is_turn || false;
-      this.actionList = human?.legal_actions || [];
+      this.state = data.state;
+      this.isMyTurn = data.status === "WAITING_FOR_HUMAN";
+      this.actionList = data.legal_actions || [];
+      this.selectedAction = "";
+      this.amount = 0;
     },
 
-    selectAction(actionName) {
-      this.selectedAction = actionName;
-      if (!this.selectedActionRequiresAmount) {
-        this.submitAction(actionName);
-      }
+    // --- アクション選択 ---
+    selectAction(action) {
+      this.selectedAction = action;
     },
 
-    submitAction(actionName) {
-      const payload = { name: actionName };
-      if (['raise', 'bet'].includes(actionName)) {
-        payload.amount = this.amount;
-      }
-
-      fetch("/api/game/action", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(() => {
-        this.amount = null;
-        this.selectedAction = '';
-        this.fetchState();
-      });
-    },
-
-    formatBoard(board) {
-      return board && board.length ? board.join(" ") : "なし";
-    },
-
-    seatPositionClass(seatNumber) {
-      const positions = {
-        1: "top-0 left-1/2 -translate-x-1/2",
-        2: "top-1/4 right-0",
-        3: "bottom-1/4 right-0",
-        4: "bottom-0 left-1/2 -translate-x-1/2",
-        5: "bottom-1/4 left-0",
-        6: "top-1/4 left-0"
-      };
-      return positions[seatNumber] || "";
-    },
-
+    // --- Raise / Bet 時だけ金額入力を表示 ---
     get selectedActionRequiresAmount() {
-      return ['raise', 'bet'].includes(this.selectedAction);
-    }
+      return ["raise", "bet"].includes(this.selectedAction);
+    },
+
+    // --- ボード整形表示 ---
+    formatBoard(board) {
+      return board.join(" ");
+    },
   };
 }

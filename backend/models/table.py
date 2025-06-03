@@ -92,6 +92,7 @@ class Table:
         self.board.append(self.deck.draw())
 
     def showdown(self):
+        pass # 後で開発
 
     def to_dict(self, show_all_hands=False):
         return {

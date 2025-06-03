@@ -9,7 +9,7 @@ class GameState:
     def __init__(self):
         self.table = Table()
         self.round_manager = RoundManager(self.table)
-        self.state = Status.RUNNING
+        self.status = Status.RUNNING
 
     def start_new_hand(self):
         if self.table.seats is None:
@@ -44,7 +44,10 @@ class GameState:
         }
 
     def get_state(self):
-        return self.table.to_dict()
+        return {
+            "status": self.status,
+            "state": self.table.to_dict(),
+        }
 
     def get_action_log(self):
         return self.round_manager.action_log

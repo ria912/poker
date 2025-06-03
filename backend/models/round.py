@@ -11,6 +11,7 @@ class RoundManager:
         self.action_index = 0
 
     def start_round(self):
+        self.action_log = []
         self.action_order = self.get_action_order()
         self.action_index = 0
 
