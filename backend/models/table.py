@@ -92,8 +92,6 @@ class Table:
         self.board.append(self.deck.draw())
 
     def showdown(self):
-        self.is_hand_in_progress = False
-        # 勝者の決定とポットの配分は、RoundManagerで行う
 
     def to_dict(self, show_all_hands=False):
         return {
