@@ -1,5 +1,5 @@
 # models/human_player.py
-from models.player import Player
+from backend.models.player import Player
 
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):

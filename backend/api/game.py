@@ -1,8 +1,7 @@
 # api/game.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from state.game_state import game_state
-from models.enum import Status
+from backend.state.game_state import game_state
 
 router = APIRouter()
 
@@ -37,7 +36,7 @@ def post_action(request: ActionRequest):
 @router.get("/game/state")
 def get_state():
     return {
-        "status": game_state.state,
+        "status": game_state.status,
         "state": game_state.get_state()
     }
 

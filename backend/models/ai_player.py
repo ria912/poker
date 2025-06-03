@@ -1,6 +1,6 @@
 # models/ai_player.py
-from models.player import Player
-from models.action import Action
+from backend.models.player import Player
+from backend.models.action import Action
 import random
 
 class AIPlayer(Player):

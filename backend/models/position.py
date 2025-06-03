@@ -1,6 +1,6 @@
 # models/position.py
-from models.enum import Position
-from models import utils
+from backend.models.enum import Position
+from backend.models import utils
 # ポジション割り当ての順番（アクション順）
 ACTION_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN]
 # player数に応じて使用するポジションを決定するためのリスト

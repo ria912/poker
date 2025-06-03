@@ -1,10 +1,10 @@
 # models/table.py
-from models.deck import Deck
-from models.player import Player
-from models.human_player import HumanPlayer
-from models.ai_player import AIPlayer
-from models.position import set_btn_index, assign_positions
-from models.enum import Round
+from backend.models.deck import Deck
+from backend.models.player import Player
+from backend.models.human_player import HumanPlayer
+from backend.models.ai_player import AIPlayer
+from backend.models.position import set_btn_index, assign_positions
+from backend.models.enum import Round
 
 
 class Table:
