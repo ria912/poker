@@ -22,6 +22,8 @@ class GameState:
             result = self.round_manager.step_one_action()
             if result == Status.WAITING_FOR_HUMAN:
                 return self._make_waiting_response()
+            elif result == Status.RUNNING:
+                return self.get_state()
             elif result == Status.HAND_OVER:
                 break
 
@@ -38,13 +40,16 @@ class GameState:
     def _make_waiting_response(self):
         human = next(p for p in self.table.seats if p and p.is_human)
         return {
-            "status": Status.WAITING_FOR_HUMAN,
+            "status": Status.WAITING_FOR_HUMAN.value,
             "state": self.table.to_dict(),
             "legal_actions": Action.get_legal_actions(human, self.table),
         }
 
     def get_state(self):
-        return self.round_manager.get_state()
+        return {
+            "status": self.round_manager.status.value,
+            "state": self.table.to_dict(),
+        }
 
     def get_action_log(self):
         return self.round_manager.action_log()
