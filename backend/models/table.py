@@ -4,7 +4,7 @@ from backend.models.player import Player
 from backend.models.human_player import HumanPlayer
 from backend.models.ai_player import AIPlayer
 from backend.models.position import set_btn_index, assign_positions
-from backend.models.enum import Round
+from backend.models.enum import Round, Position
 
 
 class Table:
@@ -54,8 +54,8 @@ class Table:
     def start_hand(self):
         self.deck.deck_shuffle()
         # BTNのローテーション・ポジションの割り当て
-        self.btn_index = set_btn_index(self)
-        assign_positions(self)
+        self.btn_index = position.set_btn_index(self)
+        position.assign_positions(self.seats)
         # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
@@ -64,12 +64,12 @@ class Table:
         for p in self.seats:
             if not p:
                 continue
-            if p.position == 'SB':
+            if p.position == Position.SB:
                 blind = min(self.small_blind, p.stack)
                 p.stack -= blind
                 p.current_bet = blind
                 self.pot += blind
-            elif p.position == 'BB':
+            elif p.position == Position.BB:
                 blind = min(self.big_blind, p.stack)
                 p.stack -= blind
                 p.current_bet = blind
@@ -96,7 +96,7 @@ class Table:
 
     def to_dict(self, show_all_hands=False):
         return {
-            "round": self.round.title(),
+            "round": self.round,
             "board": self.board,
             "pot": self.pot,
             "current_bet": self.current_bet,
