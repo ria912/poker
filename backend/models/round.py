@@ -9,13 +9,9 @@ class RoundManager:
         self.action_log = []
         self.action_order = []
         self.action_index = 0
+        self.status = Status.RUNNING
 
-    def start_round(self):
-        self.action_log = []
-        self.action_order = self.get_action_order()
-        self.action_index = 0
-
-    def reset_for_next_round(self):
+    def reset_for_new_round(self):
         self.action_order = self.get_action_order()
         self.action_index = 0
 
@@ -38,6 +34,11 @@ class RoundManager:
         ]
         return ordered_players
     
+    @property
+    def current_player(self):
+        current_player = self.action_order[self.action_index]
+        return current_player
+    
     def step_one_action(self):
         # 全アクション済み or ハンド終了
         if self.table.round == Round.SHOWDOWN:
@@ -48,31 +49,33 @@ class RoundManager:
             self.action_order = self.get_action_order()
             self.action_index = 0
 
-        # 次のプレイヤーを取得
-        if self.action_index < len(self.action_order):
-            current_player = self.action_order[self.action_index]
-        else:
-            # ラウンド終了チェックと進行
+            self.is_betting_round_over()
             if self.is_betting_round_over():
                 return self.advance_round()
             else:
                 self.action_order = self.get_action_order()
                 self.action_index = 0
-                return Status.RUNNING
 
-        # 人間の番なら処理を止める
-        if current_player.is_human:
-            return Status.WAITING_FOR_HUMAN
+                self.step_apply_action()
+                self.status = Status.RUNNING
+                return self.status
+
+        current_player = self.current_player
+        if current_player.is_human: # 人間の番なら処理を止める
+            self.status = Status.WAITING_FOR_HUMAN
+            return self.status
         else:
             return self.step_apply_action(current_player)
 
-    def step_apply_action(self, current_player):
+    def step_apply_action(self, current_player=None):
+        if current_player is None:
+            current_player = self.current_player
         try:
             action, amount = current_player.decide_action(self.table)
         except Exception as e:
             raise RuntimeError(f"アクション取得失敗: {e}")
 
-        Action.apply_action(current_player, self.table, action, amount)
+        Action.apply_action(self.table, current_player, action, amount)
         self.log_action(current_player, action, amount)
 
         # レイズした場合、他プレイヤーの has_acted をリセット
@@ -83,8 +86,9 @@ class RoundManager:
                     p.has_acted = False
 
         self.action_index += 1
-
-        return Status.RUNNING
+        
+        self.status = Status.RUNNING
+        return self.status
 
     def is_betting_round_over(self):
         active = [p for p in self.table.seats if p.is_active]
@@ -120,7 +124,9 @@ class RoundManager:
             self.table.award_pot_to_winner()
             return Status.HAND_OVER
 
-        return Status.ROUND_OVER
+        self.status = Status.ROUND_OVER
+        return self.status
+
 
     def log_action(self, current_player, action, amount):
         self.action_log.append({
