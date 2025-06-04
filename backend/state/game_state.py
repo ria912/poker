@@ -44,13 +44,10 @@ class GameState:
         }
 
     def get_state(self):
-        return {
-            "status": self.status,
-            "state": self.table.to_dict(),
-        }
+        return self.round_manager.get_state()
 
     def get_action_log(self):
-        return self.round_manager.action_log
+        return self.round_manager.action_log()
 
 # グローバルなゲーム状態（FastAPIエンドポイントで利用）
 game_state = GameState()
