@@ -19,15 +19,15 @@ class GameState:
         self.table.start_hand()
         self.round_manager.start_round()
         while True:
-            result = self.round_manager.step_one_action()
-            if result == Status.WAITING_FOR_HUMAN:
+            self.status = self.round_manager.step_one_action()
+            if self.status == Status.WAITING_FOR_HUMAN:
                 return self._make_waiting_response()
-            elif result == Status.RUNNING:
+            elif self.status == Status.RUNNING:
                 return self.get_state()
-            elif result == Status.HAND_OVER:
+            elif self.status == Status.HAND_OVER:
                 break
 
-        return {"status": result, "state": self.table.to_dict()}
+        return {"status": self.status, "state": self.table.to_dict()}
 
     def receive_human_action(self, action: str, amount: int):
         human = next(p for p in self.table.seats if p and p.is_human)
