@@ -35,7 +35,6 @@ class GameState:
         result = self.round_manager.step_one_action()  # step_one_actionで decide_action 呼び出し
         if result == Status.WAITING_FOR_HUMAN:
             return self._make_waiting_response()
-        return {"status": result, "state": self.table.to_dict()}
 
     def _make_waiting_response(self):
         human = next(p for p in self.table.seats if p and p.is_human)
