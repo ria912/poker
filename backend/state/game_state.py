@@ -17,8 +17,9 @@ class GameState:
         self.table.reset_for_new_hand()
         self.table.start_hand()
         self.round_manager.start_round()
+        
+    def step_untill_response(self):
         while True:
-            self.round_manager.step_one_action()
             if self.round_manager.status == Status.WAITING_FOR_HUMAN:
                 return self._make_waiting_response()
             elif self.round_manager.status == Status.RUNNING:
@@ -30,13 +31,9 @@ class GameState:
 
     def _make_waiting_response(self):
         if self.round_manager.current_player.is_human:
-            return {
-                "status": Status.WAITING_FOR_HUMAN.value,
-                "state": self.table.to_dict(),
-                "legal_actions": Action.get_legal_actions(self.round_manager.current_player, self.table),
-            }
+            return self._build_response(Status.WAITING_FOR_HUMAN, include_legal_actions=True)
         else:
-            raise HTTPException(status_code=500, detail=f"Unexpected human: {self.round_manager.currentplayer}")
+            raise HTTPException(500, f"Unexpected human: {self.round_manager.current_player}")
 
     def receive_human_action(self, action: str, amount: int):
         self.round_manager.current_player.set_pending_action(Action(action), amount)  # アクションセット
@@ -50,15 +47,13 @@ class GameState:
         else:
             raise HTTPException(status_code=500, detail=f"Unexpected status: {self.round_manager.status}")
 
-    def get_state(self):
-        return {
-            "status": self.round_manager.status.value,
+    def _build_response(self, status: Status, include_legal_actions=False):
+        response = {
+            "status": status.value,
             "state": self.table.to_dict(),
         }
-
-    @property
-    def action_log(self):
-        return self.round_manager.action_log
-
+    if include_legal_actions:
+        response["legal_actions"] = Action.get_legal_actions(self.round_manager.current_player, self.table)
+    return response
 # グローバルなゲーム状態（FastAPIエンドポイントで利用）
 game_state = GameState()
