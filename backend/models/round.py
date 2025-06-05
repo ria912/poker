@@ -26,7 +26,6 @@ class RoundManager:
             start_index = 0  # SBから
     
         ordered_positions = ACTION_ORDER[start_index:] + ACTION_ORDER[:start_index]
-    
         # ポジション順でアクティブプレイヤーを並べ替え
         ordered_players = [
             p for pos in ordered_positions
@@ -126,7 +125,11 @@ class RoundManager:
 
         self.status = Status.ROUND_OVER
         return self.status
-
+    
+    def advance_until_human_or_end(self):
+        while self.status == Status.RUNNING:
+            self.step_one_action()
+        return self.status
 
     def log_action(self, current_player, action, amount):
         self.action_log.append({
