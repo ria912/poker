@@ -19,16 +19,21 @@ class GameState:
         self.round_manager.start_round()
         
     def step_untill_response(self):
+        status = self.round_manager.advance_until_human_or_end()
         while True:
-            if self.round_manager.status == Status.WAITING_FOR_HUMAN:
+            if status == Status.WAITING_FOR_HUMAN:
                 return self._make_waiting_response()
-            elif self.round_manager.status == Status.RUNNING:
+            elif status == Status.HAND_OVER:
                 return self.get_state()
-            elif self.round_manager.status == Status.HAND_OVER:
-                break
-
-        return {"status": self.round_manager.status.value, "state": self.table.to_dict()}
-
+            def _step_until_response(self):
+    status = self.round_manager.advance_until_human_or_end()
+    if status == Status.WAITING_FOR_HUMAN:
+        return self._make_waiting_response()
+    elif status == Status.HAND_OVER:
+        return self.get_state()
+    else:
+        raise HTTPException(500, f"Unexpected status: {status}")
+    
     def _make_waiting_response(self):
         if self.round_manager.current_player.is_human:
             return self._build_response(Status.WAITING_FOR_HUMAN, include_legal_actions=True)
