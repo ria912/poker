@@ -74,7 +74,7 @@ class RoundManager:
 
         self.action_index += 1
         
-        self.status = Status.RUNNING
+        self.status = Status.AI_ACTED
         return self.status
 
     def is_betting_round_over(self):
@@ -115,7 +115,7 @@ class RoundManager:
         return self.status
     
     def advance_until_human_or_end(self):
-        while self.status == Status.RUNNING:
+        while self.status == Status.AI_ACTED:
             self.step_one_action()
         return self.status
 
