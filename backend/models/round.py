@@ -39,32 +39,22 @@ class RoundManager:
         return current_player
     
     def step_one_action(self):
-        # 全アクション済み or ハンド終了
         if self.table.round == Round.SHOWDOWN:
             return Status.HAND_OVER
-
-        # まだアクション順がない（ラウンド開始直後）
+    
         if not self.action_order or self.action_index >= len(self.action_order):
             self.action_order = self.get_action_order()
             self.action_index = 0
-
-            self.is_betting_round_over()
+    
             if self.is_betting_round_over():
                 return self.advance_round()
-            else:
-                self.action_order = self.get_action_order()
-                self.action_index = 0
-
-                self.step_apply_action()
-                self.status = Status.RUNNING
-                return self.status
-
+    
         current_player = self.current_player
-        if current_player.is_human: # 人間の番なら処理を止める
+        if current_player.is_human:
             self.status = Status.WAITING_FOR_HUMAN
             return self.status
-        else:
-            return self.step_apply_action(current_player)
+    
+        return self.step_apply_action(current_player)
 
     def step_apply_action(self, current_player=None):
         if current_player is None:
