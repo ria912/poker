@@ -25,6 +25,7 @@ class Round(str, Enum):
 
 class Status(str, Enum):
     RUNNING = "running"
+    AI_ACTED = "ai_acted"
     WAITING_FOR_HUMAN = "waiting_for_human"
     ROUND_OVER = "round_over"
     HAND_OVER = "hand_over"
