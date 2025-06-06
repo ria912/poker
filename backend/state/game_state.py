@@ -19,17 +19,15 @@ class GameState:
         self.round_manager.start_round()
         return self._step_until_response()
         
-    def _step_untill_response(self):
-        status = self.round_manager.advance_until_human_or_end()
+    def _step_until_response(self):
         while True:
+            status = self.round_manager.advance_until_human_or_end()
             if status == Status.WAITING_FOR_HUMAN:
                 return self._make_waiting_response()
             elif status == Status.HAND_OVER:
                 return self._build_response(Status.HAND_OVER)
-            elif self.round_manager.status == Status.RUNNING:
-                self.round_manager.step_one_action()
-            else:
-                raise HTTPException(500, f"Unexpected status: {status}")
+    
+        raise HTTPException(500, f"Unexpected status: {status}")
             
     def _make_waiting_response(self):
         if self.round_manager.current_player.is_human:
@@ -47,8 +45,9 @@ class GameState:
             "status": status.value,
             "state": self.table.to_dict(),
         }
-    if include_legal_actions:
-        response["legal_actions"] = Action.get_legal_actions(self.round_manager.current_player, self.table)
-    return response
+        if include_legal_actions:
+            response["legal_actions"] = Action.get_legal_actions(self.round_manager.current_player, self.table)
+        return response
+        
 # グローバルなゲーム状態（FastAPIエンドポイントで利用）
 game_state = GameState()
