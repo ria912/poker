@@ -43,20 +43,18 @@ class RoundManager:
             return Status.HAND_OVER
     
         if not self.action_order or self.action_index >= len(self.action_order):
-            self.action_order = self.get_action_order()
-            self.action_index = 0
-    
             if self.is_betting_round_over():
                 return self.advance_round()
+            self.reset_for_new_round()
     
         current_player = self.current_player
         if current_player.is_human:
             self.status = Status.WAITING_FOR_HUMAN
             return self.status
-    
+
         return self.step_apply_action(current_player)
 
-    def step_apply_action(self, current_player=None):
+    def step_apply_action(self, current_player):
         if current_player is None:
             current_player = self.current_player
         try:
@@ -123,8 +121,9 @@ class RoundManager:
 
     def log_action(self, current_player, action, amount):
         self.action_log.append({
+            "round": self.table.round.title(),
             "player": current_player.name,
+            "current_bet": current_player.current_bet,
             "action": action,
             "amount": amount,
-            "round": self.table.round.title(),
         })
