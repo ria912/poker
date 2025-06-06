@@ -35,13 +35,4 @@ def post_action(request: ActionRequest):
 # ----- GET /api/game/state -----
 @router.get("/game/state")
 def get_state():
-    return {
-        "status": game_state.status,
-        "state": game_state.get_state()
-    }
-
-
-# ----- GET /api/game/log -----
-@router.get("/game/log")
-def get_action_log():
-    return game_state.get_action_log()
+    return game_state._build_response()
