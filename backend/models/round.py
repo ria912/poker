@@ -55,7 +55,7 @@ class RoundManager:
             self.status = Status.WAITING_AI
             return self.step_apply_action(current_player)
 
-    def step_apply_action(self, current_player):
+    def step_apply_action(self, current_player=None):
         if current_player is None:
             current_player = self.current_player
         try:
