@@ -38,7 +38,8 @@ class RoundManager:
     
     def step_one_action(self):
         if self.table.round == Round.SHOWDOWN:
-            return Status.ROUND_OVER
+            self.status = Status.ROUND_OVER
+            return self.status
     
         if self.action_index >= len(self.action_order):
             if self.is_betting_round_over():
@@ -86,24 +87,32 @@ class RoundManager:
                 return False
         return True
 
+    def advance_until_human_or_end(self):
+        while self.status == Status.AI_ACTED:
+            self.step_one_action()
+        return self.status
+
     def advance_round(self):
         # Round enum に基づく遷移
         if self.table.round == Round.PREFLOP:
             self.table.deal_flop()
             self.table.round = Round.FLOP
             self.reset_action_oder()
+            self.table.last_laiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.FLOP:
             self.table.deal_turn()
             self.table.round = Round.TURN
             self.reset_action_oder()
+            self.table.last_laiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.TURN:
             self.table.deal_river()
             self.table.round = Round.RIVER
             self.reset_action_oder()
+            self.table.last_laiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.RIVER:
@@ -112,11 +121,6 @@ class RoundManager:
             return Status.HAND_OVER
 
         self.status = Status.ROUND_OVER
-        return self.status
-    
-    def advance_until_human_or_end(self):
-        while self.status == Status.AI_ACTED:
-            self.step_one_action()
         return self.status
 
     def log_action(self, current_player, action, amount):
