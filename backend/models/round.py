@@ -11,8 +11,8 @@ class RoundManager:
         self.action_index = 0
         self.status = Status.DEF
 
-    def reset_action_oder(self):
-        self.action_order = self.get_action_order()
+    def reset_action_order(self):
+        self.action_order = self.get_action_order(start_index)
         self.action_index = 0
 
     def get_action_order(self):
@@ -22,8 +22,6 @@ class RoundManager:
             start_index = 2  # LJから
         else:
             start_index = 0  # SBから
-        
-        self.action_index = start_index
     
         ordered_positions = ACTION_ORDER[start_index:] + ACTION_ORDER[:start_index]
         # ポジション順でアクティブプレイヤーを並べ替え
@@ -45,7 +43,8 @@ class RoundManager:
         if self.action_index >= len(self.action_order):
             if self.is_betting_round_over():
                 return self.advance_round()
-            self.reset_action_oder()
+            else:
+                self.reset_action_oder()
     
         current_player = self.current_player
         if current_player.is_human:
@@ -92,19 +91,19 @@ class RoundManager:
         if self.table.round == Round.PREFLOP:
             self.table.deal_flop()
             self.table.round = Round.FLOP
-            self.reset_for_next_round()
+            self.reset_action_oder()
             return self.step_one_action()
 
         elif self.table.round == Round.FLOP:
             self.table.deal_turn()
             self.table.round = Round.TURN
-            self.reset_for_next_round()
+            self.reset_action_oder()
             return self.step_one_action()
 
         elif self.table.round == Round.TURN:
             self.table.deal_river()
             self.table.round = Round.RIVER
-            self.reset_for_next_round()
+            self.reset_action_oder()
             return self.step_one_action()
 
         elif self.table.round == Round.RIVER:
