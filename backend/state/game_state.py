@@ -24,6 +24,8 @@ class GameState:
             status = self.round_manager.advance_until_human_or_end()
             if status == Status.WAITING_FOR_HUMAN:
                 return self._make_waiting_response()
+            elif status == Status.AI_ACTED:
+                return self._build_response(Status.AI_ACTED)
             elif status == Status.HAND_OVER:
                 return self._build_response(Status.HAND_OVER)
     
@@ -38,12 +40,12 @@ class GameState:
     def receive_human_action(self, action: str, amount: int):
         player = self.round_manager.current_player.
         player.set_pending_action(Action(action), amount)
-        self.round_manager.step_apply_action()  # step_aplly_actionで decide_action 呼び出し
+        self.round_manager.step_apply_action()  # player.decide_action 呼び出し
         return self._step_until_response()
 
     def _build_response(self, status: Status, include_legal_actions=False):
         response = {
-            "status": status.value,
+            "status": self.round_manager.status.value,
             "state": self.table.to_dict(),
         }
         if include_legal_actions:
