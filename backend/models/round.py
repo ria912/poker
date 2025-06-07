@@ -12,7 +12,7 @@ class RoundManager:
         self.status = Status.DEF
 
     def reset_action_order(self):
-        self.action_order = self.get_action_order(start_index)
+        self.action_order = self.get_action_order()
         self.action_index = 0
 
     def get_action_order(self):
@@ -45,7 +45,7 @@ class RoundManager:
             if self.is_betting_round_over():
                 return self.advance_round()
             else:
-                self.reset_action_oder()
+                self.reset_action_order()
     
         current_player = self.current_player
         if current_player.is_human:
@@ -97,21 +97,21 @@ class RoundManager:
         if self.table.round == Round.PREFLOP:
             self.table.deal_flop()
             self.table.round = Round.FLOP
-            self.reset_action_oder()
+            self.reset_action_order()
             self.table.last_laiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.FLOP:
             self.table.deal_turn()
             self.table.round = Round.TURN
-            self.reset_action_oder()
+            self.reset_action_order()
             self.table.last_laiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.TURN:
             self.table.deal_river()
             self.table.round = Round.RIVER
-            self.reset_action_oder()
+            self.reset_action_order()
             self.table.last_laiser = None
             return self.step_one_action()
 
