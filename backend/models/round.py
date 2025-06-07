@@ -9,7 +9,7 @@ class RoundManager:
         self.action_log = []
         self.action_order = []
         self.action_index = 0
-        self.status = Status.RUNNING
+        self.status = Status.DEF
 
     def reset_for_new_round(self):
         self.action_order = self.get_action_order()
@@ -40,7 +40,7 @@ class RoundManager:
     
     def step_one_action(self):
         if self.table.round == Round.SHOWDOWN:
-            return Status.HAND_OVER
+            return Status.ROUND_OVER
     
         if not self.action_order or self.action_index >= len(self.action_order):
             if self.is_betting_round_over():
@@ -49,10 +49,11 @@ class RoundManager:
     
         current_player = self.current_player
         if current_player.is_human:
-            self.status = Status.WAITING_FOR_HUMAN
+            self.status = Status.WAITING_HUMAN
             return self.status
-
-        return self.step_apply_action(current_player)
+        elif:
+            self.status = Status.WAITING_AI
+            return self.step_apply_action(current_player)
 
     def step_apply_action(self, current_player):
         if current_player is None:
