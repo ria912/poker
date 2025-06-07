@@ -11,11 +11,9 @@ class RoundManager:
         self.action_index = 0
         self.status = Status.DEF
 
-    def reset_for_new_round(self):
+    def reset_action_oder(self):
         self.action_order = self.get_action_order()
         self.action_index = 0
-
-        self.table.last_raiser = None
 
     def get_action_order(self):
         active_players = [p for p in self.table.seats if p.is_active and not p.has_acted]
@@ -24,6 +22,8 @@ class RoundManager:
             start_index = 2  # LJから
         else:
             start_index = 0  # SBから
+        
+        self.action_index = start_index
     
         ordered_positions = ACTION_ORDER[start_index:] + ACTION_ORDER[:start_index]
         # ポジション順でアクティブプレイヤーを並べ替え
@@ -42,16 +42,16 @@ class RoundManager:
         if self.table.round == Round.SHOWDOWN:
             return Status.ROUND_OVER
     
-        if not self.action_order or self.action_index >= len(self.action_order):
+        if self.action_index >= len(self.action_order):
             if self.is_betting_round_over():
                 return self.advance_round()
-            self.reset_for_new_round()
+            self.reset_action_oder()
     
         current_player = self.current_player
         if current_player.is_human:
             self.status = Status.WAITING_HUMAN
             return self.status
-        elif:
+        else:
             self.status = Status.WAITING_AI
             return self.step_apply_action(current_player)
 
