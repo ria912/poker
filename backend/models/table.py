@@ -54,8 +54,8 @@ class Table:
     def start_hand(self):
         self.deck.deck_shuffle()
         # BTNのローテーション・ポジションの割り当て
-        self.btn_index = position.set_btn_index(self)
-        position.assign_positions(self.seats)
+        self.btn_index = set_btn_index(self)
+        assign_positions(self.seats)
         # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
