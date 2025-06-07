@@ -16,7 +16,7 @@ class GameState:
 
         self.table.reset_for_new_hand()
         self.table.start_hand()
-        self.round_manager.start_round()
+        self.round_manager.reset_action_oder()
         return self._step_until_response()
         
     def _step_until_response(self):
@@ -36,7 +36,8 @@ class GameState:
             raise HTTPException(500, f"Unexpected human: {self.round_manager.current_player}")
 
     def receive_human_action(self, action: str, amount: int):
-        self.round_manager.current_player.set_pending_action(Action(action), amount)  # アクションセット
+        player = self.round_manager.current_player.
+        player.set_pending_action(Action(action), amount)
         self.round_manager.step_apply_action()  # step_aplly_actionで decide_action 呼び出し
         return self._step_until_response()
 
