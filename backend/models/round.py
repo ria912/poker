@@ -98,21 +98,21 @@ class RoundManager:
             self.table.deal_flop()
             self.table.round = Round.FLOP
             self.reset_action_order()
-            self.table.last_laiser = None
+            self.table.last_raiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.FLOP:
             self.table.deal_turn()
             self.table.round = Round.TURN
             self.reset_action_order()
-            self.table.last_laiser = None
+            self.table.last_raiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.TURN:
             self.table.deal_river()
             self.table.round = Round.RIVER
             self.reset_action_order()
-            self.table.last_laiser = None
+            self.table.last_raiser = None
             return self.step_one_action()
 
         elif self.table.round == Round.RIVER:
