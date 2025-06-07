@@ -16,7 +16,13 @@ class GameState:
 
         self.table.reset_for_new_hand()
         self.table.start_hand()
-        self.round_manager.reset_action_oder()
+        self.round_manager.reset_action_order()
+        return self._step_until_response()
+        
+    def receive_human_action(self, action: str, amount: int):
+        player = self.round_manager.current_player
+        player.set_pending_action(Action(action), amount)
+        self.round_manager.step_apply_action()  # player.decide_action 呼び出し
         return self._step_until_response()
         
     def _step_until_response(self):
@@ -26,8 +32,8 @@ class GameState:
                 return self._make_waiting_response()
             elif status == Status.AI_ACTED:
                 return self._build_response(Status.AI_ACTED)
-            elif status == Status.HAND_OVER:
-                return self._build_response(Status.HAND_OVER)
+            elif status == Status.ROUND_OVER:
+                return self._build_response(Status.ROUND_OVER)
     
         raise HTTPException(500, f"Unexpected status: {status}")
             
@@ -36,12 +42,6 @@ class GameState:
             return self._build_response(Status.WAITING_FOR_HUMAN, include_legal_actions=True)
         else:
             raise HTTPException(500, f"Unexpected human: {self.round_manager.current_player}")
-
-    def receive_human_action(self, action: str, amount: int):
-        player = self.round_manager.current_player.
-        player.set_pending_action(Action(action), amount)
-        self.round_manager.step_apply_action()  # player.decide_action 呼び出し
-        return self._step_until_response()
 
     def _build_response(self, status: Status, include_legal_actions=False):
         response = {
