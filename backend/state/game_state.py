@@ -39,18 +39,24 @@ class GameState:
             
     def _make_waiting_response(self):
         if self.round_manager.current_player.is_human:
-            return self._build_response(Status.WAITING_FOR_HUMAN, include_legal_actions=True)
+            return self._build_response(Status.WAITING_FOR_HUMAN)
         else:
             raise HTTPException(500, f"Unexpected human: {self.round_manager.current_player}")
 
-    def _build_response(self, status: Status, include_legal_actions=False):
+    def _build_response(self, status: Status):
+        current_player = self.round_manager.current_player
+        if current_player is None:
+            raise HTTPException(500, "現在のプレイヤーが不明です")
+            
         response = {
-            "status": self.round_manager.status.value,
+            "status": status.value,
             "state": self.table.to_dict(),
+            "current_player": current_player.seat_number,
+            "legal_actions": Action.get_legal_actions(current_player, self.table)
         }
-        if include_legal_actions:
-            response["legal_actions"] = Action.get_legal_actions(self.round_manager.current_player, self.table)
         return response
         
+    def get_state(self):
+        return self._build_response()
 # グローバルなゲーム状態（FastAPIエンドポイントで利用）
 game_state = GameState()
