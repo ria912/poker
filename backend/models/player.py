@@ -6,7 +6,7 @@ class Player:
         self.hand = []
         self.position = None
         self.seat_number = None
-        self.current_bet = 0
+        self.bet_total = 0
         self.last_action = None
         self.has_acted = False # アクション済みである
         self.folded = False
@@ -17,14 +17,14 @@ class Player:
 
     def reset_for_new_hand(self):
         self.hand = []
-        self.current_bet = 0
+        self.bet_total = 0
         self.last_action = None
         self.has_acted = False
         self.folded = False
         self.all_in = False
 
     def reset_for_next_round(self):
-        self.current_bet = 0
+        self.bet_total = 0
         self.last_action = None
         self.has_acted = False
     
@@ -38,7 +38,7 @@ class Player:
             "stack": self.stack,
             "position": self.position,
             "seat_number": self.seat_number,
-            "current_bet": self.current_bet,
+            "bet_total": self.bet_total,
             "last_action": self.last_action,
             "has_acted": self.has_acted,            
             "folded": self.folded,

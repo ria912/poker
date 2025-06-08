@@ -13,11 +13,11 @@ class Action(str, Enum):
         actions = []
         current_bet = table.current_bet
         min_bet = table.min_bet
-        to_call = current_bet - player.current_bet
+        to_call = current_bet - player.bet_total
 
         actions.append(Action.FOLD)
 
-        if current_bet == player.current_bet:
+        if current_bet == player.bet_total:
             actions.append(Action.CHECK)
             if current_bet == 0:
                 actions.append(Action.BET)
@@ -66,8 +66,8 @@ class Action(str, Enum):
         total = min(player.stack, total)
 
         player.stack -= total
-        player.current_bet += total
-        table.current_bet = player.current_bet
+        player.bet_total += total
+        table.current_bet = player.bet_total
         table.pot += total
 
         if total > table.min_bet:
@@ -75,29 +75,29 @@ class Action(str, Enum):
 
     @staticmethod
     def _apply_call(player, table):      
-        to_call = table.current_bet - player.current_bet
+        to_call = table.current_bet - player.bet_total
         total = min(player.stack, to_call)
 
         player.stack -= total
         player.current_bet += total
         table.pot += total
 
-        if player.current_bet > table.current_bet:
-            table.current_bet = player.current_bet
+        if player.bet_total > table.current_bet:
+            table.current_bet = player.bet_total
 
     @staticmethod
     def _apply_raise(player, table, amount):
         if amount < 0:
             raise ValueError(f"Invalid Bet/Raise amount: {amount}. Must be >= 0.")
         min_bet = table.min_bet
-        call_amount = table.current_bet - player.current_bet
+        call_amount = table.current_bet - player.bet_total
         total = amount + min_bet + call_amount
         total = min(player.stack, total)
 
         player.stack -= total
-        player.current_bet += total
+        player.bet_total += total
         table.pot += total
-        table.current_bet = player.current_bet
+        table.current_bet = player.bet_total
 
         raise_amount = total - call_amount
         table.min_bet = raise_amount

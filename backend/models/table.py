@@ -9,6 +9,7 @@ from backend.models.enum import Round, Position
 
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count=6):
+
         self.small_blind = small_blind
         self.big_blind = big_blind
         self.min_bet = big_blind
@@ -31,7 +32,14 @@ class Table:
         for i, player in enumerate(players[:len(self.seats)]):
             player.seat_number = i
             self.seats[i] = player
-        
+    
+    @property
+    def active_seat_indices(self) -> list[int]:
+        return [
+            i for i, seat in enumerate(self.seats)
+            if seat.player and seat.player.is_active
+        ]
+
     def reset_for_new_hand(self):
         self.round = Round.PREFLOP
         self.board = []

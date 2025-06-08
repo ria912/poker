@@ -24,9 +24,10 @@ class Round(str, Enum):
     SHOWDOWN = "showdown"
 
 class Status(str, Enum):
-    RUNNING = "running"
+    DEF = "def"
     AI_ACTED = "ai_acted"
     WAITING_FOR_HUMAN = "waiting_for_human"
+    WAITING_FOR_AI = "waiting_for_ai"
     ROUND_OVER = "round_over"
     HAND_OVER = "hand_over"
     ERROR = "error"
