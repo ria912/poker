@@ -49,10 +49,10 @@ class RoundManager:
     
         current_player = self.current_player
         if current_player.is_human:
-            self.status = Status.WAITING_HUMAN
+            self.status = Status.WAITING_FOR_HUMAN
             return self.status
         else:
-            self.status = Status.WAITING_AI
+            self.status = Status.WAITING_FOR_AI
             return self.step_apply_action(current_player)
 
     def step_apply_action(self, current_player=None):
