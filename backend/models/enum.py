@@ -8,6 +8,11 @@ class Position(str, Enum):
     HJ = 'hj'
     CO = 'co'
     BTN = 'btn'
+    BTN_SB = "btn_sb"
+
+    ALL_POSITIONS = [BTN, SB, BB, CO, HJ, LJ]
+
+    ASSIGN_ORDER = [SB, BB, LJ, HJ, CO, BTN, BTN_SB]
 
 class Action(str, Enum):
     FOLD = 'fold'

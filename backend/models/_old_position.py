@@ -1,24 +1,3 @@
-# models/table.py
-from backend.models.position import set_btn_index, assign_positions
-from backend.models.enum import Round, Position
-
-
-class Table:
-    def __init__(self, small_blind=50, big_blind=100, seat_count=6):
-        self.small_blind = small_blind
-        self.big_blind = big_blind
-        self.min_bet = big_blind
-
-        self.seats = [None] * seat_count
-        self.btn_index = None
-    
-    def start_hand(self):
-        self.deck.deck_shuffle()
-        # BTNのローテーション・ポジションの割り当て
-        self.btn_index = set_btn_index(self)
-        assign_positions(self.seats)
-
-
 # models/position.py
 from backend.models.enum import Position
 # ポジション割り当ての順番（アクション順）

@@ -3,7 +3,7 @@ from backend.models.deck import Deck
 from backend.models.player import Player
 from backend.models.human_player import HumanPlayer
 from backend.models.ai_player import AIPlayer
-from backend.models.position import set_btn_index, assign_positions
+from backend.models.position import PositionManager
 from backend.models.enum import Round, Position
 
 
@@ -37,7 +37,7 @@ class Table:
     def active_seat_indices(self) -> list[int]:
         return [
             i for i, player in enumerate(self.seats)
-            if player and player.is_active
+            if player and not player.sitting_out
         ]
 
     def reset_for_new_hand(self):
@@ -45,7 +45,6 @@ class Table:
         self.board = []
         self.pot = 0
         self.current_bet = 0
-        self.min_bet = self.big_blind
         self.last_raiser = None
         for p in self.seats:
             if p:
@@ -62,8 +61,8 @@ class Table:
     def start_hand(self):
         self.deck.deck_shuffle()
         # BTNのローテーション・ポジションの割り当て
-        self.btn_index = set_btn_index(self)
-        assign_positions(self.seats)
+        self.btn_index = PositionManager.set_btn_index(self)
+        PositionManager.assign_positions(self)
         # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
@@ -72,7 +71,7 @@ class Table:
         for p in self.seats:
             if not p:
                 continue
-            if p.position == Position.SB:
+            if p.position == Position.SB or Position.BTN_SB:
                 blind = min(self.small_blind, p.stack)
                 p.stack -= blind
                 p.current_bet = blind

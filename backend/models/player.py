@@ -8,7 +8,7 @@ class Player:
         self.seat_number = None
         self.bet_total = 0
         self.last_action = None
-        self.has_acted = False # アクション済みである
+        self.has_acted = False # アクション済みである（チェック確認用）
         self.folded = False
         self.all_in = False
         self.is_human = False # AIで初期化

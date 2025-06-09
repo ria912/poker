@@ -1,29 +1,31 @@
 # models/round_manager.py
 from backend.models.action import Action
-from backend.models.position import ACTION_ORDER
-from backend.models.enum import Round, Status
+from backend.models.enum import Round, Position, Status
 
 class RoundManager:
+
+    ROUND_ORDER = [Round.PREFLOP, Round.FLOP, Round.TURN, Round.RIVER, Round.SHOWDOWN]
+
     def __init__(self, table):
         self.table = table
         self.action_log = []
         self.action_order = []
         self.action_index = 0
-        self.status = Status.DEF
+        self.status = Status.AI_ACTED
 
     def reset_action_order(self):
         self.action_order = self.get_action_order()
         self.action_index = 0
 
     def get_action_order(self):
+        action_order = Position.ASSIGN_ORDER
         active_players = [p for p in self.table.seats if p.is_active and not p.has_acted]
-
         if self.table.round == Round.PREFLOP:
             start_index = 2  # LJから
         else:
             start_index = 0  # SBから
     
-        ordered_positions = ACTION_ORDER[start_index:] + ACTION_ORDER[:start_index]
+        ordered_positions = action_order[start_index:] + action_order[:start_index]
         # ポジション順でアクティブプレイヤーを並べ替え
         ordered_players = [
             p for pos in ordered_positions
@@ -67,7 +69,7 @@ class RoundManager:
         self.log_action(current_player, action, amount)
 
         # レイズした場合、他プレイヤーの has_acted をリセット
-        if action in [Action.BET, Action.RAISE] and current_player.current_bet == self.table.current_bet:
+        if action in [Action.BET, Action.RAISE] and current_player.bet_total == self.table.current_bet:
             self.table.last_raiser = current_player
             for p in self.table.seats:
                 if p and p.is_active and p != current_player:
@@ -83,7 +85,7 @@ class RoundManager:
         if len(active) <= 1:
             return True
         for p in active:
-            if not p.has_acted or p.current_bet != self.table.current_bet:
+            if not p.has_acted or p.bet_total != self.table.current_bet:
                 return False
         return True
 

@@ -11,7 +11,7 @@ class GameState:
         self.round_manager = RoundManager(self.table)
 
     def start_new_hand(self):
-        if self.table.seats is None:
+        if not any(self.table.seats):
             self.table.seat_assign_players()
 
         self.table.reset_for_new_hand()
@@ -34,8 +34,7 @@ class GameState:
                 return self._build_response(Status.AI_ACTED)
             elif status == Status.ROUND_OVER:
                 return self._build_response(Status.ROUND_OVER)
-    
-        raise HTTPException(500, f"Unexpected status: {status}")
+            raise HTTPException(500, f"Unexpected status: {status}")
             
     def _make_waiting_response(self):
         if self.round_manager.current_player.is_human:

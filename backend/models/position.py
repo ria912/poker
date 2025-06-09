@@ -1,77 +1,71 @@
 # models/position.py
 from backend.models.enum import Position
-# ポジション割り当ての順番（アクション順）
-ACTION_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN]
-# player数に応じて使用するポジションを決定するためのリスト
-FULL_POSITIONS = [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ]
 
-def get_ordered_active_players(seats, btn_index):
-    """
-    btn_index の次から時計回りに、アクティブプレイヤーを順にリストで返す。
+class PositionManager:
+    ALL_POSITIONS = [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ]
+    # ポジションを割り当てる順番（BTN_SBが最後でヘッズアップに対応）Round 制御に注意！！
+    ASSIGN_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN, Position.BTN_SB]
+    # 上記リスト、enum にあるが念のため再記入
 
-    Args:
-        seats (list): プレイヤーの座席リスト
-        btn_index (int): BTNの座席インデックス
+    @staticmethod
+    def set_btn_index(table) -> int:
+        """
+        button_index を決定して table にセットする。
+        ない場合は最初の着席者をBTNに、以降は次の着席者へ移動。
+        """
+        seat_count = len(table.seats)
 
-    Returns:
-        list: アクティブプレイヤー（Playerオブジェクト）の順序付きリスト
-    """
-    if btn_index is None:
-        btn_index = 0
+        # 初回: 最初の非NoneのプレイヤーをBTNに
+        if table.btn_index is None:
+            for i in range(seat_count):
+                if table.seats[i] is not None and not table.seats[i].sitting_out:
+                    table.btn_index = i
+                    return i
+            raise Exception("No active players to assign BTN")
+        
+        # 2回目以降: 次の有効なプレイヤーへBTNを回す
+        for offset in range(1, seat_count + 1):
+            i = (table.btn_index + offset) % seat_count
+            if table.seats[i] is not None and not table.seats[i].sitting_out:
+                table.btn_index = i
+                return i
+    
+        raise Exception("No active players to assign BTN")
 
-    active_players = [
-        seat.player for seat in seats if seat.player and seat.player.is_active
-    ]
-    if not active_players:
-        return None
+    @staticmethod
+    def position_names(n: int) -> list[Position]:
+        # 使用するポジションのリストを作成する
+        if n == 2:
+            return [Position.BB, Position.BTN_SB]
+        elif n > len(PositionManager.ALL_POSITIONS):
+            raise ValueError(f"{n}人は未対応（最大{len(PositionManager.ALL_POSITIONS)}人まで）")
+        return PositionManager.ALL_POSITIONS[:n]
 
-    seat_count = len(seats)
-    ordered = []
-    for offset in range(1, seat_count + 1):
-        i = (btn_index + offset) % seat_count
-        seat = seats[i]
-        if seat.player and seat.player in active_players:
-            ordered.append(seat.player)
+    @classmethod
+    def assign_positions(cls, table):
+        """
+        BTNを起点に、ASSIGN_ORDER順でアクティブプレイヤーにポジションを割り振る。
+        """
+        active_indices = table.active_seat_indices
+        n = len(active_indices)
+        if n < 2:
+            raise ValueError("assign_positions には2人の以上のアクティブプレイヤーが必要")
 
-    return ordered
+        # 有効なポジション名と、ASSIGN_ORDERに従った並び
+        valid_positions = cls.position_names(n)
+        ordered_positions = [p for p in cls.ASSIGN_ORDER if p in valid_positions]
 
+        # btn_index の次から順番にアクティブプレイヤーを回す
+        seat_count = len(table.seats)
+        i = (table.btn_index + 1) % seat_count
+        ordered_seats = []
 
-def set_btn_index(seats, btn_index):
-    seat_count = len(seats)
-    active_players = [seat for seat in seats if seat.player and seat.player.is_active]
-
-    if not active_players:
-        return None
-
-    start = (btn_index + 1) if btn_index is not None else 0
-
-    for offset in range(seat_count):
-        i = (start + offset) % seat_count
-        if seats[i] in active_players:
-            return i  # 新しい btn_index を返す
-
-    return None
-
-def assign_positions(seats, btn_index):
-    if btn_index is None:
-        raise ValueError("btn_index is not set.")
-
-    for seat in seats:
-        if seat.player:
-            seat.player.position = None
-
-    btn_seat = seats[btn_index]
-    if not btn_seat.player or btn_seat.player.has_left:
-        raise ValueError("BTN is not assigned to a valid player.")
-
-    btn_seat.player.position = 'BTN'
-
-    ordered_players = get_ordered_active_players(seats, btn_index)
-    if not ordered_players:
-        raise ValueError("No active players to assign positions.")
-
-    used_positions = FULL_POSITIONS[:len(ordered_players)]
-    ordered_positions = [pos for pos in ACTION_ORDER if pos in used_positions]
-
-    for player, pos in zip(ordered_players, ordered_positions):
-        player.position = pos
+        while len(ordered_seats) < n:
+            if i in active_indices:
+                ordered_seats.append(i)
+            i = (i + 1) % seat_count
+                
+        # ポジションを割り当てる
+        for seat_index, pos in zip(ordered_seats, ordered_positions):
+            player = table.seats[seat_index]
+            player.position = pos
