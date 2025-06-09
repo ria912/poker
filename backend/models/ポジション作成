@@ -1,5 +1,5 @@
 # models/position.py
-forom backend.models.enum import Position
+from backend.models.enum import Position
 
 def set_btn_index(table):
     """
