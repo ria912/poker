@@ -36,8 +36,8 @@ class Table:
     @property
     def active_seat_indices(self) -> list[int]:
         return [
-            i for i, seat in enumerate(self.seats)
-            if seat.player and seat.player.is_active
+            i for i, player in enumerate(self.seats)
+            if player and player.is_active
         ]
 
     def reset_for_new_hand(self):
