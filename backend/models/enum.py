@@ -12,7 +12,7 @@ class Position(str, Enum):
 
     ALL_POSITIONS = [BTN, SB, BB, CO, HJ, LJ]
 
-    ASSIGN_ORDER = [SB, BB, LJ, HJ, CO, BTN, BTN_SB]
+    ASSIGN_ORDER = [SB, BB, LJ, HJ, CO, BTN]
 
 class Action(str, Enum):
     FOLD = 'fold'
