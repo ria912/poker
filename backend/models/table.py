@@ -6,17 +6,21 @@ from backend.models.ai_player import AIPlayer
 from backend.models.position import PositionManager
 from backend.models.enum import Round, Position
 
+class Seat:
+    def __init__(self, index: int):
+        self.index = index  # 座席番号
+        self.player: Player | None = None  # 座っているプレイヤー
 
 class Table:
-    def __init__(self, small_blind=50, big_blind=100, seat_count=6):
+    def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
 
         self.small_blind = small_blind
         self.big_blind = big_blind
         self.min_bet = big_blind
 
-        self.seats = [None] * seat_count
-        self.btn_index = None
-
+        self.seats: list[Seat] = [Seat(i) for i in range(seat_count)]
+        self.btn_index: int | None = None
+        
         self.deck = Deck()
         self.round = Round.PREFLOP
         self.board = []
@@ -25,19 +29,21 @@ class Table:
         
         self.last_raiser = None
         
-    def seat_assign_players(self, human_names=["YOU"], ai_count=5):
-        players = [HumanPlayer(name=n) for n in human_names]
-        players += [AIPlayer(name=f"AI{i+1}") for i in range(ai_count)]
+    def assign_players_to_seats(self):
+        # seat[0] に HumanPlayer、それ以降に AIPlayer を順に割り当てる。
+        self.seats[0].player = HumanPlayer(name="Hero")
         
-        for i, player in enumerate(players[:len(self.seats)]):
-            player.seat_number = i
-            self.seats[i] = player
+        for i in range(1, len(self.seats)):
+            self.seats[i].player = AIPlayer(name=f"AI_{i}")
     
+    def get_active_players(self):
+        return [seat.player for seat in self.seats if seat.player and not seat.player.sitting_out]
+
     @property
     def active_seat_indices(self) -> list[int]:
         return [
-            i for i, player in enumerate(self.seats)
-            if player and not player.sitting_out
+            i for i, seat in enumerate(self.seats)
+            if seat.player and not seat.player.sitting_out
         ]
 
     def reset_for_new_hand(self):
@@ -46,17 +52,19 @@ class Table:
         self.pot = 0
         self.current_bet = 0
         self.last_raiser = None
-        for p in self.seats:
-            if p:
-                Player.reset_for_new_hand(p)
+        for seat in self.seats:
+            player = seat.player
+            if player:
+                player.reset_for_new_hand()
 
     def reset_for_next_round(self):
         self.current_bet = 0
         self.min_bet = self.big_blind
         self.last_raiser = None
-        for p in self.seats:
-            if p and p.is_active:
-                Player.reset_for_next_round(p)
+        for seat in self.seats:
+            player = seat.player
+            if player:
+                player.reset_for_next_round()
 
     def start_hand(self):
         self.deck.deck_shuffle()
@@ -66,37 +74,39 @@ class Table:
         # ブラインドとカードの配布
         self._post_blinds()
         self._deal_cards()
+    
+    def _deal_cards(self):
+        for seat in self.seats:
+            player = seat.player
+            if player and not player.sitting_out:
+                player.hand = [self.deck.draw(), self.deck.draw()]
+
+    def deal_flop(self):
+            self.board.extend([self.deck.draw() for _ in range(3)])
+
+    def deal_turn(self):
+            self.board.append(self.deck.draw())
+
+    def deal_river(self):
+            self.board.append(self.deck.draw())
 
     def _post_blinds(self):
-        for p in self.seats:
-            if not p:
+        for seat in self.seats:
+            player = seat.player
+            if not player:
                 continue
-            if p.position == Position.SB or Position.BTN_SB:
-                blind = min(self.small_blind, p.stack)
-                p.stack -= blind
-                p.current_bet = blind
+            if player.position in (Position.SB, Position.BTN_SB):
+                blind = min(self.small_blind, player.stack)
+                player.stack -= blind
+                player.bet_total = blind
                 self.pot += blind
-            elif p.position == Position.BB:
-                blind = min(self.big_blind, p.stack)
-                p.stack -= blind
-                p.current_bet = blind
+            elif player.position == Position.BB:
+                blind = min(self.big_blind, player.stack)
+                player.stack -= blind
+                player.bet_total = blind
                 self.current_bet = blind
                 self.min_bet = blind
                 self.pot += blind
-
-    def _deal_cards(self):
-        for p in self.seats:
-            if p and not p.sitting_out:
-                p.hand = [self.deck.draw(), self.deck.draw()]
-
-    def deal_flop(self):
-        self.board.extend([self.deck.draw() for _ in range(3)])
-
-    def deal_turn(self):
-        self.board.append(self.deck.draw())
-
-    def deal_river(self):
-        self.board.append(self.deck.draw())
 
     def showdown(self):
         pass # 後で開発
@@ -109,9 +119,9 @@ class Table:
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
             "btn_index": self.btn_index,
-            "last_raiser": self.last_raiser.name if self.last_raiser else None,
+            "last_raiser": self.last_raiser if self.last_raiser else None,
             "seats": [
-                p.to_dict(show_hand=(show_all_hands or p.is_human)) if p else None
-                for p in self.seats
+                seat.player.base_dict(show_hand=(show_all_hands or seat.player.is_human)) if seat.player else None
+                for seat in self.seats
             ],
         }

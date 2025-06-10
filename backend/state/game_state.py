@@ -51,7 +51,7 @@ class GameState:
             "status": status.value,
             "state": self.table.to_dict(),
             "current_player": current_player.seat_number,
-            "legal_actions": Action.get_legal_actions(current_player, self.table)
+            "legal_actions": Action.get_legal_actions(current_player, self.table),
         }
         return response
         

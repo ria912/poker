@@ -34,7 +34,7 @@ class PositionManager:
 
     @staticmethod
     def position_names(n: int) -> list[Position]:
-        # 使用するポジションのリストを作成する
+        # 使用するポジションのリストをアクション順に並べ替えて作成する
         if n == 2:
             return [Position.BB, Position.BTN_SB]
         elif n > len(PositionManager.ALL_POSITIONS):
