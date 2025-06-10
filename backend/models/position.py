@@ -3,8 +3,8 @@ from backend.models.enum import Position
 
 class PositionManager:
     ALL_POSITIONS = [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ]
-    # ポジションを割り当てる順番（BTN_SBが最後でヘッズアップに対応）Round 制御に注意！！
-    ASSIGN_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN, Position.BTN_SB]
+    # ポジションを割り当てる順番（BTNは最後でアクション順に対応）
+    ASSIGN_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN]
     # 上記リスト、enum にあるが念のため再記入
 
     @staticmethod
