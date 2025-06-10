@@ -82,13 +82,13 @@ class Table:
                 player.hand = [self.deck.draw(), self.deck.draw()]
 
     def deal_flop(self):
-            self.board.extend([self.deck.draw() for _ in range(3)])
+        self.board.extend([self.deck.draw() for _ in range(3)])
 
     def deal_turn(self):
-            self.board.append(self.deck.draw())
+        self.board.append(self.deck.draw())
 
     def deal_river(self):
-            self.board.append(self.deck.draw())
+        self.board.append(self.deck.draw())
 
     def _post_blinds(self):
         for seat in self.seats:
@@ -111,6 +111,11 @@ class Table:
     def showdown(self):
         pass # 後で開発
 
+    def _seat_to_dict(self, seat: Seat, show_all_hands: bool):
+        if not seat.player:
+            return None
+        return seat.player.base_dict(show_hand=(show_all_hands or seat.player.is_human))
+
     def to_dict(self, show_all_hands=False):
         return {
             "round": self.round,
@@ -121,7 +126,6 @@ class Table:
             "btn_index": self.btn_index,
             "last_raiser": self.last_raiser if self.last_raiser else None,
             "seats": [
-                seat.player.base_dict(show_hand=(show_all_hands or seat.player.is_human)) if seat.player else None
-                for seat in self.seats
+            self._seat_to_dict(seat, show_all_hands) for seat in self.seats
             ],
         }
