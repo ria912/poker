@@ -14,19 +14,30 @@ class Position(str, Enum):
 
     ASSIGN_ORDER = [SB, BB, LJ, HJ, CO, BTN]
 
-class Action(str, Enum):
-    FOLD = 'fold'
-    CALL = 'call'
-    CHECK = 'check'
-    BET = 'bet'
-    RAISE = 'raise'
-
 class Round(str, Enum):
     PREFLOP = "preflop"
     FLOP = "flop"
     TURN = "turn"
     RIVER = "river"
     SHOWDOWN = "showdown"
+
+    ROUND_ORDER = [PREFLOP, FLOP, TURN, RIVER, SHOWDOWN]
+
+    @classmethod
+    def next(cls, current_round):
+        order = cls.ROUND_ORDER
+        try:
+            i = order.index(current_round)
+            return order[i + 1] if i + 1 < len(order) else None
+        except ValueError:
+            return None
+
+class Action(str, Enum):
+    FOLD = 'fold'
+    CALL = 'call'
+    CHECK = 'check'
+    BET = 'bet'
+    RAISE = 'raise'
 
 class Status(str, Enum):
     DEF = "def"

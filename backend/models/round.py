@@ -4,7 +4,7 @@ from backend.models.enum import Round, Position, Status
 
 class RoundManager:
 
-    ROUND_ORDER = [Round.PREFLOP, Round.FLOP, Round.TURN, Round.RIVER, Round.SHOWDOWN]
+    ROUND_ORDER: list[Round] = [Round.PREFLOP, Round.FLOP, Round.TURN, Round.RIVER, Round.SHOWDOWN]
 
     def __init__(self, table):
         self.table = table
@@ -19,7 +19,11 @@ class RoundManager:
 
     def get_action_order(self):
         action_order = Position.ASSIGN_ORDER
-        active_players = [p for p in self.table.seats if p.is_active and not p.has_acted]
+        active_players = [
+            seat.player for seat in self.table.seats
+            if seat.player and seat.player.is_active and not seat.player.has_acted
+        ]
+
         if self.table.round == Round.PREFLOP:
             start_index = 2  # LJから
         else:
@@ -95,35 +99,24 @@ class RoundManager:
         return self.status
 
     def advance_round(self):
-        # Round enum に基づく遷移
-        if self.table.round == Round.PREFLOP:
+        next_round = Round.next(self.table.round)
+
+        if next_round == Round.FLOP:
             self.table.deal_flop()
-            self.table.round = Round.FLOP
-            self.reset_action_order()
-            self.table.last_raiser = None
-            return self.step_one_action()
-
-        elif self.table.round == Round.FLOP:
+        elif next_round == Round.TURN:
             self.table.deal_turn()
-            self.table.round = Round.TURN
-            self.reset_action_order()
-            self.table.last_raiser = None
-            return self.step_one_action()
-
-        elif self.table.round == Round.TURN:
+        elif next_round == Round.RIVER:
             self.table.deal_river()
-            self.table.round = Round.RIVER
-            self.reset_action_order()
-            self.table.last_raiser = None
-            return self.step_one_action()
-
-        elif self.table.round == Round.RIVER:
-            self.table.round = Round.SHOWDOWN
+        elif next_round == Round.SHOWDOWN:
+            self.table.round = next_round
             self.table.award_pot_to_winner()
             return Status.HAND_OVER
 
-        self.status = Status.ROUND_OVER
-        return self.status
+        self.table.round = next_round
+        self.reset_action_order()
+        self.table.last_raiser = None
+        return self.step_one_action()
+
 
     def log_action(self, current_player, action, amount):
         self.action_log.append({

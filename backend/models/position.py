@@ -2,8 +2,6 @@
 from backend.models.enum import Position
 
 class PositionManager:
-    ALL_POSITIONS = [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ]
-    ASSIGN_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN]
     
     @staticmethod
     def set_btn_index(table) -> int:
@@ -29,38 +27,38 @@ class PositionManager:
         raise Exception("No active players to assign BTN")
 
     @staticmethod
-    def position_names(n: int) -> list[Position]:
+    def get_position_order(n: int) -> list[Position]:
         if n == 2:
             return [Position.BB, Position.BTN_SB]
-        elif n > len(PositionManager.ALL_POSITIONS):
-            raise ValueError(f"{n}人は未対応（最大{len(PositionManager.ALL_POSITIONS)}人まで）")
-        return PositionManager.ALL_POSITIONS[:n]
+        elif n > len(Position.ALL_POSITIONS):
+            raise ValueError(f"{n}人は未対応（最大{len(Position.ALL_POSITIONS)}人まで）")
+        
+        position_list = Position.ALL_POSITIONS[:n]
+        return [pos for pos in Position.ASSIGN_ORDER if pos in position_list]
 
     @classmethod
     def assign_positions(cls, table):
-        active_indices = table.active_seat_indices
-        n = len(active_indices)
+        n = len(table.active_seat_indices)
         if n < 2:
             raise ValueError("assign_positions には2人以上のアクティブプレイヤーが必要")
 
-        valid_positions = cls.position_names(n)
-        ordered_positions = [p for p in cls.ASSIGN_ORDER if p in valid_positions]
+        # BTNの次からスタートして、BTNを最後にする並び順
+        ordered_seats = sorted(
+            table.active_seat_indices,
+            key=lambda i: (i - table.btn_index) % len(table.seats)
+        )
 
-        seat_count = len(table.seats)
-        i = (table.btn_index + 1) % seat_count
-        ordered_seats = []
+        # ポジション順を取得
+        ordered_positions = cls.get_position_order(n)
 
-        while len(ordered_seats) < n:
-            if i in active_indices:
-                ordered_seats.append(i)
-            i = (i + 1) % seat_count
-                
-        # ポジションを割り当てる
+        # 割り当て
         assigned = {}
         for seat_index, pos in zip(ordered_seats, ordered_positions):
             seat = table.seats[seat_index]
             if seat.player:
                 seat.player.position = pos
-                assigned[seat_index] = pos  # ← 戻り値用に保存
+                assigned[seat_index] = pos
+            else:
+                raise ValueError(f"Seat {seat_index} にプレイヤーがいません")
 
-        return assigned  # ← return の位置を修正
+        return assigned
