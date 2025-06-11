@@ -5,11 +5,12 @@ from backend.models.human_player import HumanPlayer
 from backend.models.ai_player import AIPlayer
 from backend.models.position import PositionManager
 from backend.models.enum import Round, Position
+from typing import Optional # None の可能性があることを型として明示
 
 class Seat:
     def __init__(self, index: int):
         self.index = index  # 座席番号
-        self.player: Player | None = None  # 座っているプレイヤー
+        self.player: Optional[Player] = None  # 座っているプレイヤー
 
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
