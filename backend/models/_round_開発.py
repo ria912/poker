@@ -1,22 +1,73 @@
+from backend.models.table import Table
 from backend.models.action import Action
 from backend.models.enum import Round, Position, Status
 
-def get_action_order(self, round: Round) -> list[int]:
-    # アクティブな座席を抽出
-    active_seats = [seat for seat in self.table.seats if seat.player and not seat.player.sitting_out]
+class RoundManager:
+    def __init__(self, table: Table):
+        self.table = table
+        self.action_order = []  # このラウンドでのアクション順序（毎ラウンド更新）
+        self.action_index = 0
 
-    # ラウンドに応じて開始ポジションを変えたい場合はここで処理を入れる
-    # 例: プリフロップはUTGからスタート（今回は未実装）
-    # 便宜上、先頭はSB（Position.SB）
+    def start_new_hand(self):
+        self.table.reset_for_next_round()  # プレイヤー状態、ベットなどリセット
+        self.table.deal_hands()
+        self.table._post_blinds()  # ここで投稿
+        self.start_new_round()
 
-    # ASSIGN_ORDERのインデックスを取得するための辞書
-    pos_order_map = {pos: i for i, pos in enumerate(Position.ASSIGN_ORDER)}
+    def start_new_round(self):
+        self.table.reset_for_next_round()
+        self.action_order = self.get_action_order()
+        self.action_index = 0
 
-    # アクティブな座席をポジション順でソート
-    sorted_seats = sorted(
-        active_seats,
-        key=lambda seat: pos_order_map.get(seat.player.position, 999)
-    )
+    def get_action_order(self):
+        active_players = self.table.get_active_players()
+        sorted_players = sorted(
+            active_players,
+            key=lambda p: Position.ASSIGN_ORDER.index(p.position)
+        )
+        if self.table.round == Round.PREFLOP:
+            try:
+                bb_index = next(i for i, p in enumerate(sorted_players) if p.position == Position.BB)
+                return sorted_players[bb_index + 1:] + sorted_players[:bb_index + 1]
+            except StopIteration:
+                return sorted_players
+        else:
+            return sorted_players  # ポストフロップはSB起点で並び替えても良い
 
-    # 並べ替えた座席のインデックスを返す
-    return [seat.index for seat in sorted_seats]
+    def get_pending_players(self):
+        """まだアクションが必要なプレイヤーのリスト"""
+        return [
+            p for p in self.action_order
+            if p.is_active and p.bet_total != self.table.current_bet
+        ]
+
+    def process_action(self, player, action):
+        # アクション適用（fold/call/raiseなど）
+        player.apply_action(action, self.table)
+
+        # AIや次のプレイヤーに進む処理
+        pending = self.get_pending_players()
+        if not pending:
+            self.advance_round()
+        else:
+            # 次のプレイヤーのindexを更新（順番維持）
+            self.action_index = self.action_order.index(pending[0])
+
+    def advance_round(self):
+        next_round = Round.next(self.table.round)
+        if not next_round:
+            self.table.round = Round.SHOWDOWN
+            self.table.showdown()
+            return
+
+        self.table.round = next_round
+
+        # ボードにカードを配る
+        if self.table.round == Round.FLOP:
+            self.table.deal_flop()
+        elif self.table.round == Round.TURN:
+            self.table.deal_turn()
+        elif self.table.round == Round.RIVER:
+            self.table.deal_river()
+
+        self.start_new_round()

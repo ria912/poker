@@ -79,7 +79,7 @@ class Table:
         self._post_blinds()
         self._deal_cards()
     
-    def _deal_cards(self):
+    def deal_hands(self):
         for seat in self.seats:
             player = seat.player
             if player and not player.sitting_out:
