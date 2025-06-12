@@ -38,7 +38,7 @@ class Table:
             self.seats[i].player = AIPlayer(name=f"AI_{i}")
     
     def get_active_players(self):
-        return [seat.player for seat in self.seats if seat.player and not seat.player.sitting_out]
+        return [seat.player for seat in self.seats if seat.player and seat.player.is_active]
 
     @property
     def active_seat_indices(self) -> list[int]:
