@@ -1,7 +1,7 @@
 # state/game_state.py
 from backend.models.table import Table
 from backend.models.round import RoundManager
-from backend.models.action import Action
+from backend.models.action import Action, ActionManager
 from backend.models.enum import Status
 from fastapi import HTTPException
 
@@ -9,33 +9,29 @@ class GameState:
     def __init__(self):
         self.table = Table()
         self.round_manager = RoundManager(self.table)
+        self.table.assign_players_to_seats()  # 初期化時にプレイヤーを座席に割り当てる
 
     def start_new_hand(self):
-        if not any(self.table.seats):
-            self.table.seat_assign_players()
-
         self.table.reset_for_new_hand()
         self.table.start_hand()
         self.round_manager.reset_action_order()
-        return self._step_until_response()
+
+        result = self.round_manager.step()
+        if result == Status.WAITING_FOR_HUMAN:
+            return self._make_waiting_response()
         
+        elif result == Status.WAITING_FOR_AI:
+            self.round_manager.step_apply_action()
+            return self._build_response(self.round_manager.status)
+
     def receive_human_action(self, action: str, amount: int):
         player = self.round_manager.current_player
+        if player is None or not player.is_human:
+            raise HTTPException(400, "現在のプレイヤーは人間ではありません")
         player.set_pending_action(Action(action), amount)
         self.round_manager.step_apply_action()  # player.decide_action 呼び出し
-        return self._step_until_response()
-        
-    def _step_until_response(self):
-        while True:
-            status = self.round_manager.advance_until_human_or_end()
-            if status == Status.WAITING_FOR_HUMAN:
-                return self._make_waiting_response()
-            elif status == Status.AI_ACTED:
-                return self._build_response(Status.AI_ACTED)
-            elif status == Status.ROUND_OVER:
-                return self._build_response(Status.ROUND_OVER)
-            raise HTTPException(500, f"Unexpected status: {status}")
-            
+        return self._build_response(self.round_manager.status)
+
     def _make_waiting_response(self):
         if self.round_manager.current_player.is_human:
             return self._build_response(Status.WAITING_FOR_HUMAN)
@@ -50,8 +46,8 @@ class GameState:
         response = {
             "status": status.value,
             "state": self.table.to_dict(),
-            "current_player": current_player.seat_number,
-            "legal_actions": Action.get_legal_actions(current_player, self.table),
+            "current_player": current_player.name,
+            "legal_actions": [action.value for action in ActionManager.get_legal_actions(current_player, self.table)],
         }
         return response
         

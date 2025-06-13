@@ -1,7 +1,7 @@
 # models/round_manager.py
 from backend.models.table import Table
-from backend.models.action import ActionManager
-from backend.models.enum import Round, Status, Position, Action
+from backend.models.action import Action, ActionManager
+from backend.models.enum import Round, Status, Position
 
 class RoundManager:
     def __init__(self, table: Table):
@@ -12,16 +12,9 @@ class RoundManager:
         
         self.status = Status.RUNNING
 
-    def start_new_hand(self):
-        self.table.reset_for_new_hand()
-        self.table.deal_hands()
-        self.table._post_blinds()
-        self.start_new_round()
-
     def start_new_round(self):
         self.table.reset_for_next_round()
         self.action_order = self.reset_action_order()
-        self.step()
 
     def reset_action_order(self):
         # is_active かつ has_acted == False のプレイヤーを取得
@@ -29,44 +22,38 @@ class RoundManager:
             p for p in self.table.get_active_players() if not p.has_acted
         ]
         # ASSIGN_ORDER順にソート
-        self.action_order = sorted(
+        sorted_order = sorted(
             active_unacted_players,
             key=lambda p: Position.ASSIGN_ORDER.index(p.position)
             if p.position in Position.ASSIGN_ORDER else 999
         )
         self.action_index = 0
-        
+
         if self.table.round == Round.PREFLOP and not self.action_order:
             # BBの次からアクション開始（ASSIGN_ORDER内でのBBの次）
             try:
                 bb_index = next(
-                    i for i, p in enumerate(self.action_order) if p.position == Position.BB
+                    i for i, p in enumerate(sorted_order) if p.position == Position.BB
                 )
                 # BBの次（UTG）スタートに並べ直して返す
-                self.action_order = self.action_order[bb_index + 1:] + self.action_order[:bb_index + 1]
+                self.action_order = sorted_order[bb_index + 1:] + sorted_order[:bb_index + 1]
                 return self.action_order
             except Exception as e:
                 raise RuntimeError(f"bb_indexを取得できません。: {e}")
-        return self.action_order # ポストフロップ,None以外はそのまま返す
-        
+        # ポストフロップ,None以外はそのまま返す
+        self.action_order = sorted_order
+        return self.action_order
+
     def step(self):
-        if self.table.round == Round.SHOWDOWN:
-            self.status = Status.HAND_OVER
-            return self.status
-    
         if self.action_index >= len(self.action_order):
-            if self.check_next_action_or_end():
-                return self.advance_round()
-            else:
-                self.reset_action_order()
+            return self.check_next_action_or_end()
 
         current_player = self.action_order[self.action_index]
         if current_player.is_human:
             self.status = Status.WAITING_FOR_HUMAN
-            return self.status
         else:
             self.status = Status.WAITING_FOR_AI
-        return self.step_apply_action(current_player)
+        return self.status
 
     def step_apply_action(self, current_player=None):
         if current_player is None:
@@ -105,26 +92,26 @@ class RoundManager:
         active_players = [p for p in self.table.seats if p and p.is_active]
         if len(active_players) == 1:
             self.status = Status.HAND_OVER
-            return self.status
     
         self.action_order = self.reset_action_order()
         # action_orderがない → ラウンド終了
         if not self.action_order:
             self.status = Status.ROUND_OVER
-            return self.advance_round()
         # アクション継続
-        return self.step()
+        else:
+            self.status = Status.RUNNING
+            self.current_player = self.action_order[self.action_index]
+        return self.status
 
     def advance_round(self):
         next_round = Round.next(self.table.round)
-        if not next_round:
+        if next_round == Round.SHOWDOWN:
             self.table.round = Round.SHOWDOWN
-            self.table.showdown()
-            return
-
+            self.status = Status.HAND_OVER
+            return self.status
+        
         self.table.round = next_round
 
-        # ボードにカードを配る
         if self.table.round == Round.FLOP:
             self.table.deal_flop()
         elif self.table.round == Round.TURN:
@@ -133,3 +120,17 @@ class RoundManager:
             self.table.deal_river()
 
         self.start_new_round()
+        self.status = Status.RUNNING
+        return self.status
+    
+    def log_action(self, current_player, action, amount):
+        """アクションをログに記録する。"""
+        log_entry = {
+            'player': current_player.name,
+            'action': action.name,
+            'amount': amount,
+            'round': self.table.round.name,
+            'timestamp': self.table.get_current_time()
+        }
+        self.table.action_log.append(log_entry)
+        print(f"Action logged: {log_entry}")

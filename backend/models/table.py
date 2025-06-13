@@ -29,6 +29,7 @@ class Table:
         self.current_bet = 0
         
         self.last_raiser = None
+        self.action_log = []
         
     def assign_players_to_seats(self):
         # seat[0] に HumanPlayer、それ以降に AIPlayer を順に割り当てる。
@@ -77,7 +78,7 @@ class Table:
         PositionManager.assign_positions(self)
         # ブラインドとカードの配布
         self._post_blinds()
-        self._deal_cards()
+        self.deal_hands()
     
     def deal_hands(self):
         for seat in self.seats:
