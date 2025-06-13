@@ -13,25 +13,26 @@ class RoundManager:
     def start_new_hand(self):
         self.table.reset_for_next_hand()
         self.table.deal_hands()
-        self.table._post_blinds()  # ここで投稿
+        self.table._post_blinds()
         self.start_new_round()
 
     def start_new_round(self):
         self.table.reset_for_next_round()
         self.action_order = self.get_action_order()
-        self.action_index = 0
 
-    def get_action_order(self):
+    def reset_action_order(self):
         # is_active かつ has_acted == False のプレイヤーを取得
         active_unacted_players = [
             p for p in self.table.get_active_players() if not p.has_acted
         ]
-        # 位置順にソート
+        # ASSIGN_ORDER順にソート
         sorted_players = sorted(
             active_unacted_players,
             key=lambda p: Position.ASSIGN_ORDER.index(p.position)
             if p.position in Position.ASSIGN_ORDER else 999
         )
+        self.action_index = 0
+        
         if self.table.round == Round.PREFLOP and not self.action_order:
         # BBの次からアクション開始（ASSIGN_ORDER内でのBBの次）
         try:
@@ -40,12 +41,11 @@ class RoundManager:
             )
             # BBの次（UTG）からに並べ直す
             return sorted_players[bb_index + 1:] + sorted_players[:bb_index + 1]
-        except StopIteration:
-            # BBがいない場合はそのまま
-            return sorted_players
-        else:
-            # ポストフロップはソート順そのまま
-            return sorted_players
+        except Exception as e:
+            raise RuntimeError(f"bb_indexを取得できません。: {e}")
+        # 初め以外はそのまま返す
+        return sorted_players # ポストフロップはそのまま
+        
 
     def get_pending_players(self):
         """まだアクションが必要なプレイヤーのリスト"""
@@ -82,7 +82,7 @@ class RoundManager:
             if self.is_betting_round_over():
                 return self.advance_round()
             else:
-                self.reset_action_order()
+                self.get_action_order()
     
         current_player = self.current_player
         if current_player.is_human:
