@@ -38,11 +38,42 @@ class Action(str, Enum):
     BET = 'bet'
     RAISE = 'raise'
 
+    @classmethod
+    def betting_actions(cls):
+        # ベット系アクションの集合。BETとRAISEは金額指定が必要
+        return [cls.BET, cls.RAISE]
+
+    @classmethod
+    def passive_actions(cls):
+        # パッシブなアクション（掛け金増やさない）
+        return [cls.FOLD, cls.CALL, cls.CHECK]
+
+    @classmethod
+    def requires_amount(cls, action):
+        # どのアクションがベット額（amount）を必要とするか
+        return action in cls.betting_actions()
+
 class Status(str, Enum):
-    DEF = "def"
-    AI_ACTED = "ai_acted"
+    RUNNING = "running"
     WAITING_FOR_HUMAN = "waiting_for_human"
     WAITING_FOR_AI = "waiting_for_ai"
+    HUMAN_ACTED = "human_acted"
+    AI_ACTED = "ai_acted"
     ROUND_OVER = "round_over"
     HAND_OVER = "hand_over"
     ERROR = "error"
+
+    @classmethod
+    def is_waiting(cls, status):
+        # 人間・AIいずれかの待機状態か判定
+        return status in [cls.WAITING_FOR_HUMAN, cls.WAITING_FOR_AI]
+
+    @classmethod
+    def is_terminal(cls, status):
+        # ラウンド終了またはハンド終了、エラーなどの状態判定
+        return status in [cls.ROUND_OVER, cls.HAND_OVER, cls.ERROR]
+
+    @classmethod
+    def is_active(cls, status):
+        # まだアクションが期待されている状態
+        return not cls.is_terminal(status)

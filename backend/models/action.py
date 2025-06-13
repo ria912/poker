@@ -1,13 +1,7 @@
 # models/action.py
-from enum import Enum
+from backend.models.enum import Action
 
-class Action(str, Enum):
-    FOLD = 'fold'
-    CALL = 'call'
-    CHECK = 'check'
-    BET = 'bet'
-    RAISE = 'raise'
-
+class ActionManager:
     @staticmethod
     def get_legal_actions(player, table):
         actions = []
