@@ -52,25 +52,33 @@ class Table:
         ]
 
     def reset(self, hand_over=False, round_over=False):
+        # 共通してリセットする情報
+        self.current_bet = 0
+        self.last_raiser = None
+        self.min_bet = self.big_blind
+    
         if hand_over:
             self.round = Round.PREFLOP
             self.board = []
             self.pot = 0
-            self.current_bet = 0
-            self.last_raiser = None
-            for seat in self.seats:
-                player = seat.player
-                if player:
-                    player.reset_for_new_hand()
-
-        elif round_over:
-            self.current_bet = 0
-            self.min_bet = self.big_blind
-            self.last_raiser = None
-            for seat in self.seats:
-                player = seat.player
-                if player:
-                    player.reset_for_next_round()
+    
+        for seat in self.seats:
+            player = seat.player
+            if not player:
+                continue
+            if hand_over:
+                player.reset_for_new_hand()
+            elif round_over:
+                player.reset_for_next_round()
+    
+            elif round_over:
+                self.current_bet = 0
+                self.min_bet = self.big_blind
+                self.last_raiser = None
+                for seat in self.seats:
+                    player = seat.player
+                    if player:
+                        player.reset_for_next_round()
     
     def start_hand(self):
         self.deck.deck_shuffle()
