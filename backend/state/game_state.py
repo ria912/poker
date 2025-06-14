@@ -20,28 +20,29 @@ class GameState:
 
     def start_new_hand(self):
         """新しくハンドをスタートしてAIも最初にアクションしておく。"""
-        self.table.reset_for_new_hand()
+        self.table.reset()
+        self.table.start_hand()
         self.round_manager.start_new_round()
         
-        self.result = self.round_manager.status
+        self.result = self.round_manager.step()
 
-        if self.round_manager.status == Status.WAITING_FOR_AI:
+        if self.result == Status.WAITING_FOR_AI:
             self.round_manager.step_apply_action()
             self.result = self.round_manager.status
 
     def apply_action(self, action, amount=None):
         """プレイヤーからアクションを受け付け、AIも次に動く。"""
-        if self.result == Status.WAITING_FOR_HUMAN:
             self.round_manager.step_apply_action(player_action=action, amount=amount)
             self.result = self.round_manager.status
 
-            if self.result == Status.WAITING_FOR_AI:
-                self.round_manager.step_apply_action()
-                self.result = self.round_manager.status
+            if self.result == Status.HUMAN_ACTED:
+                self.result = self.round_manager.step()
         
     def state_manager(self):
-        if self.result == self.is_waiting()
-            self.aplly_action()
+        if self.result == Status.WAITING_FOR_FUNAN:
+            return self.get_state()
+        if self.result == Status.WAITING_FOR_AI:
+            return self.round_manager.step_aplly_action
             
         elif 
 
