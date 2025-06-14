@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 from backend.models.table import Table
-from backend.models.round import RoundManager, Status
+from backend.models.round import RoundManager, Status, Action
 
 # グローバルに保持
 game_state = None
@@ -22,13 +22,14 @@ class GameState:
         """新しくハンドをスタートしてAIも最初にアクションしておく。"""
         self.table.reset_for_new_hand()
         self.round_manager.start_new_round()
+        
         self.result = self.round_manager.status
 
         if self.round_manager.status == Status.WAITING_FOR_AI:
             self.round_manager.step_apply_action()
             self.result = self.round_manager.status
 
-    def receive_human_action(self, action, amount=None):
+    def apply_action(self, action, amount=None):
         """プレイヤーからアクションを受け付け、AIも次に動く。"""
         if self.result == Status.WAITING_FOR_HUMAN:
             self.round_manager.step_apply_action(player_action=action, amount=amount)
@@ -37,17 +38,17 @@ class GameState:
             if self.result == Status.WAITING_FOR_AI:
                 self.round_manager.step_apply_action()
                 self.result = self.round_manager.status
-
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"現在プレイヤーのアクションフェイズじゃありません。status = {self.status}",
-            )
+        
+    def state_manager(self):
+        if self.result == self.is_waiting()
+            self.aplly_action()
+            
+        elif 
 
     def get_state(self):
         """APIレスポンス用にゲーム情報を整理して取得。"""
         return {
-            "status": self.status.value,
+            "status": self.result.value,
             "table": self.table.to_dict(),  # table.to_dict を実装してあるという前提
         }
 
