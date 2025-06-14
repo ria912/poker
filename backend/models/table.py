@@ -18,7 +18,7 @@ class Table:
         self.small_blind = small_blind
         self.big_blind = big_blind
         self.min_bet = big_blind
-
+        # Seat 0~5 までの座席を用意
         self.seats: list[Seat] = [Seat(i) for i in range(seat_count)]
         self.btn_index: int | None = None
         
@@ -51,26 +51,27 @@ class Table:
             if seat.player and not seat.player.sitting_out
         ]
 
-    def reset_for_new_hand(self):
-        self.round = Round.PREFLOP
-        self.board = []
-        self.pot = 0
-        self.current_bet = 0
-        self.last_raiser = None
-        for seat in self.seats:
-            player = seat.player
-            if player:
-                player.reset_for_new_hand()
+    def reset(self, hand_over=False, round_over=False):
+        if hand_over:
+            self.round = Round.PREFLOP
+            self.board = []
+            self.pot = 0
+            self.current_bet = 0
+            self.last_raiser = None
+            for seat in self.seats:
+                player = seat.player
+                if player:
+                    player.reset_for_new_hand()
 
-    def reset_for_next_round(self):
-        self.current_bet = 0
-        self.min_bet = self.big_blind
-        self.last_raiser = None
-        for seat in self.seats:
-            player = seat.player
-            if player:
-                player.reset_for_next_round()
-
+        elif round_over:
+            self.current_bet = 0
+            self.min_bet = self.big_blind
+            self.last_raiser = None
+            for seat in self.seats:
+                player = seat.player
+                if player:
+                    player.reset_for_next_round()
+    
     def start_hand(self):
         self.deck.deck_shuffle()
         # BTNのローテーション・ポジションの割り当て
@@ -116,12 +117,17 @@ class Table:
     def showdown(self):
         pass # 後で開発
 
-    def _seat_to_dict(self, seat: Seat, show_all_hands: bool):
+    def _seat_to_dict(self, seat: Seat):
+        show_hand = False
         if not seat.player:
-            return None
-        return seat.player.base_dict(show_hand=(show_all_hands or seat.player.is_human))
+            return {"index": seat.index, "player": None}
+       
+        if seat.player.is_human or self.round == Round.SHOWDOWN:
+            show_hand = True
+        
+        return seat.player.base_dict(show_hand)
 
-    def to_dict(self, show_all_hands=False):
+    def to_dict(self):
         return {
             "round": self.round,
             "board": self.board,
@@ -130,7 +136,5 @@ class Table:
             "min_bet": self.min_bet,
             "btn_index": self.btn_index,
             "last_raiser": self.last_raiser if self.last_raiser else None,
-            "seats": [
-            self._seat_to_dict(seat, show_all_hands) for seat in self.seats
-            ],
+            "seats": [self._seat_to_dict(seat) for seat in self.seats]
         }

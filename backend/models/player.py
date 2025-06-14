@@ -32,19 +32,15 @@ class Player:
     def is_active(self):
         return not self.folded and not self.all_in and not self.sitting_out
 
-    def base_dict(self, show_hand=False):
+    def base_dict(self, show_hand = False):
         data = {
             "name": self.name,
             "stack": self.stack,
             "position": self.position,
-            "seat_number": self.seat_number,
             "bet_total": self.bet_total,
             "last_action": self.last_action,
-            "has_acted": self.has_acted,            
-            "folded": self.folded,
-            "all_in": self.all_in,
-            "sitting_out": self.sitting_out,
-            "is_human": self.is_human,
+
+            "seat_number": self.seat_number,
         }
         
         if show_hand:

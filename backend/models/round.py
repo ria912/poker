@@ -1,4 +1,4 @@
-# models/round_manager.py
+# models/round.py
 from backend.models.table import Table
 from backend.models.action import Action, ActionManager
 from backend.models.enum import Round, Status, Position
@@ -6,15 +6,15 @@ from backend.models.enum import Round, Status, Position
 class RoundManager:
     def __init__(self, table: Table):
         self.table = table
-        self.action_order = []  # このラウンドでのアクション順序（毎ラウンド更新）
+        self.action_order = []
         self.action_index = 0
-        self.current_player = None  # 現在のプレイヤー
-        
+        self.current_player = None
         self.status = Status.RUNNING
 
     def start_new_round(self):
-        self.table.reset_for_next_round()
+        self.table.reset(hand_over=False, round_over=True)
         self.action_order = self.reset_action_order()
+        return self.step()
 
     def reset_action_order(self):
         # is_active かつ has_acted == False のプレイヤーを取得
@@ -55,20 +55,13 @@ class RoundManager:
             self.status = Status.WAITING_FOR_AI
         return self.status
 
-    def step_apply_action(self, current_player=None):
+    def step_apply_action(self, current_player, action, amount):
         if current_player is None:
             current_player = self.current_player
-        try:
-            action, amount = current_player.decide_action(self.table)
-        except Exception as e:
-            raise RuntimeError(f"アクション取得失敗: {e}")
-
+        
         if action is None:
-            if current_player.is_human:
-                self.status = Status.WAITING_FOR_HUMAN
-            else:
-                self.status = Status.WAITING_FOR_AI
-                return self.status
+            self.status = Status.ERROR
+            raise ValueError("アクションが指定されていません。")
 
         ActionManager.apply_action(self.table, current_player, action, amount)
         self.log_action(current_player, action, amount)

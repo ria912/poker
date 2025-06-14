@@ -1,57 +1,63 @@
-# state/game_state.py
-from backend.models.table import Table
-from backend.models.round import RoundManager
-from backend.models.action import Action, ActionManager
-from backend.models.enum import Status
+# backend/state/game_state.py
+
 from fastapi import HTTPException
+from backend.models.table import Table
+from backend.models.round import RoundManager, Status
+
+# グローバルに保持
+game_state = None
+
 
 class GameState:
+    """ゲームの状態管理クラス"""
+
     def __init__(self):
         self.table = Table()
-        self.round_manager = RoundManager(self.table)
-        self.table.assign_players_to_seats()  # 初期化時にプレイヤーを座席に割り当てる
+        self.round_manager = RoundManager(table = self.table)
+        self.table.assign_players_to_seats()
+
+        self.result: Status = None
 
     def start_new_hand(self):
+        """新しくハンドをスタートしてAIも最初にアクションしておく。"""
         self.table.reset_for_new_hand()
-        self.table.start_hand()
-        self.round_manager.reset_action_order()
+        self.round_manager.start_new_round()
+        self.result = self.round_manager.status
 
-        result = self.round_manager.step()
-        if result == Status.WAITING_FOR_HUMAN:
-            return self._make_waiting_response()
-        
-        elif result == Status.WAITING_FOR_AI:
+        if self.round_manager.status == Status.WAITING_FOR_AI:
             self.round_manager.step_apply_action()
-            return self._build_response(self.round_manager.status)
+            self.result = self.round_manager.status
 
-    def receive_human_action(self, action: str, amount: int):
-        player = self.round_manager.current_player
-        if player is None or not player.is_human:
-            raise HTTPException(400, "現在のプレイヤーは人間ではありません")
-        player.set_pending_action(Action(action), amount)
-        self.round_manager.step_apply_action()  # player.decide_action 呼び出し
-        return self._build_response(self.round_manager.status)
+    def receive_human_action(self, action, amount=None):
+        """プレイヤーからアクションを受け付け、AIも次に動く。"""
+        if self.result == Status.WAITING_FOR_HUMAN:
+            self.round_manager.step_apply_action(player_action=action, amount=amount)
+            self.result = self.round_manager.status
 
-    def _make_waiting_response(self):
-        if self.round_manager.current_player.is_human:
-            return self._build_response(Status.WAITING_FOR_HUMAN)
+            if self.result == Status.WAITING_FOR_AI:
+                self.round_manager.step_apply_action()
+                self.result = self.round_manager.status
+
         else:
-            raise HTTPException(500, f"Unexpected human: {self.round_manager.current_player}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"現在プレイヤーのアクションフェイズじゃありません。status = {self.status}",
+            )
 
-    def _build_response(self, status: Status):
-        current_player = self.round_manager.current_player
-        if current_player is None:
-            raise HTTPException(500, "現在のプレイヤーが不明です")
-            
-        response = {
-            "status": status.value,
-            "state": self.table.to_dict(),
-            "current_player": current_player.name,
-            "legal_actions": [action.value for action in ActionManager.get_legal_actions(current_player, self.table)],
-        }
-        return response
-        
     def get_state(self):
-        return self._build_response()
-# グローバルなゲーム状態（FastAPIエンドポイントで利用）
+        """APIレスポンス用にゲーム情報を整理して取得。"""
+        return {
+            "status": self.status.value,
+            "table": self.table.to_dict(),  # table.to_dict を実装してあるという前提
+        }
+
+    def is_waiting(self) -> bool:
+        return Status.is_waiting(self.status)
+
+
+    def is_terminal(self) -> bool:
+        return Status.is_terminal(self.status)
+
+
+# アプリケーション起動時に１つだけ用意しておく
 game_state = GameState()

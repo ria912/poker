@@ -1,5 +1,6 @@
 # models/human_player.py
 from backend.models.player import Player
+from backend.models.enum import Action
 
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):
@@ -8,7 +9,7 @@ class HumanPlayer(Player):
         self.pending_amount = None
         self.is_human = True
 
-    def set_pending_action(self, action: str, amount: int,):
+    def set_pending_action(self, action: Action, amount: int):
         self.pending_action = action
         self.pending_amount = amount
 

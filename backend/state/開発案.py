@@ -5,7 +5,6 @@ from backend.models.action import Action, ActionManager
 from backend.models.enum import Status
 from fastapi import HTTPException
 
-
 class GameState:
     """ゲームのユースケースレイヤ。APIレスポンスもここから整理して提供。"""
 
@@ -27,19 +26,18 @@ class GameState:
             self.round_manager.step_apply_action()
             return self._make_waiting_response()
         else:
-            return self._make_waiting_response()
+            return self.process_action(self.round_manager.current_player.decide_action(self.table))
 
-    def process_action(self, player_name: str, action_name: str, amount: int = 0):
+    def process_action(self, current_player, action: str, amount: int = 0):
         """プレイヤが指定したアクションを実行してレスポンスも整理して返す。"""
-        player = self.table.get_player_by_name(player_name)
-        if not player:
-            raise HTTPException(404, f"プレイヤ {player_name} を見つけられない")
+        if not current_player:
+            raise HTTPException(404, f"プレイヤ {current_player.name} を見つけられない")
 
-        action = Action.from_name(action_name)
-        if not action:
-            raise HTTPException(400, f"不正なアクション: {action_name}")
+        action, amount = self.round_manager.current_player.decide_action(self.table)
+        if not action or not amount:
+            raise HTTPException(400, f"不正なアクション: {action}")
 
-        self.round_manager.step_apply_action(player, action, amount)
+        self.round_manager.step_apply_action(current_player, action, amount)
         return self._make_waiting_response()
 
 
