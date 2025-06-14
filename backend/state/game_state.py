@@ -32,19 +32,17 @@ class GameState:
 
     def apply_action(self, action, amount=None):
         """プレイヤーからアクションを受け付け、AIも次に動く。"""
-            self.round_manager.step_apply_action(player_action=action, amount=amount)
-            self.result = self.round_manager.status
+        self.round_manager.step_apply_action(player_action=action, amount=amount)
+        self.result = self.round_manager.status
 
-            if self.result == Status.HUMAN_ACTED:
-                self.result = self.round_manager.step()
+        if self.result == Status.HUMAN_ACTED:
+            self.result = self.round_manager.step()
         
     def state_manager(self):
-        if self.result == Status.WAITING_FOR_FUNAN:
+        if self.result == Status.WAITING_FOR_HUMAN:
             return self.get_state()
         if self.result == Status.WAITING_FOR_AI:
-            return self.round_manager.step_aplly_action
-            
-        elif 
+            return self.round_manager.step_apply_action()
 
     def get_state(self):
         """APIレスポンス用にゲーム情報を整理して取得。"""

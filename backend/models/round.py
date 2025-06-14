@@ -2,21 +2,15 @@
 from backend.models.table import Table
 from backend.models.action import Action, ActionManager
 from backend.models.enum import Round, Status, Position
+from typing import List, Optional
 
-class RoundManager:
+class ActionOrder:
     def __init__(self, table: Table):
         self.table = table
         self.action_order = []
         self.action_index = 0
-        self.current_player = None
-        self.status = Status.RUNNING
 
-    def start_new_round(self):
-        self.table.reset(hand_over=False, round_over=True)
-        self.action_order = self.reset_action_order()
-        return self.step()
-
-    def reset_action_order(self):
+    def reset(self) -> List[Table.seats]:
         # is_active かつ has_acted == False のプレイヤーを取得
         active_unacted_players = [
             p for p in self.table.get_active_players() if not p.has_acted
@@ -37,28 +31,42 @@ class RoundManager:
                 )
                 # BBの次（UTG）スタートに並べ直して返す
                 self.action_order = sorted_order[bb_index + 1:] + sorted_order[:bb_index + 1]
-                return self.action_order
             except Exception as e:
                 raise RuntimeError(f"bb_indexを取得できません。: {e}")
         # ポストフロップ,None以外はそのまま返す
         self.action_order = sorted_order
-        return self.action_order
+
+    def get_current_player(self) -> Optional[Table.seats]:
+        if self.action_index < len(self.action_order):
+            return self.action_order[self.action_index]
+        return None
+
+class RoundManager:
+    def __init__(self, table: Table):
+        self.table = table
+        self.action_order = ActionOrder(table)
+        self.status = Status.RUNNING # step()待ちフラグ（初期）
+
+    def reset(self):
+        self.table.reset()
+        self.action_order.reset()
 
     def step(self):
         if self.action_index >= len(self.action_order):
             return self.check_next_action_or_end()
 
-        current_player = self.action_order[self.action_index]
+        current_player = self.action_order.get_current_player()
         if current_player.is_human:
             self.status = Status.WAITING_FOR_HUMAN
         else:
             self.status = Status.WAITING_FOR_AI
+            self.step_apply_action(current_player)
         return self.status
 
     def step_apply_action(self, current_player, action, amount):
         if current_player is None:
-            current_player = self.current_player
-        
+            current_player = self.action_order.get_current_player()
+
         if action is None:
             self.status = Status.ERROR
             raise ValueError("アクションが指定されていません。")
@@ -85,22 +93,21 @@ class RoundManager:
         active_players = [p for p in self.table.seats if p and p.is_active]
         if len(active_players) == 1:
             self.status = Status.HAND_OVER
-    
-        self.action_order = self.reset_action_order()
+
+        self.action_order = ActionOrder.reset()
         # action_orderがない → ラウンド終了
         if not self.action_order:
             self.status = Status.ROUND_OVER
         # アクション継続
         else:
             self.status = Status.RUNNING
-            self.current_player = self.action_order[self.action_index]
         return self.status
 
     def advance_round(self):
         next_round = Round.next(self.table.round)
         if next_round == Round.SHOWDOWN:
             self.table.round = Round.SHOWDOWN
-            self.status = Status.HAND_OVER
+            self.status = Status.ROUND_OVER
             return self.status
         
         self.table.round = next_round
@@ -112,7 +119,7 @@ class RoundManager:
         elif self.table.round == Round.RIVER:
             self.table.deal_river()
 
-        self.start_new_round()
+        return self.start_new_round()
         self.status = Status.RUNNING
         return self.status
     

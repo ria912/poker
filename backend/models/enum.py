@@ -54,13 +54,13 @@ class Action(str, Enum):
         return action in cls.betting_actions()
 
 class Status(str, Enum):
-    RUNNING = "running"
+    RUNNING = "running" # round.step()待ちフラグ（初期）
     WAITING_FOR_HUMAN = "waiting_for_human"
     WAITING_FOR_AI = "waiting_for_ai"
     HUMAN_ACTED = "human_acted"
     AI_ACTED = "ai_acted"
-    ROUND_OVER = "round_over"
-    HAND_OVER = "hand_over"
+    ROUND_OVER = "round_over" # ラウンド終了フラグ（ショウダウン）
+    HAND_OVER = "hand_over" # ショウダウン処理終了フラグ
     ERROR = "error"
 
     @classmethod

@@ -15,7 +15,7 @@ class GameState:
 
     def start_new_hand(self):
         """ゲームのハンドを最初からスタートしてレスポンスも整理して返す。"""
-        self.table.reset_for_new_hand()
+        self.table.reset()
         self.table.start_hand()
         self.round_manager.reset_action_order()
 

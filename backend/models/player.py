@@ -15,19 +15,16 @@ class Player:
 
         self.sitting_out = False # 離席中かどうか
 
-    def reset_for_new_hand(self):
-        self.hand = []
+    def reset(self, hand_over=False):
         self.bet_total = 0
         self.last_action = None
         self.has_acted = False
-        self.folded = False
-        self.all_in = False
+        
+        if hand_over:
+            self.folded = False
+            self.all_in = False
+            self.hand = []
 
-    def reset_for_next_round(self):
-        self.bet_total = 0
-        self.last_action = None
-        self.has_acted = False
-    
     @property
     def is_active(self):
         return not self.folded and not self.all_in and not self.sitting_out
