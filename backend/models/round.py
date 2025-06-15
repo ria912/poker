@@ -1,5 +1,5 @@
 # models/round.py
-from backend.models.table import Table
+from backend.models.table import Table, Player
 from backend.models.action import Action, ActionManager
 from backend.models.enum import Round, Status, Position
 from typing import List, Optional
@@ -10,7 +10,7 @@ class ActionOrder:
         self.action_order = []
         self.action_index = 0
 
-    def reset(self) -> List[Table.seats]:
+    def reset(self) -> List[Player.position]:
         # is_active かつ has_acted == False のプレイヤーを取得
         active_unacted_players = [
             p for p in self.table.get_active_players() if not p.has_acted
@@ -97,7 +97,8 @@ class RoundManager:
         self.action_order = ActionOrder.reset()
         # action_orderがない → ラウンド終了
         if not self.action_order:
-            self.status = Status.ROUND_OVER
+            self.status = Status.ODER_OVER
+            self.advance_round()
         # アクション継続
         else:
             self.status = Status.RUNNING
@@ -119,7 +120,7 @@ class RoundManager:
         elif self.table.round == Round.RIVER:
             self.table.deal_river()
 
-        return self.start_new_round()
+        self.start_new_round()
         self.status = Status.RUNNING
         return self.status
     
