@@ -1,6 +1,6 @@
 # models/ai_player.py
 from backend.models.player import Player
-from backend.models.action import Action
+from backend.models.action import Action, ActionManager
 import random
 
 class AIPlayer(Player):
@@ -8,7 +8,7 @@ class AIPlayer(Player):
         super().__init__(name=f"{name}AI", stack=10000)
 
     def decide_action(self, table):
-        legal_actions = Action.get_legal_actions(self, table)
+        legal_actions = ActionManager.get_legal_actions(self, table)
 
         if Action.FOLD in legal_actions and random.random() < 0.2:
             return Action.FOLD, 0

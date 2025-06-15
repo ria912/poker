@@ -36,8 +36,8 @@ class Table:
         
         for i in range(1, len(self.seats)):
             self.seats[i].player = AIPlayer(name=f"AI_{i}")
-    
-    def get_active_players(self): List[Seat.player]
+
+    def get_active_players(self) -> List[Player]:
         return [
             seat.player for seat in self.seats
             if seat.player and seat.player.is_active
@@ -50,7 +50,7 @@ class Table:
             if seat.player and not seat.player.sitting_out
         ]
 
-    def reset(self):
+    def seats_player_reset(self):
         # 共通してリセットする情報
         self.current_bet = 0
         self.last_raiser = None
@@ -132,7 +132,6 @@ class Table:
             "pot": self.pot,
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
-            "btn_index": self.btn_index,
             "last_raiser": self.last_raiser if self.last_raiser else None,
             "seats": [self._seat_to_dict(seat) for seat in self.seats]
         }

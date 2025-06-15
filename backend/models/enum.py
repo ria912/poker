@@ -54,26 +54,22 @@ class Action(str, Enum):
         return action in cls.betting_actions()
 
 class Status(str, Enum):
-    RUNNING = "running" # round.step()待ちフラグ（初期）
+    ROUND_CONTINUE = "round_continue" # round.step()待ちフラグ（初期）
     WAITING_FOR_HUMAN = "waiting_for_human"
     WAITING_FOR_AI = "waiting_for_ai"
     HUMAN_ACTED = "human_acted"
     AI_ACTED = "ai_acted"
-    ROUND_OVER = "round_over" # ラウンド終了フラグ（ショウダウン）
+    ROUND_OVER = "round_over" # 各ラウンド終了フラグ
+    WAITING_FOR_WINNER = "waiting_for_winner" # ショウダウン処理待ちフラグ
     HAND_OVER = "hand_over" # ショウダウン処理終了フラグ
     ERROR = "error"
 
     @classmethod
     def is_waiting(cls, status):
-        # 人間・AIいずれかの待機状態か判定
-        return status in [cls.WAITING_FOR_HUMAN, cls.WAITING_FOR_AI]
+        # 人間・AI・勝者判定・待機状態
+        return status in [cls.WAITING_FOR_HUMAN, cls.WAITING_FOR_AI, cls.WAITING_FOR_WINNER]
 
     @classmethod
-    def is_terminal(cls, status):
-        # ラウンド終了またはハンド終了、エラーなどの状態判定
-        return status in [cls.ROUND_OVER, cls.HAND_OVER, cls.ERROR]
-
-    @classmethod
-    def is_active(cls, status):
-        # まだアクションが期待されている状態
-        return not cls.is_terminal(status)
+    def waiting_step(cls, status):
+        # 処理完了フラグ（エラー以外）
+        return status in [cls.HUMAN_ACTED, cls.AI_ACTED, cls.ROUND_CONTINUE, cls.ROUND_OVER]
