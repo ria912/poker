@@ -5,22 +5,21 @@ from backend.models.human_player import HumanPlayer
 from backend.models.ai_player import AIPlayer
 from backend.models.position import PositionManager
 from backend.models.enum import Round, Position
-from typing import Optional # None の可能性があることを型として明示
+from typing import List, Optional # None の可能性を型で明示
 
 class Seat:
     def __init__(self, index: int):
-        self.index = index  # 座席番号 0~5
-        self.player: Optional[Player] = None  # 座っているプレイヤー
+        self.index: int = index # 座席数0~5
+        self.player: Optional[Player] = None # プレイヤー or 空席
 
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
-
         self.small_blind = small_blind
         self.big_blind = big_blind
         self.min_bet = big_blind
         # Seat 0~5 までの座席を用意
-        self.seats: list[Seat] = [Seat(i) for i in range(seat_count)]
-        self.btn_index: Optional[Seat.index] = None
+        self.seats: List[Seat] = [Seat(i) for i in range(seat_count)]
+        self.btn_index: Optional[int] = None
         
         self.deck = Deck()
         self.round = Round.PREFLOP
@@ -38,14 +37,14 @@ class Table:
         for i in range(1, len(self.seats)):
             self.seats[i].player = AIPlayer(name=f"AI_{i}")
     
-    def get_active_players(self): list[Seat.player]
+    def get_active_players(self): List[Seat.player]
         return [
             seat.player for seat in self.seats
             if seat.player and seat.player.is_active
         ]
 
     @property
-    def active_seat_indices(self) -> list[int]:
+    def active_seat_indices(self) -> List[int]:
         return [
             index for index, seat in enumerate(self.seats)
             if seat.player and not seat.player.sitting_out
