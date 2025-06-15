@@ -10,7 +10,7 @@ class ActionOrder:
         self.action_order = []
         self.action_index = 0
 
-    def reset(self) -> List[Player.position]:
+    def reset(self) -> List[Player]:
         # is_active かつ has_acted == False のプレイヤーを取得
         active_unacted_players = [
             p for p in self.table.get_active_players() if not p.has_acted
