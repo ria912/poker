@@ -9,7 +9,7 @@ from typing import Optional # None の可能性があることを型として明
 
 class Seat:
     def __init__(self, index: int):
-        self.index = index  # 座席番号
+        self.index = index  # 座席番号 0~5
         self.player: Optional[Player] = None  # 座っているプレイヤー
 
 class Table:
@@ -20,7 +20,7 @@ class Table:
         self.min_bet = big_blind
         # Seat 0~5 までの座席を用意
         self.seats: list[Seat] = [Seat(i) for i in range(seat_count)]
-        self.btn_index: int | None = None
+        self.btn_index: Optional[Seat.index] = None
         
         self.deck = Deck()
         self.round = Round.PREFLOP
@@ -38,7 +38,7 @@ class Table:
         for i in range(1, len(self.seats)):
             self.seats[i].player = AIPlayer(name=f"AI_{i}")
     
-    def get_active_players(self):
+    def get_active_players(self): list[Seat.player]
         return [
             seat.player for seat in self.seats
             if seat.player and seat.player.is_active
