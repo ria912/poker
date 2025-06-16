@@ -4,7 +4,33 @@ from backend.models.action import Action, ActionManager
 from backend.models.enum import Round, Status, Position
 from typing import List, Optional
 
-class ActionOrder:
+class RoundLogic:
+    def __init__(self, table: Table):
+        self.table = table
+        self.round = Round.PREFLOP
+    
+    def advance_round(self):
+        next_round = Round.next(self.table.round)
+        if next_round == Round.SHOWDOWN:
+            self.table.round = Round.SHOWDOWN
+            self.status = Status.WAITING_FOR_WINNER
+            return self.status
+        
+        self.table.round = next_round
+        self.table.pot_sum()
+        self.table.reset()
+        
+        if self.table.round == Round.FLOP:
+            self.table.deal_flop()
+        elif self.table.round == Round.TURN:
+            self.table.deal_turn()
+        elif self.table.round == Round.RIVER:
+            self.table.deal_river()
+        
+        self.status = Status.ROUND_CONTINUE
+        return self.status
+
+class ActionOder:
     def __init__(self, table: Table):
         self.table = table
         self.action_order = []
@@ -36,7 +62,7 @@ class ActionOrder:
         # ポストフロップ,None以外はそのまま返す
         self.action_order = sorted_order
 
-    def get_current_player(self) -> Optional[Table.seats]:
+    def get_current_player(self) -> Optional[Player]:
         if self.action_index < len(self.action_order):
             return self.action_order[self.action_index]
         return None
@@ -48,7 +74,7 @@ class RoundManager:
         self.status = Status.ROUND_CONTINUE # step()待ちフラグ（初期）
 
     def reset(self):
-        self.table.seats_player_reset()
+        self.table.reset()
         self.action_order.reset()
 
     def step(self):
