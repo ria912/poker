@@ -12,7 +12,7 @@ class Seat:
         self.index: int = index # 座席数0~5
         self.player: Optional[Player] = None # プレイヤー or 空席
     
-    def reset_players(self, hand_over: bool = False):
+    def reset_player(self, hand_over: bool = False):
         if self.player:
             self.player.reset(hand_over=hand_over)
     
