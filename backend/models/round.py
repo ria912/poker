@@ -130,26 +130,6 @@ class RoundManager:
             self.status = Status.ROUND_CONTINUE
         return self.status
 
-    def advance_round(self):
-        next_round = Round.next(self.table.round)
-        if next_round == Round.SHOWDOWN:
-            self.table.round = Round.SHOWDOWN
-            self.status = Status.WAITING_FOR_WINNER
-            return self.status
-        
-        self.table.round = next_round
-
-        if self.table.round == Round.FLOP:
-            self.table.deal_flop()
-        elif self.table.round == Round.TURN:
-            self.table.deal_turn()
-        elif self.table.round == Round.RIVER:
-            self.table.deal_river()
-
-        self.reset()
-        self.status = Status.ROUND_CONTINUE
-        return self.status
-    
     def log_action(self, current_player, action, amount):
         """アクションをログに記録する。"""
         log_entry = {
