@@ -11,7 +11,11 @@ class Seat:
     def __init__(self, index: int):
         self.index: int = index # 座席数0~5
         self.player: Optional[Player] = None # プレイヤー or 空席
-
+    
+    def reset_players(self, hand_over: bool = False):
+        if self.player:
+            self.player.reset(hand_over=hand_over)
+            
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
         self.small_blind = small_blind
@@ -50,17 +54,22 @@ class Table:
             if seat.player and not seat.player.sitting_out
         ]
 
-    def seats_player_reset(self):
-        # 共通してリセットする情報
-        self.current_bet = 0
-        self.last_raiser = None
-        self.min_bet = self.big_blind
-    
+    def reset(self):
         if self.round == Round.SHOWDOWN:
             self.round = Round.PREFLOP
             self.board = []
             self.pot = 0
+            for seat in self.seats:
+                seat.reset_players(hand_over=True)
+        else:
+            for seat in self.seats:
+                seat.reset_players()
+
+        self.current_bet = 0
+        self.last_raiser = None
+        self.min_bet = self.big_blind
     
+        '''
         for seat in self.seats:
             player = seat.player
             if not player:
@@ -69,7 +78,7 @@ class Table:
                 player.reset(hand_over=True)
             else:
                 player.reset()
-
+        '''
     def start_hand(self):
         self.deck.deck_shuffle()
         # BTNのローテーション・ポジションの割り当て
