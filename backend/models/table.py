@@ -15,13 +15,13 @@ class Seat:
     def reset_players(self, hand_over: bool = False):
         if self.player:
             self.player.reset(hand_over=hand_over)
-            
+    
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
         self.small_blind = small_blind
         self.big_blind = big_blind
         self.min_bet = big_blind
-        # Seat 0~5 までの座席を用意
+        # Seat 0~5 までの席を定義
         self.seats: List[Seat] = [Seat(i) for i in range(seat_count)]
         self.btn_index: Optional[int] = None
         
@@ -47,10 +47,9 @@ class Table:
             if seat.player and seat.player.is_active
         ]
 
-    @property
     def active_seat_indices(self) -> List[int]:
         return [
-            index for index, seat in enumerate(self.seats)
+            seat.index for seat in self.seats
             if seat.player and not seat.player.sitting_out
         ]
 
@@ -68,41 +67,16 @@ class Table:
         self.current_bet = 0
         self.last_raiser = None
         self.min_bet = self.big_blind
-    
-        '''
-        for seat in self.seats:
-            player = seat.player
-            if not player:
-                continue
-            if self.round == Round.SHOWDOWN:
-                player.reset(hand_over=True)
-            else:
-                player.reset()
-        '''
+
     def start_hand(self):
-        self.deck.deck_shuffle()
+        self.deck.reset()
         # BTNのローテーション・ポジションの割り当て
         self.btn_index = PositionManager.set_btn_index(self)
-        PositionManager.assign_positions(self)
+        self.seats = PositionManager.assign_positions(self)
         # ブラインドとカードの配布
         self._post_blinds()
-        self.deal_hands()
-    
-    def deal_hands(self):
-        for seat in self.seats:
-            player = seat.player
-            if player and not player.sitting_out:
-                player.hand = [self.deck.draw(), self.deck.draw()]
-
-    def deal_flop(self):
-        self.board.extend([self.deck.draw() for _ in range(3)])
-
-    def deal_turn(self):
-        self.board.append(self.deck.draw())
-
-    def deal_river(self):
-        self.board.append(self.deck.draw())
-
+        self.deck.deal_hands(self.seats)
+ 
     def _post_blinds(self):
         for seat in self.seats:
             player = seat.player

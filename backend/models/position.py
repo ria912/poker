@@ -6,22 +6,23 @@ class PositionManager:
     @staticmethod
     def set_btn_index(table) -> int:
         seat_count = len(table.seats)
+        idx = table.btn_index
 
         # 初回: 最初の非NoneのプレイヤーをBTNに
-        if table.btn_index is None:
+        if idx is None:
             for i in range(seat_count):
                 player = table.seats[i].player
                 if player and not player.sitting_out:
-                    table.btn_index = i
+                    idx = i
                     return i
             raise Exception("No active players to assign BTN")
         
         # 2回目以降: 次の有効なプレイヤーへBTNを回す
         for offset in range(1, seat_count + 1):
-            i = (table.btn_index + offset) % seat_count
-            player = table.seats[i].player  # ← player を定義追加
+            i = (idx + offset) % seat_count
+            player = table.seats[i].player
             if player and not player.sitting_out:
-                table.btn_index = i
+                idx = i
                 return i
     
         raise Exception("No active players to assign BTN")
@@ -38,22 +39,23 @@ class PositionManager:
 
     @classmethod
     def assign_positions(cls, table):
-        n = len(table.active_seat_indices)
+        active_indices = table.active_seat_indices()
+        if not active_indices:
+            raise ValueError("assign_positions にはアクティブプレイヤーが必要")
+        n = len(active_indices)
         if n < 2:
             raise ValueError("assign_positions には2人以上のアクティブプレイヤーが必要")
 
         # BTNの次からスタートして、BTNを最後にする並び順
-        ordered_seats = sorted(
-            table.active_seat_indices,
+        ordered_indices = sorted(
+            active_indices,
             key=lambda i: (i - table.btn_index) % len(table.seats)
         )
-
         # ポジション順を取得
         ordered_positions = cls.get_position_order(n)
-
         # 割り当て
         assigned = {}
-        for seat_index, pos in zip(ordered_seats, ordered_positions):
+        for seat_index, pos in zip(ordered_indices, ordered_positions):
             seat = table.seats[seat_index]
             if seat.player:
                 seat.player.position = pos
