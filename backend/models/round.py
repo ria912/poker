@@ -30,7 +30,7 @@ class RoundLogic:
         self.status = Status.ROUND_CONTINUE
         return self.status
 
-class ActionOder:
+class ActionOrder:
     def __init__(self, table: Table):
         self.table = table
         self.action_order = []
