@@ -16,6 +16,15 @@ class Seat:
         if self.player:
             self.player.reset(hand_over=hand_over)
     
+    def to_dict(self):
+        return {
+            "index": self.index,
+            "player": self.player.base_dict() if self.player else None
+        }
+
+    def __repr__(self):
+        return f"Seat(index={self.index}, player={self.player})"
+    
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
         self.small_blind = small_blind
@@ -23,8 +32,8 @@ class Table:
         self.min_bet = big_blind
         # Seat 0~5 までの席を定義
         self.seats: List[Seat] = [Seat(i) for i in range(seat_count)]
-        self.btn_index: Optional[int] = None
-        
+        self.btn_index: Optional[int] = None # ボタンの座席インデックス
+
         self.deck = Deck()
         self.round = Round.PREFLOP
         self.board = []
@@ -59,10 +68,10 @@ class Table:
             self.board = []
             self.pot = 0
             for seat in self.seats:
-                seat.reset_players(hand_over=True)
+                seat.reset_player(hand_over=True)
         else:
             for seat in self.seats:
-                seat.reset_players()
+                seat.reset_player()
 
         self.current_bet = 0
         self.last_raiser = None

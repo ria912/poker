@@ -13,28 +13,25 @@ class RoundLogic:
         next_round = Round.next(self.table.round)
         if next_round == Round.SHOWDOWN:
             self.table.round = Round.SHOWDOWN
-            self.status = Status.WAITING_FOR_WINNER
-            return self.status
+            self.status = Status.ROUND_OVER
         
         self.table.round = next_round
-        self.table.pot_sum()
         self.table.reset()
         
         if self.table.round == Round.FLOP:
-            self.table.deal_flop()
+            self.table.deck.deal_flop()
         elif self.table.round == Round.TURN:
-            self.table.deal_turn()
+            self.table.deck.deal_turn()
         elif self.table.round == Round.RIVER:
-            self.table.deal_river()
-        
+            self.table.deck.deal_river()
+
         self.status = Status.ROUND_CONTINUE
-        return self.status
 
 class ActionOrder:
     def __init__(self, table: Table):
         self.table = table
-        self.action_order = []
-        self.index = 0
+        self.action_order: List[Player] = []
+        self.action_index = 0
 
     def reset(self) -> List[Player]:
         # is_active かつ has_acted == False のプレイヤーを取得

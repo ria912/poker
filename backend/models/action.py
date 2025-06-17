@@ -26,7 +26,7 @@ class ActionManager:
             "legal_actions": actions,
             "amount_ranges": {
                 "bet": [max(0,player.stack - min_bet)],
-                "raise": [max(0,player.stack - to_call - min_bet)],
+                "raise": [max(0,player.stack - min_bet - to_call)],
             }
         }
 
@@ -37,12 +37,12 @@ class ActionManager:
         elif action == Action.CHECK:
             pass
         elif action == Action.CALL:
-            Action._apply_call(player, table)
+            ActionManager._apply_call(player, table)
         elif action == Action.BET:
-            Action._apply_bet(player, table, amount)
+            ActionManager._apply_bet(player, table, amount)
             table.last_raiser = player
         elif action == Action.RAISE:
-            Action._apply_raise(player, table, amount)
+            ActionManager._apply_raise(player, table, amount)
             table.last_raiser = player
         
         player.has_acted = True
