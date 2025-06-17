@@ -34,7 +34,7 @@ class ActionOrder:
     def __init__(self, table: Table):
         self.table = table
         self.action_order = []
-        self.action_index = 0
+        self.index = 0
 
     def reset(self) -> List[Player]:
         # is_active かつ has_acted == False のプレイヤーを取得
