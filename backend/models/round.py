@@ -44,7 +44,6 @@ class ActionOrder:
             key=lambda p: Position.ASSIGN_ORDER.index(p.position)
             if p.position in Position.ASSIGN_ORDER else 999
         )
-        self.action_index = 0
 
         if self.table.round == Round.PREFLOP and not self.action_order:
             # BBの次からアクション開始（ASSIGN_ORDER内でのBBの次）
