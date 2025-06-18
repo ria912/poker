@@ -18,6 +18,7 @@ class RoundLogic:
         if next_round == Round.SHOWDOWN:
             self.table.round = Round.SHOWDOWN
             self.status = Status.ROUND_OVER
+        
         else:
             self.table.round = next_round
             self.table.reset()
@@ -84,25 +85,11 @@ class OrderManager:
         
         return None
 
-    def reset_actions(self):
-        """プレイヤーのアクション状態もリセット。次のラウンドに備えて。"""
-        for player in self.active_players:
-            player.has_acted = False
-        self.active_players = self.table.get_active_players()
-        self.action_index = 0
-
-    def is_round_complete(self) -> bool:
-        """現在のベット額に対して全プレイヤーがアクション済みならTRUE。"""
-        for player in self.table.get_active_players():
-            if not player.has_acted or player.bet_total < self.table.current_bet:
-                return Status.ROUND_CONTINUE
-        return Status.ROUND_OVER
-
     def proceed(self):
         """次のプレイヤーにアクションしてもらう。完了時に次のラウンドに移行。"""
         if self.is_round_complete():
             self.round_logic.advance_round()
-            self.reset_actions()
+            self.reset()
             return
 
         player = self.get_next_player()
