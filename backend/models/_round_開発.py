@@ -18,18 +18,22 @@ class RoundLogic:
         if next_round == Round.SHOWDOWN:
             self.table.round = Round.SHOWDOWN
             self.status = Status.ROUND_OVER
-        
+            # Showdownの処理を行う
+            self.table.showdown()
+            self.table.pot.get_winners() # tableにclass potを作るべき？tableに書く？
+
         else:
             self.table.round = next_round
             self.table.reset()
-            self.status = Status.ROUND_CONTINUE
-
+            
             if self.table.round == Round.FLOP:
                 self.table.deck.deal_flop()
             elif self.table.round == Round.TURN:
                 self.table.deck.deal_turn()
             elif self.table.round == Round.RIVER:
                 self.table.deck.deal_river()
+
+            self.status = Status.ROUND_CONTINUE
 
 
 class OrderManager:
@@ -99,3 +103,7 @@ class OrderManager:
             # player.act()
             player.has_acted = True
             self.action_index += 1
+    
+    def is_round_complete(self) -> bool:
+        """現在のラウンドが完了しているかを確認。"""
+        return all(player.has_acted for player in self.action_order)
