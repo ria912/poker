@@ -31,7 +31,7 @@ class RoundLogic:
                 self.table.deck.deal_river()
 
 
-class RoundManager:
+class OrderManager:
     """アクション管理も行うRound Manager。"""
 
     def __init__(self, table: Table):
@@ -45,6 +45,7 @@ class RoundManager:
     def reset(self):
         """ラウンド開始時に呼び出して状態をリセット。"""
         self.round_logic = RoundLogic(self.table)
+        self.active_players = self.table.get_active_players()
         self.action_order = self.get_action_order()
         self.action_index = 0
 
@@ -59,7 +60,6 @@ class RoundManager:
             key=lambda p: Position.ASSIGN_ORDER.index(p.position)
             if p.position in Position.ASSIGN_ORDER else 999
         )
-        self.action_index = 0
 
         if self.table.round == Round.PREFLOP and not self.action_order:
             # BBの次からアクション開始（ASSIGN_ORDER内でのBBの次）
