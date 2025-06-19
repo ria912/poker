@@ -77,7 +77,7 @@ class Table:
         self.last_raiser = None
         self.min_bet = self.big_blind
 
-    def start_hand(self):
+    def starting_hand(self):
         self.deck.reset()
         # BTNのローテーション・ポジションの割り当て
         self.btn_index = PositionManager.set_btn_index(self)

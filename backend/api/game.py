@@ -1,7 +1,7 @@
 # api/game.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.state.game_state import game_state
+from backend.state.single_game_state import game_state
 
 router = APIRouter()
 

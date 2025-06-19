@@ -9,7 +9,7 @@ class HumanPlayer(Player):
         self.pending_amount = None
         self.is_human = True
 
-    def set_pending_action(self, action: Action, amount: int):
+    def receive_action(self, action: Action, amount: int):
         self.pending_action = action
         self.pending_amount = amount
 

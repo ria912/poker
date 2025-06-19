@@ -1,39 +1,59 @@
-# models/round.py
-from backend.models.table import Table, Player
-from backend.models.action import Action, ActionManager
-from backend.models.enum import Round, Status, Position
+# backend/models/round.py
 from typing import List, Optional
+from backend.models.table import Table
+from backend.models.player import Player
+from backend.models.enum import Round, Status, Position
 
 class RoundLogic:
+    """ラウンドの状態管理も行います。"""
+
     def __init__(self, table: Table):
         self.table = table
-        self.round = Round.PREFLOP
-    
+        self.round = self.table.round
+        self.status = Status.ROUND_CONTINUE
+
     def advance_round(self):
+        """次のベットラウンドに移行します。 showdown時にラウンド完了。"""
         next_round = Round.next(self.table.round)
         if next_round == Round.SHOWDOWN:
             self.table.round = Round.SHOWDOWN
             self.status = Status.ROUND_OVER
-        
-        self.table.round = next_round
-        self.table.reset()
-        
-        if self.table.round == Round.FLOP:
-            self.table.deck.deal_flop()
-        elif self.table.round == Round.TURN:
-            self.table.deck.deal_turn()
-        elif self.table.round == Round.RIVER:
-            self.table.deck.deal_river()
+            # Showdownの処理を行う
+            self.table.showdown()
+            self.table.pot.get_winners() # tableにclass Potを作る？Tableに書く？
 
-        self.status = Status.ROUND_CONTINUE
+        else:
+            self.table.round = next_round
+            self.table.reset()
+            
+            if self.table.round == Round.FLOP:
+                self.table.deck.deal_flop()
+            elif self.table.round == Round.TURN:
+                self.table.deck.deal_turn()
+            elif self.table.round == Round.RIVER:
+                self.table.deck.deal_river()
 
-class ActionOrder:
+            self.status = Status.ROUND_CONTINUE
+
+
+class OrderManager:
+    """アクション管理も行うRound Manager。"""
+
     def __init__(self, table: Table):
         self.table = table
-        self.action_order: List[Player] = []
+        self.round_logic = RoundLogic(table)
+        self.active_players = self.table.get_active_players()
+
+        self.action_order: List[Player] = self.set_action_order()
+        self.action_index = 0
+    
+    def reset(self):
+        """ラウンド開始時に呼び出して状態をリセット。"""
+        self.active_players = self.table.get_active_players()
+        self.action_order = self.set_action_order()
         self.action_index = 0
 
-    def reset(self) -> List[Player]:
+    def set_action_order(self) -> List[Player]:
         # is_active かつ has_acted == False のプレイヤーを取得
         active_unacted_players = [
             p for p in self.table.get_active_players() if not p.has_acted
@@ -58,82 +78,31 @@ class ActionOrder:
         # ポストフロップ,None以外はそのまま返す
         self.action_order = sorted_order
 
-    def get_current_player(self) -> Optional[Player]:
-        if self.action_index < len(self.action_order):
-            return self.action_order[self.action_index]
+    def get_next_player(self) -> Optional[Player]:
+        """次にアクションすべきプレイヤーを取得。全員完了時に帰 None。"""
+        while self.action_index < len(self.action_order):
+            player = self.action_order[self.action_index]
+            if not player.has_acted:
+                return player
+            self.action_index += 1
+        
         return None
 
-class RoundManager:
-    def __init__(self, table: Table):
-        self.table = table
-        self.action_order = ActionOrder(table)
-        self.status = Status.ROUND_CONTINUE # step()待ちフラグ（初期）
+    def proceed(self):
+        """次のプレイヤーにアクションしてもらう。完了時に次のラウンドに移行。"""
+        if self.is_round_complete():
+            self.round_logic.advance_round()
+            self.reset()
+            return
 
-    def reset(self):
-        self.table.reset()
-        self.action_order.reset()
-
-    def step(self):
-        if self.action_index >= len(self.action_order):
-            return self.check_next_action_or_end()
-
-        current_player = self.action_order.get_current_player()
-        if current_player.is_human:
-            self.status = Status.WAITING_FOR_HUMAN
-        else:
-            self.status = Status.WAITING_FOR_AI
-        return self.status
-
-    def step_apply_action(self, current_player, action, amount):
-        if current_player is None:
-            current_player = self.action_order.get_current_player()
-
-        action, amount = current_player.decide_action(self.table, action, amount)
-
-        if action is None:
-            self.status = Status.ERROR
-            raise ValueError("アクションが指定されていません。")
-
-        ActionManager.apply_action(self.table, current_player, action, amount)
-        self.log_action(current_player, action, amount)
-        # レイズした場合、他プレイヤーの has_acted をリセット
-        if action in Action.betting_actions() and current_player.bet_total == self.table.current_bet:
-            self.table.last_raiser = current_player
-            for p in self.table.seats:
-                if p and p.is_active and p != current_player:
-                    p.has_acted = False
-
-        self.action_index += 1
-        
-        if current_player.is_human:
-            self.status = Status.HUMAN_ACTED
-        else:
-            self.status = Status.AI_ACTED
-        return self.status
+        player = self.get_next_player()
+        if player is not None:
+            # ここにプレイヤーにアクションしてもらうロジック
+            # 例:
+            # player.act()
+            player.has_acted = True
+            self.action_index += 1
     
-    def check_next_action_or_end(self):
-        # アクティブプレイヤーが1人 → ハンド終了
-        active_players = [p for p in self.table.seats if p and p.is_active]
-        if len(active_players) == 1:
-            self.status = Status.HAND_OVER
-
-        self.action_order = self.action_order.reset()
-        # action_orderがない → ラウンド終了
-        if not self.action_order:
-            self.status = Status.ROUND_OVER
-        # アクション継続
-        else:
-            self.status = Status.ROUND_CONTINUE
-        return self.status
-
-    def log_action(self, current_player, action, amount):
-        """アクションをログに記録する。"""
-        log_entry = {
-            'player': current_player.name,
-            'action': action.name,
-            'amount': amount,
-            'round': self.table.round.name,
-            'timestamp': self.table.get_current_time()
-        }
-        self.table.action_log.append(log_entry)
-        print(f"Action logged: {log_entry}")
+    def is_round_complete(self) -> bool:
+        """現在のラウンドが完了しているかを確認。"""
+        return all(player.has_acted for player in self.action_order)
