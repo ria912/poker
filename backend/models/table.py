@@ -21,10 +21,7 @@ class Seat:
             "index": self.index,
             "player": self.player.base_dict() if self.player else None
         }
-
-    def __repr__(self):
-        return f"Seat(index={self.index}, player={self.player})"
-    
+   
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
         self.small_blind = small_blind
@@ -108,13 +105,12 @@ class Table:
         pass # 後で開発
 
     def _seat_to_dict(self, seat: Seat):
-        show_hand = False
         if not seat.player:
             return {"index": seat.index, "player": None}
-       
+       show_hand = False
         if seat.player.is_human or self.round == Round.SHOWDOWN:
             show_hand = True
-        
+        else:
         return seat.player.base_dict(show_hand)
 
     def to_dict(self):
