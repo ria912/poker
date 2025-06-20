@@ -27,13 +27,13 @@ class GameState:
             player.act()  # AIのアクション（act() はAI側で定義）
             self.order_manager.proceed()
 
-    def receive_human_action(self, action: Action):
+    def receive_human_action(self, action: Action, amount: int = None):
         current = self.order_manager.get_next_player()
         if not current or not current.is_human:
             raise HTTPException(status_code=400, detail="現在あなたのターンではありません。")
 
-        current.receive_action(action)
-        current.has_acted = True
+        action, amount = current.receive_action(action)
+        current.decide_action
         self.order_manager.proceed()
 
         # AIのターンを処理
