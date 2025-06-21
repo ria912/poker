@@ -44,13 +44,13 @@ class OrderManager:
         self.round_logic = RoundLogic(table)
         self.active_players = self.table.get_active_players()
 
-        self.action_order: List[Player] = self.set_action_order()
+        self.action_order: List[Player] = self.compute_action_order()
         self.action_index = 0
     
     def reset(self):
         """ラウンド開始時に呼び出して状態をリセット。"""
         self.active_players = self.table.get_active_players()
-        self.action_order = self.set_action_order()
+        self.action_order = self.compute_action_order()
         self.action_index = 0
 
     def compute_action_order(self) -> List[Player]:
@@ -83,8 +83,6 @@ class OrderManager:
             player = self.action_order[self.action_index]
             if not player.has_acted:
                 return player
-            self.action_index += 1
-        
         return None
 
     def proceed(self):
