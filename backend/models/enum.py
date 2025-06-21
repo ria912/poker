@@ -59,6 +59,7 @@ class Status(str, Enum):
     WAITING_FOR_AI = "waiting_for_ai"
     HUMAN_ACTED = "human_acted"
     AI_ACTED = "ai_acted"
+    ORDER_OVER = "order_over" # オーダー処理完了フラグ
     ROUND_OVER = "round_over" # 各ラウンド終了フラグ
     WAITING_FOR_WINNER = "waiting_for_winner" # ショウダウン処理待ちフラグ
     HAND_OVER = "hand_over" # ショウダウン処理終了フラグ
