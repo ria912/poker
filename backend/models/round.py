@@ -53,30 +53,29 @@ class OrderManager:
         self.action_order = self.set_action_order()
         self.action_index = 0
 
-    def set_action_order(self) -> List[Player]:
-        # is_active かつ has_acted == False のプレイヤーを取得
-        active_unacted_players = [
-            p for p in self.table.get_active_players() if not p.has_acted
-        ]
-        # ASSIGN_ORDER順にソート
-        sorted_order = sorted(
-            active_unacted_players,
-            key=lambda p: Position.ASSIGN_ORDER.index(p.position)
-            if p.position in Position.ASSIGN_ORDER else 999
-        )
-
-        if self.table.round == Round.PREFLOP and not self.action_order:
-            # BBの次からアクション開始（ASSIGN_ORDER内でのBBの次）
-            try:
-                bb_index = next(
-                    i for i, p in enumerate(sorted_order) if p.position == Position.BB
-                )
-                # BBの次（UTG）スタートに並べ直して返す
-                self.action_order = sorted_order[bb_index + 1:] + sorted_order[:bb_index + 1]
-            except Exception as e:
-                raise RuntimeError(f"bb_indexを取得できません。: {e}")
-        # ポストフロップ,None以外はそのまま返す
-        self.action_order = sorted_order
+    def compute_action_order(self) -> List[Player]:
+        """BBまたはBTNを基準に、席順でアクションプレイヤーを並べる"""
+        round = self.table.round
+        seats = self.table.seats
+    
+        if round == Round.PREFLOP:
+            base_pos = Position.BB
+        else:
+            base_pos = Position.BTN
+    
+        # 基準となる seat index を取得
+        base_index = self.table.get_seat_index_by_position(base_pos)
+        n = len(seats)
+    
+        action_order: List[Player] = []
+    
+        for offset in range(1, n + 1):  # 1つ先から時計回りに全席走査
+            i = (base_index + offset) % n
+            player = seats[i].player
+            if player and player.is_active and not player.has_acted:
+                action_order.append(player)
+    
+        return action_order
 
     def get_next_player(self) -> Optional[Player]:
         """次にアクションすべきプレイヤーを取得。全員完了時に帰 None。"""
