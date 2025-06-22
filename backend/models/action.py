@@ -25,8 +25,8 @@ class ActionManager:
         return {
             "legal_actions": actions,
             "amount_ranges": {
-                "bet": [max(0,player.stack - min_bet)],
-                "raise": [max(0,player.stack - min_bet - to_call)],
+                "bet": max(0, player.stack - min_bet),
+                "raise": max(0, player.stack - min_bet - to_call),
             }
         }
 
@@ -73,7 +73,7 @@ class ActionManager:
         total = min(player.stack, to_call)
 
         player.stack -= total
-        player.current_bet += total
+        player.bet_total += total
         table.pot += total
 
         if player.bet_total > table.current_bet:

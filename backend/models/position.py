@@ -12,18 +12,16 @@ class PositionManager:
         if idx is None:
             for i in range(seat_count):
                 player = table.seats[i].player
-                if player and not player.sitting_out:
-                    idx = i
-                    return i
+                if player and player.is_active:
+                    table.btn_index = i
             raise Exception("No active players to assign BTN")
         
         # 2回目以降: 次の有効なプレイヤーへBTNを回す
         for offset in range(1, seat_count + 1):
             i = (idx + offset) % seat_count
             player = table.seats[i].player
-            if player and not player.sitting_out:
-                idx = i
-                return i
+            if player and player.is_active:
+                table.btn_index = i
     
         raise Exception("No active players to assign BTN")
 
@@ -53,14 +51,10 @@ class PositionManager:
         )
         # ポジション順を取得
         ordered_positions = cls.get_position_order(n)
-        # 割り当て
-        assigned = {}
+
         for seat_index, pos in zip(ordered_indices, ordered_positions):
             seat = table.seats[seat_index]
             if seat.player:
                 seat.player.position = pos
-                assigned[seat_index] = pos
             else:
                 raise ValueError(f"Seat {seat_index} にプレイヤーがいません")
-
-        return assigned

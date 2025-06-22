@@ -77,8 +77,8 @@ class Table:
     def starting_hand(self):
         self.deck.reset()
         # BTNのローテーション・ポジションの割り当て
-        self.btn_index = PositionManager.set_btn_index(self)
-        self.seats = PositionManager.assign_positions(self)
+        PositionManager.set_btn_index(self)
+        PositionManager.assign_positions(self)
         # ブラインドとカードの配布
         self._post_blinds()
         self.deck.deal_hands(self.seats)
@@ -107,11 +107,11 @@ class Table:
     def _seat_to_dict(self, seat: Seat):
         if not seat.player:
             return {"index": seat.index, "player": None}
-       show_hand = False
+        show_hand = False
         if seat.player.is_human or self.round == Round.SHOWDOWN:
             show_hand = True
         else:
-        return seat.player.base_dict(show_hand)
+            return seat.player.base_dict(show_hand)
 
     def to_dict(self):
         return {

@@ -1,5 +1,7 @@
 # models/player.py
-class Player:
+from abc import ABC, abstractmethod
+
+class Player(ABC):  # ABCを継承して「抽象クラス」とする
     def __init__(self, name="Player", stack=10000):
         self.name = name
         self.stack = stack
@@ -24,10 +26,16 @@ class Player:
             self.folded = False
             self.all_in = False
             self.hand = []
+            if self.stack == 0:
+                self.sitting_out = True
 
     @property
     def is_active(self):
         return not self.folded and not self.all_in and not self.sitting_out
+
+    @abstractmethod
+    def act(self, table):
+        pass
 
     def base_dict(self, show_hand = False):
         data = {

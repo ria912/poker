@@ -9,7 +9,6 @@ class RoundLogic:
 
     def __init__(self, table: Table):
         self.table = table
-        self.round = self.table.round
         self.status = Status.ROUND_CONTINUE
 
     def advance_round(self):
@@ -54,17 +53,16 @@ class OrderManager:
         self.action_index = 0
 
     def compute_action_order(self) -> List[Seat]:
-        """BBまたはBTNを基準に、席順でアクションプレイヤーを並べる"""
-        round = self.table.round
+        """プリフロップはBBの次、以降はBTNの次から時計回りにアクション順を作る。"""
         seats = self.table.seats
-    
-        base_pos = Position.BB if round == Round.PREFLOP else Position.BTN
-    
-        # 基準となる seat index を取得
-        base_index = self.table.get_seat_index_by_position(base_pos)
         n = len(seats)
+
+        if self.table.round == Round.PREFLOP:
+            base_index = (self.table.btn_index + 2) % n  # = BB
+        else:
+            base_index = self.table.btn_index
     
-        action_order: List[Seat] = []
+        action_order = []
     
         for offset in range(1, n + 1):  # 1つ先から時計回りに全席走査
             i = (base_index + offset) % n
@@ -75,17 +73,13 @@ class OrderManager:
         return action_order
 
     def get_next_seat(self) -> Optional[Seat]:
-        if self.action_index >= len(self.action_order):
-            self.status = Status.ORDER_OVER
-            return None
-
-        seat = self.action_order[self.action_index]
-        if not seat.player.has_acted:
-            return seat
-
-        # has_acted ならスキップして次へ
-        self.action_index += 1
-        return self.get_next_seat()
+        while self.action_index < len(self.action_order):
+            seat = self.action_order[self.action_index]
+            if seat.player and not seat.player.has_acted:
+                return seat
+            self.action_index += 1
+        self.status = Status.ORDER_OVER
+        return None
 
     def proceed(self):
         """次のプレイヤーにアクションしてもらう。完了時に次のラウンドに移行。"""
@@ -94,14 +88,15 @@ class OrderManager:
             self.reset()
             return
 
-        player = self.get_next_player()
-        if player is not None:
-            # ここにプレイヤーにアクションしてもらうロジック
-            # 例:
-            # player.act()
-            player.has_acted = True
+        seat = self.get_next_seat()
+        if seat and seat.player:
+            action, amount = seat.player.act(self.table)  # AI,Human共通
+            print(f"{seat.player.name} が {action},{amount} を選択。")
             self.action_index += 1
     
     def is_round_complete(self) -> bool:
-        """現在のラウンドが完了しているかを確認。"""
-        return all(seat.player.has_acted for seat in self.action_order)
+        """アクション順の全プレイヤーがアクション済みかどうかを確認。"""
+        for seat in self.action_order:
+            if seat.player and seat.player.is_active and not seat.player.has_acted:
+                return False
+        return True
