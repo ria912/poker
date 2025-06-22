@@ -26,6 +26,9 @@ class AIPlayer(Player):
 
         return Action.FOLD, 0
     
+    def act(self, table):
+        """OrderManager などから呼び出される共通アクション実行インターフェース"""
+        return self.decide_action(table)
+    
     def to_dict(self, show_hand=False):
         return self.base_dict(show_hand=show_hand)
-    

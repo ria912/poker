@@ -1,7 +1,7 @@
 # backend/schemas/game_state_schema.py
 from pydantic import BaseModel
 from typing import List, Optional
-from backend.models.enum import Round, Position
+from backend.models.enum import Action, Round, Position, Status
 
 class PlayerInfo(BaseModel):
     name: str
@@ -9,7 +9,7 @@ class PlayerInfo(BaseModel):
     stack: int
     bet_total: int
 
-    last_action: Optional[str]  # 最後のアクション（例: "bet", "fold"）
+    last_action: Optional[Action]  # 最後のアクション（例: "bet", "fold"）
     folded: bool
     all_in: bool
 
@@ -25,7 +25,7 @@ class GameStateResponse(BaseModel):
 
     legal_actions: List[str] = []  # 例: ["fold", "call", "raise"]
 
-    status: str
+    status: Optional[Status] = None
 
 class MessageResponse(BaseModel):
     message: str

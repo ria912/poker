@@ -16,10 +16,10 @@ class Seat:
         if self.player:
             self.player.reset(hand_over=hand_over)
     
-    def to_dict(self):
+    def to_dict(self, show_hand: bool = False):
         return {
             "index": self.index,
-            "player": self.player.base_dict() if self.player else None
+            "player": self.player.base_dict(show_hand=show_hand) if self.player else None
         }
    
 class Table:
@@ -104,15 +104,6 @@ class Table:
     def showdown(self):
         pass # 後で開発
 
-    def _seat_to_dict(self, seat: Seat):
-        if not seat.player:
-            return {"index": seat.index, "player": None}
-        show_hand = False
-        if seat.player.is_human or self.round == Round.SHOWDOWN:
-            show_hand = True
-        else:
-            return seat.player.base_dict(show_hand)
-
     def to_dict(self):
         return {
             "round": self.round,
@@ -121,5 +112,10 @@ class Table:
             "current_bet": self.current_bet,
             "min_bet": self.min_bet,
             "last_raiser": self.last_raiser if self.last_raiser else None,
-            "seats": [self._seat_to_dict(seat) for seat in self.seats]
-        }
+            "seats": [
+            seat.to_dict(
+                show_hand=seat.player.is_human or self.round == Round.SHOWDOWN
+            ) if seat.player else seat.to_dict()
+            for seat in self.seats
+        ]
+    }

@@ -1,6 +1,6 @@
 # models/human_player.py
 from backend.models.player import Player
-from backend.models.action import ActionManager, Action
+from backend.models.action import Action
 
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):
@@ -24,11 +24,9 @@ class HumanPlayer(Player):
         else:
             raise ValueError("No pending action set for HumanPlayer.")
     
-    def act(self, table):
+    def act(self):
         """OrderManager などから呼び出される共通アクション実行インターフェース"""
-        action, amount = self.decide_action()
-        ActionManager.apply_action(self, table, action, amount)
-        return action, amount  # ログなどに使う用に返してもよい
-
+        return self.decide_action()
+        
     def to_dict(self, show_hand=True):
         return self.base_dict(show_hand=show_hand)

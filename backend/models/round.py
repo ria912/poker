@@ -1,8 +1,8 @@
 # backend/models/round.py
 from typing import List, Optional
 from backend.models.table import Table, Seat
-from backend.models.player import Player
-from backend.models.enum import Round, Status, Position
+from backend.models.enum import Round, Status
+from backend.models.action import ActionManager, Action
 
 class RoundLogic:
     """ラウンドの状態管理も行います。"""
@@ -41,14 +41,13 @@ class OrderManager:
     def __init__(self, table: Table):
         self.table = table
         self.round_logic = RoundLogic(table)
-        self.active_players = self.table.get_active_players()
 
         self.action_order: List[Seat] = self.compute_action_order()
         self.action_index = 0
+        self.current_seat: Optional[Seat] = None
     
     def reset(self):
         """ラウンド開始時に呼び出して状態をリセット。"""
-        self.active_players = self.table.get_active_players()
         self.action_order = self.compute_action_order()
         self.action_index = 0
 
@@ -67,17 +66,18 @@ class OrderManager:
         for offset in range(1, n + 1):  # 1つ先から時計回りに全席走査
             i = (base_index + offset) % n
             player = seats[i].player
+            # アクション可能なプレイヤーのみを追加
             if player and player.is_active and not player.has_acted:
                 action_order.append(seats[i])
 
         return action_order
 
-    def get_next_seat(self) -> Optional[Seat]:
+    def get_current_seat(self) -> Optional[Seat]:
         while self.action_index < len(self.action_order):
             seat = self.action_order[self.action_index]
             if seat.player and not seat.player.has_acted:
                 return seat
-            self.action_index += 1
+ 
         self.status = Status.ORDER_OVER
         return None
 
@@ -88,10 +88,17 @@ class OrderManager:
             self.reset()
             return
 
-        seat = self.get_next_seat()
-        if seat and seat.player:
-            action, amount = seat.player.act(self.table)  # AI,Human共通
-            print(f"{seat.player.name} が {action},{amount} を選択。")
+        current = self.get_current_seat()
+        if current and current.player:
+            action, amount = current.player.act(self.table)  # AI,Human共通
+            print(f"{current.player.name} が {action},{amount} を選択。")
+            ActionManager.apply_action(current.player, self.table, action, amount)
+
+            if action in Action.betting_actions() and current.player.stack == self.table.current_bet:
+                for seat in self.action_order:
+                    if seat != current and seat.player.is_active:
+                        seat.player.has_acted = False
+                        
             self.action_index += 1
     
     def is_round_complete(self) -> bool:

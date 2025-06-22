@@ -40,18 +40,11 @@ class Action(str, Enum):
 
     @classmethod
     def betting_actions(cls):
-        # ベット系アクションの集合。BETとRAISEは金額指定が必要
         return [cls.BET, cls.RAISE]
 
     @classmethod
     def passive_actions(cls):
-        # パッシブなアクション（掛け金増やさない）
         return [cls.FOLD, cls.CALL, cls.CHECK]
-
-    @classmethod
-    def requires_amount(cls, action):
-        # どのアクションがベット額（amount）を必要とするか
-        return action in cls.betting_actions()
 
 class Status(str, Enum):
     ROUND_CONTINUE = "round_continue" # round.step()待ちフラグ（初期）

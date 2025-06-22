@@ -1,5 +1,6 @@
 # backend/state/single_game_state.py
-from backend.models.table import Table
+from backend.models.table import Table, Seat
+from backend.models.human_player import HumanPlayer
 from backend.models.round import OrderManager
 from backend.models.action import Action
 from backend.models.enum import Status
@@ -10,41 +11,32 @@ from typing import List, Optional
 class GameState:
     def __init__(self):
         self.table = Table()
-        self.order_manager = OrderManager(self.table)
         self.table.assign_players_to_seats()
+        self.order_manager = OrderManager(self.table)
 
     def start_new_hand(self):
         self.table.reset()
         self.order_manager.reset()
-
-        # AIプレイヤーが先なら自動で処理
-        while True:
-            player = self.order_manager.get_next_player()
-            if player is None:
-                break
-            if player.is_human:
-                break
-            player.act()  # AIのアクション（act() はAI側で定義）
-            self.order_manager.proceed()
+        self._process_ai_until_human()
 
     def receive_human_action(self, action: Action, amount: int = None):
-        current = self.order_manager.get_next_player()
-        if not current or not current.is_human:
+        current_seat: Optional[Seat] = self.order_manager.get_current_seat()
+        if not current_seat or not current_seat.player.is_human:
             raise HTTPException(status_code=400, detail="現在あなたのターンではありません。")
 
-        action, amount = current.receive_action(action)
-        current.decide_action
+        player = current_seat.player
+        HumanPlayer.receive_action(player, action, amount)
+        
         self.order_manager.proceed()
+        self._process_ai_until_human()
 
-        # AIのターンを処理
+    def _process_ai_until_human(self):
         while True:
-            player = self.order_manager.get_next_player()
-            if player is None:
+            current_seat = self.order_manager.get_current_seat()
+            if not current_seat or current_seat.player.is_human:
                 break
-            if player.is_human:
-                break
-            player.act()
             self.order_manager.proceed()
+
 
     def get_state(self) -> GameStateResponse:
         # 座席情報をPlayerInfoに変換
@@ -62,8 +54,8 @@ class GameState:
                 ))
 
         # 現在のアクションプレイヤー（Optional）
-        current_player = self.order_manager.get_next_player()
-        current_turn = current_player.name if current_player else None
+        current = self.order_manager.get_current_seat()
+        current_turn = current.player.name if current else None
 
         return GameStateResponse(
             round=self.table.round,
