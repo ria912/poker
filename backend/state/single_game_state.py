@@ -16,6 +16,7 @@ class GameState:
 
     def start_new_hand(self):
         self.table.reset()
+        self.table.starting_new_hand()
         self.order_manager.reset()
         self._process_ai_until_human()
 
