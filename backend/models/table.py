@@ -42,22 +42,25 @@ class Table:
         
     def assign_players_to_seats(self):
         # seat[0] に HumanPlayer、それ以降に AIPlayer を順に割り当てる。
-        self.seats[0].player = HumanPlayer(name="Hero")
+        self.seats[0].player = HumanPlayer(name="You")
         
         for i in range(1, len(self.seats)):
             self.seats[i].player = AIPlayer(name=f"AI_{i}")
 
-    def get_active_players(self) -> List[Player]:
-        return [
-            seat.player for seat in self.seats
-            if seat.player and seat.player.is_active
-        ]
+    def get_active_seats(self) -> List[Seat]:
+        return [seat for seat in self.seats if seat.player and seat.player.is_active]
 
-    def active_seat_indices(self) -> List[int]:
-        return [
-            seat.index for seat in self.seats
-            if seat.player and not seat.player.sitting_out
-        ]
+    def is_round_over(self) -> bool:
+        active_seats = self.get_active_seats()
+        current_bet = self.current_bet
+
+        for seat in active_seats:
+            player = seat.player
+            if player is None:
+                continue
+            if player.bet_total != current_bet:
+                return False
+        return True
 
     def reset(self):
         if self.round == Round.SHOWDOWN:
@@ -74,7 +77,7 @@ class Table:
         self.last_raiser = None
         self.min_bet = self.big_blind
 
-    def starting_hand(self):
+    def starting_new_hand(self):
         self.deck.reset()
         # BTNのローテーション・ポジションの割り当て
         PositionManager.set_btn_index(self)
