@@ -14,6 +14,7 @@ class PositionManager:
                 player = table.seats[i].player
                 if player and player.is_active:
                     table.btn_index = i
+                    return i
             raise Exception("No active players to assign BTN")
         
         # 2回目以降: 次の有効なプレイヤーへBTNを回す
@@ -22,6 +23,7 @@ class PositionManager:
             player = table.seats[i].player
             if player and player.is_active:
                 table.btn_index = i
+                return i
     
         raise Exception("No active players to assign BTN")
 

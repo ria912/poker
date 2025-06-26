@@ -41,7 +41,7 @@ class RoundManager:
         self.table = table
         self.round_logic = RoundLogic(table)
 
-        self.action_order: List[Seat] = self.compute_action_order()
+        self.action_order: List[Seat] = []
         self.action_index = 0
         self.current_seat: Optional[Seat] = None
     
@@ -55,6 +55,9 @@ class RoundManager:
         active_seats: list[Seat] = self.table.get_active_seats()
         round = self.table.round
         btn_index = self.table.btn_index
+
+        if len(active_seats) < 2:
+            raise ValueError("アクティブプレイヤーが2人未満ではゲームを進行できません")
         # アクション開始基準インデックスを決める
         if round == Round.PREFLOP:
             # 少人数対応は後で（4人以下でエラー？）
@@ -77,8 +80,9 @@ class RoundManager:
             if seat.player and not seat.player.has_acted:
                 return seat
             else:
-                self.status = Status.ORDER_OVER
-                return None
+                self.action_index += 1
+            self.status = Status.ORDER_OVER
+            return None
 
     def proceed(self):
         current = self.get_current_seat()
@@ -108,7 +112,8 @@ class RoundManager:
     def is_round_complete(self) -> bool:
         """アクション順の全プレイヤーがアクション済みかどうかを確認。"""
         for seat in self.action_order:
-            if seat.player and seat.player.is_active and not seat.player.bet_total != self.table.current_bet:
-                return False
+            if seat.player and seat.player.is_active:
+                if seat.player.bet_total != self.table.current_bet:
+                    return False
         return True
 
