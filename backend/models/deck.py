@@ -1,5 +1,6 @@
 # models/deck.py
 import random
+from backend.models.enum import Round
 
 class Deck:
 
@@ -16,18 +17,20 @@ class Deck:
     def draw(self):
         return self.cards.pop()
 
-    def deal_hands(self, table, seats):
+    def deal_hands(self, table):
         """各プレイヤーに2枚のカードを配る。"""
-        for seat in seats:
+        for seat in table.seats:
             player = seat.player
             if player and not player.sitting_out:
                 player.hand = [self.draw(), self.draw()]
     
-    def deal_flop(self):
-        table.board.extend([self.draw() for _ in range(3)])
-
-    def deal_turn(self):
-        table.board.append(self.draw())
-
-    def deal_river(self):
-        table.board.append(self.draw())
+    def deal_board(self, table):
+        round = table.round
+        if round == Round.PREFROP:
+            table.board.extend([self.draw() for _ in range(3)])
+        elif round == "turn":
+            table.board.append(self.draw())
+        elif round == "river":
+            table.board.append(self.draw())
+        else:
+            raise ValueError(f"未定義のステージです: {round}")

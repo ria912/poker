@@ -36,7 +36,7 @@ class PositionManager:
         elif n > len(PositionManager.ALL_POSITIONS):
             raise ValueError(f"{n}人は未対応（最大{len(PositionManager.ALL_POSITIONS)}人まで）")
         use_positions =  PositionManager.ALL_POSITIONS[:n]
-        return [pos for pos in ASSIGN_ORDER if pos in use_positions]
+        return [pos for pos in PositionManager.ASSIGN_ORDER if pos in use_positions]
 
     @classmethod
     def assign_positions(cls, table):
@@ -45,7 +45,7 @@ class PositionManager:
         if n < 2:
             raise ValueError("assign_positions には2人以上のアクティブプレイヤーが必要")
 
-        valid_positions = cls.position_names(n)
+        valid_positions = cls.get_position_order(n)
         ordered_positions = [p for p in cls.ASSIGN_ORDER if p in valid_positions]
 
         seat_count = len(table.seats)
@@ -67,4 +67,4 @@ class PositionManager:
             else:
                 raise ValueError(f"Seat {seat_index} にプレイヤーがいません")
 
-        return assigned  # ← return の位置を修正
+        return assigned
