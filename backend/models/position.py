@@ -40,7 +40,7 @@ class PositionManager:
 
     @classmethod
     def assign_positions(cls, table):
-        active_indices = table.active_seat_indices
+        active_indices = table.get_active_seat_indices()
         n = len(active_indices)
         if n < 2:
             raise ValueError("assign_positions には2人以上のアクティブプレイヤーが必要")
