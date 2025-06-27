@@ -50,6 +50,9 @@ class Table:
     def get_active_seats(self) -> List[Seat]:
         return [seat for seat in self.seats if seat.player and seat.player.is_active]
 
+    def get_active_seat_indices(self) -> list[int]:
+        return [i for i, seat in enumerate(self.seats) if seat.player and seat.player.is_active]
+
     def is_round_over(self) -> bool:
         active_seats = self.get_active_seats()
         current_bet = self.current_bet
