@@ -5,7 +5,6 @@ from backend.models.enum import Round, Status
 from backend.models.action import ActionManager, Action
 
 
-
 class RoundLogic:
     """ラウンドの状態管理も行います。"""
 
@@ -26,15 +25,10 @@ class RoundLogic:
         else:
             self.table.round = next_round
             self.table.reset()
-            
-            if self.table.round == Round.FLOP:
-                self.table.deck.deal_flop()
-            elif self.table.round == Round.TURN:
-                self.table.deck.deal_turn()
-            elif self.table.round == Round.RIVER:
-                self.table.deck.deal_river()
+            self.table.deck.deal_bord(self.table)
 
             self.status = Status.ROUND_CONTINUE
+
 
 class RoundManager:
     def __init__(self, table: Table):
