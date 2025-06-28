@@ -25,7 +25,7 @@ class RoundLogic:
         else:
             self.table.round = next_round
             self.table.reset()
-            self.table.deck.deal_bord(self.table)
+            self.table.deck.deal_board(self.table)
 
             self.status = Status.ROUND_CONTINUE
 
