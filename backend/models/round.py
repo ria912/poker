@@ -39,8 +39,7 @@ class RoundManager:
         self.action_index = 0
         self.current_seat: Optional[Seat] = None
     
-    def reset(self):
-        """ラウンド開始時に呼び出して状態をリセット。"""
+    def order_reset(self):
         self.action_order = self.compute_action_order()
         self.action_index = 0
 
@@ -75,8 +74,7 @@ class RoundManager:
                 return seat
             else:
                 self.action_index += 1
-            self.status = Status.ORDER_OVER
-            return None
+        return None
 
     def proceed(self):
         current = self.get_current_seat()
