@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.state.single_game_state import game_state
+from backend.models.enum import Action
 from backend.schemas import GameStateResponse, MessageResponse
 
 router = APIRouter()
 
 # ----- リクエスト用モデル -----
 class ActionRequest(BaseModel):
-    action: str
+    action: Action
     amount: int = 0  # チェックやフォールドなど、amount不要なケースを考慮
 
 # ----- POST /api/game/start -----

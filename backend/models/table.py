@@ -53,7 +53,7 @@ class Table:
     def get_active_seat_indices(self) -> list[int]:
         return [i for i, seat in enumerate(self.seats) if seat.player and seat.player.is_active]
 
-    def is_round_over(self) -> bool:
+    def is_round_complete(self) -> bool:
         active_seats = self.get_active_seats()
         current_bet = self.current_bet
 
@@ -108,7 +108,7 @@ class Table:
                 self.pot += blind
 
     def showdown(self):
-        pass # 後で開発
+        raise NotImplementedError
 
     def to_dict(self):
         return {
@@ -121,7 +121,7 @@ class Table:
             "seats": [
             seat.to_dict(
                 show_hand=seat.player.is_human or self.round == Round.SHOWDOWN
-            ) if seat.player else seat.to_dict()
+            )
             for seat in self.seats
         ]
     }

@@ -5,48 +5,39 @@ from backend.models.enum import Round, Status
 from backend.models.action import ActionManager, Action
 
 
-
 class RoundLogic:
     """ラウンドの状態管理も行います。"""
 
     def __init__(self, table: Table):
         self.table = table
-        self.status = Status.ROUND_CONTINUE
 
     def advance_round(self):
-        """次のベットラウンドに移行します。 showdown時にラウンド完了。"""
+        if len(self.table.get_active_seats) == 1:
+            return Status.ROUND_OVER
+
         next_round = Round.next(self.table.round)
-        if next_round == Round.SHOWDOWN:
-            self.table.round = Round.SHOWDOWN
-            self.status = Status.ROUND_OVER
-            # Showdownの処理を行う
-            self.table.showdown()
-            self.table.pot.get_winners() # tableにclass Potを作る？Tableに書く？
+        self.table.round = next_round
+
+        if self.table.round == Round.SHOWDOWN:
+            return Status.ROUND_OVER
 
         else:
-            self.table.round = next_round
             self.table.reset()
-            
-            if self.table.round == Round.FLOP:
-                self.table.deck.deal_flop()
-            elif self.table.round == Round.TURN:
-                self.table.deck.deal_turn()
-            elif self.table.round == Round.RIVER:
-                self.table.deck.deal_river()
+            self.table.deck.deal_board(self.table)
+            return Status.ROUND_CONTINUE
 
-            self.status = Status.ROUND_CONTINUE
 
 class RoundManager:
     def __init__(self, table: Table):
         self.table = table
         self.round_logic = RoundLogic(table)
+        self.status: Optional[Status] = Status.ROUND_CONTINUE
 
         self.action_order: List[Seat] = []
         self.action_index = 0
         self.current_seat: Optional[Seat] = None
     
     def reset(self):
-        """ラウンド開始時に呼び出して状態をリセット。"""
         self.action_order = self.compute_action_order()
         self.action_index = 0
 
@@ -81,8 +72,7 @@ class RoundManager:
                 return seat
             else:
                 self.action_index += 1
-            self.status = Status.ORDER_OVER
-            return None
+        return None
 
     def proceed(self):
         current = self.get_current_seat()
@@ -90,10 +80,13 @@ class RoundManager:
         if current and current.player:
             self._process_action(current)
             self.action_index += 1
-        elif self.is_round_complete():
+
+        elif self.table.is_round_complete():
             self.round_logic.advance_round()
+
         else:
             self.reset() #アクション続行（オーダーリセット）
+            return Status.ROUND_CONTINUE
 
     def _process_action(self, seat: Seat):
         action, amount = seat.player.act(self.table)
@@ -116,4 +109,3 @@ class RoundManager:
                 if seat.player.bet_total != self.table.current_bet:
                     return False
         return True
-

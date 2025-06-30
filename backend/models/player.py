@@ -6,10 +6,11 @@ class Player(ABC):  # ABCを継承して「抽象クラス」とする
         self.name = name
         self.stack = stack
         self.hand = []
-        self.position = None
-        self.seat_number = None
+        self.position: str = None
+        self.seat_number: int = None
         self.bet_total = 0
-        self.last_action = None
+        
+        self.last_action: str = None
         self.has_acted = False # アクション済みである（チェック確認用）
         self.folded = False
         self.all_in = False
@@ -40,6 +41,7 @@ class Player(ABC):  # ABCを継承して「抽象クラス」とする
     def base_dict(self, show_hand = False):
         data = {
             "name": self.name,
+            "hand": self.hand if show_hand else [],
             "stack": self.stack,
             "position": self.position,
             "bet_total": self.bet_total,
@@ -47,8 +49,4 @@ class Player(ABC):  # ABCを継承して「抽象クラス」とする
 
             "seat_number": self.seat_number,
         }
-        
-        if show_hand:
-            data["hand"] = self.hand
-
         return data

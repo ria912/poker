@@ -22,7 +22,7 @@ class GameState:
         self.round_manager.reset()
         self._process_ai_until_human()
 
-    def receive_human_action(self, action: Action, amount: int = None):
+    def receive_human_action(self, action: Action, amount: Optional[int] = None):
         current_seat: Optional[Seat] = self.round_manager.get_current_seat()
         if not current_seat or not current_seat.player.is_human:
             raise HTTPException(status_code=400, detail="現在プレイヤーのターンではありません。")
@@ -37,7 +37,7 @@ class GameState:
         while True:
             current_seat = self.round_manager.get_current_seat()
             if not current_seat or current_seat.player.is_human:
-                break
+                return self.get_state()
             self.round_manager.proceed()
 
 
@@ -54,6 +54,8 @@ class GameState:
                     bet_total=player.bet_total,
                     is_active=player.is_active,
                     last_action=player.last_action,
+                    folded=player.folded,
+                    all_in=player.all_in,
                 ))
 
         # 現在のアクションプレイヤー（Optional）
@@ -61,12 +63,12 @@ class GameState:
         current_turn = current.player.name if current else None
 
         return GameStateResponse(
-            round=self.table.round,
+            round=self.table.round.value,
             pot=self.table.pot,
             board=self.table.board,
             seats=seat_infos,
             current_turn=current_turn,
-            status=self.round_manager.round_logic.status.value
+            status=self.round_manager.status.value
         )
 
 # アプリ側で使えるようにインスタンス化
