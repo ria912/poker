@@ -13,6 +13,7 @@ class GameState:
         self.table = Table()
         self.table.assign_players_to_seats()
         self.round_manager = RoundManager(self.table)
+        self.status = 
 
         self.action_log = []
 
@@ -36,9 +37,11 @@ class GameState:
     def _process_ai_until_human(self):
         while True:
             current_seat = self.round_manager.get_current_seat()
-            if not current_seat or current_seat.player.is_human:
-                return self.get_state()
-            self.round_manager.proceed()
+            if not current_seat or not current_seat.player.is_human:
+                self.round_manager.proceed()
+            elif current_seat.player.is_human:
+                self.status = 
+            
 
 
     def get_state(self) -> GameStateResponse:
