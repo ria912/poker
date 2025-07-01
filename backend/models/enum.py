@@ -50,8 +50,7 @@ class Status(str, Enum):
     ROUND_CONTINUE = "round_continue" # round.step()待ちフラグ（初期）
     WAITING_FOR_HUMAN = "waiting_for_human"
     WAITING_FOR_AI = "waiting_for_ai"
-    HUMAN_ACTED = "human_acted"
-    AI_ACTED = "ai_acted"
+    PLAYER_ACTED = "player_acted"
     ORDER_OVER = "order_over" # オーダー処理完了フラグ
     ROUND_OVER = "round_over" # 各ラウンド終了フラグ
     WAITING_FOR_WINNER = "waiting_for_winner" # ショウダウン処理待ちフラグ

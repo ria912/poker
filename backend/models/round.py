@@ -80,6 +80,7 @@ class RoundManager:
         if current and current.player:
             self._process_action(current)
             self.action_index += 1
+            return Status.PLAYER_ACTED
 
         elif self.table.is_round_complete():
             self.round_logic.advance_round()
