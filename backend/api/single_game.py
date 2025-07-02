@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.state.single_game_state import game_state
+from backend.state import humanメモ as game_state
 from backend.models.enum import Action
 from backend.schemas import GameStateResponse, MessageResponse
 

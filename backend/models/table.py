@@ -40,11 +40,15 @@ class Table:
         self.last_raiser = None
         self.action_log = []
         
-    def assign_players_to_seats(self):
+    def assign_players_to_seats(self, human_included=True):
         # seat[0] に HumanPlayer、それ以降に AIPlayer を順に割り当てる。
-        self.seats[0].player = HumanPlayer(name="You")
-        
-        for i in range(1, len(self.seats)):
+        if human_included:
+            self.seats[0].player = HumanPlayer(name="You")
+            ai_start = 1
+        else:
+            ai_start = 0
+
+        for i in range(ai_start, len(self.seats)):
             self.seats[i].player = AIPlayer(name=f"AI_{i}")
 
     def get_active_seats(self) -> List[Seat]:

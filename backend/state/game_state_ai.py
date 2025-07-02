@@ -8,12 +8,12 @@ from backend.schemas import GameStateResponse, PlayerInfo
 from fastapi import HTTPException
 from typing import List, Optional
 
-class GameState:
+class AIGameState:
     def __init__(self):
         self.table = Table()
-        self.table.assign_players_to_seats()
+        self.table.assign_players_to_seats(human_included=False)
         self.round_manager = RoundManager(self.table)
-        self.status = 
+        self.status = Status.ROUND_CONTINUE
 
         self.action_log = []
 
@@ -21,28 +21,18 @@ class GameState:
         self.table.reset()
         self.table.starting_new_hand()
         self.round_manager.reset()
-        self._process_ai_until_human()
-
-    def receive_human_action(self, action: Action, amount: Optional[int] = None):
-        current_seat: Optional[Seat] = self.round_manager.get_current_seat()
-        if not current_seat or not current_seat.player.is_human:
-            raise HTTPException(status_code=400, detail="現在プレイヤーのターンではありません。")
-
-        player = current_seat.player
-        HumanPlayer.receive_action(player, action, amount)
-        
-        self.round_manager.proceed()
-        self._process_ai_until_human()
-
-    def _process_ai_until_human(self):
+        self._run_full_hand()
+    
+    def _run_full_hand(self):
         while True:
-            current_seat = self.round_manager.get_current_seat()
-            if not current_seat or not current_seat.player.is_human:
+            current = self.round_manager.get_current_seat()
+            if not current:
+                status = self.round_manager.proceed()
+                self.status = status
+                if status == Status.HAND_OVER:
+                    break
+            else:
                 self.round_manager.proceed()
-            elif current_seat.player.is_human:
-                self.status = 
-            
-
 
     def get_state(self) -> GameStateResponse:
         # 座席情報をPlayerInfoに変換
@@ -75,4 +65,4 @@ class GameState:
         )
 
 # アプリ側で使えるようにインスタンス化
-game_state = GameState()
+ai_game_state = AIGameState()

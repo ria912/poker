@@ -24,6 +24,7 @@ class RoundLogic:
         else:
             self.table.reset()
             self.table.deck.deal_board(self.table)
+            print(self.table.board)
             return Status.ROUND_CONTINUE
 
 
@@ -97,16 +98,7 @@ class RoundManager:
         if action in Action.betting_actions():
             self._reset_has_acted(exclude=seat)
 
-    # 以下tableに仮設したis_round_overで簡略可能？
     def _reset_has_acted(self, exclude: Seat = None):
-        for seat in self.action_order:
+        for seat in self.table.get_active_seats():
             if seat != exclude and seat.player and seat.player.is_active:
                 seat.player.has_acted = False
-
-    def is_round_complete(self) -> bool:
-        """アクション順の全プレイヤーがアクション済みかどうかを確認。"""
-        for seat in self.action_order:
-            if seat.player and seat.player.is_active:
-                if seat.player.bet_total != self.table.current_bet:
-                    return False
-        return True

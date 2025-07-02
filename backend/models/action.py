@@ -22,16 +22,15 @@ class ActionManager:
             if player.stack >= to_call + min_bet:
                 actions.append(Action.RAISE)
 
-        return {
-            "legal_actions": actions,
-            "amount_ranges": {
-                "bet": max(0, player.stack - min_bet),
-                "raise": max(0, player.stack - min_bet - to_call),
-            }
-        }
+        return actions
+           
+           # "amount_ranges": {
+                #"bet": max(0, player.stack - min_bet),
+                #"raise": max(0, player.stack - min_bet - to_call),
+            
 
     @staticmethod
-    def apply_action(player, table, action, amount=0):
+    def apply_action(player, table, action, amount: int):
         if action == Action.FOLD:
             player.has_folded = True
         elif action == Action.CHECK:
@@ -52,7 +51,7 @@ class ActionManager:
             player.has_all_in = True
 
     @staticmethod
-    def _apply_bet(player, table, amount):
+    def _apply_bet(player, table, amount:int):
         if amount < 0:
             raise ValueError(f"Invalid Bet amount: {amount}. Must be >= 0.")
         min_bet = table.min_bet
@@ -80,7 +79,7 @@ class ActionManager:
             table.current_bet = player.bet_total
 
     @staticmethod
-    def _apply_raise(player, table, amount):
+    def _apply_raise(player, table, amount:int):
         if amount < 0:
             raise ValueError(f"Invalid Bet/Raise amount: {amount}. Must be >= 0.")
         min_bet = table.min_bet
