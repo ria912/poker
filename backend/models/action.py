@@ -3,7 +3,7 @@ from backend.models.enum import Action
 
 class ActionManager:
     @staticmethod
-    def get_legal_actions(player, table):
+    def get_legal_actions_info(player, table):
         actions = []
         current_bet = table.current_bet
         min_bet = table.min_bet
@@ -22,12 +22,14 @@ class ActionManager:
             if player.stack >= to_call + min_bet:
                 actions.append(Action.RAISE)
 
-        return actions
-           
-           # "amount_ranges": {
-                #"bet": max(0, player.stack - min_bet),
-                #"raise": max(0, player.stack - min_bet - to_call),
-            
+        return {
+            "legal_actions": actions,
+            "amount_ranges": {
+                "bet": max(0, player.stack - min_bet),
+                "raise": max(0, player.stack - min_bet - to_call),
+            }
+        }
+
 
     @staticmethod
     def apply_action(player, table, action, amount: int):

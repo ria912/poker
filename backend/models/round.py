@@ -70,6 +70,7 @@ class RoundManager:
         while self.action_index < len(self.action_order):
             seat = self.action_order[self.action_index]
             if seat.player and not seat.player.has_acted:
+                self.current_seat = seat
                 return seat
             else:
                 self.action_index += 1
@@ -84,7 +85,7 @@ class RoundManager:
             return Status.PLAYER_ACTED
 
         elif self.table.is_round_complete():
-            self.round_logic.advance_round()
+            return self.round_logic.advance_round()
 
         else:
             self.reset() #アクション続行（オーダーリセット）

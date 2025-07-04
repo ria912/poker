@@ -1,6 +1,5 @@
-# backend/state/single_game_state.py
+# backend/state/single_game_state_ai.py
 from backend.models.table import Table, Seat
-from backend.models.human_player import HumanPlayer
 from backend.models.round import RoundManager
 from backend.models.action import Action
 from backend.models.enum import Status
@@ -30,7 +29,7 @@ class AIGameState:
                 status = self.round_manager.proceed()
                 self.status = status
                 if status == Status.HAND_OVER:
-                    break
+                    return self.get_state()
             else:
                 self.round_manager.proceed()
 

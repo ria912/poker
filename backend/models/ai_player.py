@@ -8,7 +8,9 @@ class AIPlayer(Player):
         super().__init__(name=f"{name}AI", stack=10000)
 
     def decide_action(self, table):
-        legal_actions = ActionManager.get_legal_actions(self, table)
+        legal_info = ActionManager.get_legal_actions_info(self, table)
+        legal_actions = legal_info["legal_actions"]
+        amount_ranges = legal_info["amount_ranges"]
 
         if Action.FOLD in legal_actions and random.random() < 0.2:
             return Action.FOLD, 0
