@@ -69,7 +69,7 @@ class RoundManager:
     def get_current_seat(self) -> Optional[Seat]:
         while self.action_index < len(self.action_order):
             seat = self.action_order[self.action_index]
-            if seat.player and not seat.player.has_acted:
+            if seat.player:
                 self.current_seat = seat
                 return seat
             else:

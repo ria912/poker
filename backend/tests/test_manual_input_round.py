@@ -17,7 +17,7 @@ class InteractivePlayer(Player):
             "2": Action.CHECK,
             "3": Action.CALL,
             "4": Action.BET,
-            "5": Action.RAISE
+            "5": Action.RAISE,
         }
 
         while True:
