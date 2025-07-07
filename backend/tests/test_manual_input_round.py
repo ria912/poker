@@ -42,6 +42,8 @@ class InteractivePlayer(Player):
         self.has_acted = True
         self.last_action = action
         print(f"✅ {self.name} は {action.name}（{amount}）を選択")
+        print(f"✅ {self.name} は {action.name}（{amount}）を選択")
+
         return action, amount
 
 
@@ -53,9 +55,7 @@ def create_interactive_table():
         table.seats[i].player = InteractivePlayer(names[i])
 
     table.btn_index = 0
-    table.assign_positions()
-    table.post_blinds()
-    table.deal_hole_cards()
+    table.starting_new_hand()
     return table
 
 
@@ -64,7 +64,7 @@ def print_players(table: Table):
     for seat in table.seats:
         p = seat.player
         if p:
-            print(f"・{p.name}: position={p.position}, stack={p.stack}")
+            print(f"・{p.name}: position={p.position}, stack={p.stack}, bet={p.bet_total}")
 
 
 def run_manual_round():

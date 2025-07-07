@@ -12,7 +12,7 @@ class RoundLogic:
         self.table = table
 
     def advance_round(self):
-        if len(self.table.get_active_seats) == 1:
+        if len(self.table.get_active_seats()) == 1:
             return Status.ROUND_OVER
 
         next_round = Round.next(self.table.round)
