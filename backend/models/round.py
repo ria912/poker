@@ -95,11 +95,3 @@ class RoundManager:
         action, amount = seat.player.act(self.table)
         print(f"{seat.player.name} が {action},{amount} を選択。")
         ActionManager.apply_action(seat.player, self.table, action, amount)
-
-        if action in Action.betting_actions():
-            self._reset_has_acted(exclude=seat)
-
-    def _reset_has_acted(self, exclude: Seat = None):
-        for seat in self.table.get_active_seats():
-            if seat != exclude and seat.player and seat.player.is_active:
-                seat.player.has_acted = False

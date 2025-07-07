@@ -45,8 +45,7 @@ class ActionManager:
         elif action == Action.RAISE:
             ActionManager._apply_raise(player, table, amount)
             table.last_raiser = player
-        
-        player.has_acted = True
+
         player.last_action = action
 
         if player.stack == 0:
