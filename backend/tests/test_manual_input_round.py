@@ -39,13 +39,10 @@ class InteractivePlayer(Player):
                 except ValueError:
                     print("無効な入力です。整数を入力してください。")
 
-        self.has_acted = True
         self.last_action = action
-        print(f"✅ {self.name} は {action.name}（{amount}）を選択")
         print(f"✅ {self.name} は {action.name}（{amount}）を選択")
 
         return action, amount
-
 
 def create_interactive_table():
     table = Table()
@@ -53,6 +50,7 @@ def create_interactive_table():
 
     for i in range(4):
         table.seats[i].player = InteractivePlayer(names[i])
+        table.seats[i].index = i  # ✅ Seat.index を明示的に設定（重要！）
 
     table.btn_index = 0
     table.starting_new_hand()
@@ -79,15 +77,22 @@ def run_manual_round():
     print(f"\n🕐 ラウンド開始: {round_name}")
 
     while True:
+        prev_round = table.round  # ← ラウンド変化を検知するため保持
         status = manager.proceed()
 
-        # ラウンドが変わったらボード表示
-        if table.round.name != round_name:
+        # ✅ アクション適用後の bet_total 表示
+        print("\n💡 各プレイヤーのベット状況:")
+        for i, seat in enumerate(table.seats):
+            if seat.player:
+                print(f"  - {seat.player.name} (seat {i}): bet_total = {seat.player.bet_total}")
+
+        # ✅ ラウンドが変わったらボード表示
+        if table.round != prev_round:
             round_name = table.round.name
             print(f"\n💡 ラウンド進行 → {round_name}")
             print(f"🃍 ボード: {table.board}")
 
-        print(f"💰 ポット: {table.pot} / ステータス: {status.name}")
+        print(f"\n💰 ポット: {table.pot} / ステータス: {status.name}")
 
         if status == Status.ROUND_OVER:
             print("\n✅ ラウンド終了")

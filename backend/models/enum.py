@@ -22,14 +22,11 @@ class Round(str, Enum):
 
     ROUND_ORDER = [PREFLOP, FLOP, TURN, RIVER, SHOWDOWN]
 
-    @classmethod
-    def next(cls, current_round):
-        order = cls.ROUND_ORDER
-        try:
-            i = order.index(current_round)
-            return order[i + 1] if i + 1 < len(order) else None
-        except ValueError:
-            return None
+    @staticmethod
+    def next(current):
+        sequence = list(Round)  # [Round.PREFLOP, Round.FLOP, ...]
+        i = sequence.index(current)
+        return sequence[i + 1]
 
 class Action(str, Enum):
     FOLD = 'fold'
