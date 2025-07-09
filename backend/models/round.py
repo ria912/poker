@@ -42,29 +42,55 @@ class RoundManager:
         self.action_order = self.compute_action_order()
         self.action_index = 0
 
-    def compute_action_order(self) -> List[Seat]:
+    def compute_action_order(self, last_raiser: Optional[Seat] = None) -> List[Seat]:
+        """ラウンドごとのアクション順を構築。初期 or レイズ後対応。"""
         seats = self.table.seats
-        active_seats: list[Seat] = self.table.get_active_seats()
-        round = self.table.round
-        btn_index = self.table.btn_index
-
+        active_seats = self.table.get_active_seats()
+        n = len(seats)
+    
         if len(active_seats) < 2:
-            raise ValueError("アクティブプレイヤーが2人未満ではゲームを進行できません")
-        # アクション開始基準インデックスを決める
-        if round == Round.PREFLOP:
-            # 少人数対応は後で（4人以下でエラー？）
-            base_index = (btn_index + 3) % len(seats)
+            raise ValueError("アクティブプレイヤーが2人未満ではアクション順を構成できません")
+    
+        # --- レイズ後：last_raiserの次のアクティブ席から開始し、last_raiserを除外 ---
+        if last_raiser and last_raiser in active_seats:
+            start_index = (last_raiser.index + 1) % n
+            ordered = []
+            for i in range(n):
+                idx = (start_index + i) % n
+                seat = seats[idx]
+                if seat in active_seats and seat != last_raiser:
+                    ordered.append(seat)
+            return ordered
+    
+        # --- 初期巡回：プリフロップか、それ以外かで開始インデックスを変える ---
+        if self.table.round == Round.PREFLOP:
+            # BBの次のアクティブプレイヤー
+            bb_index = (self.table.btn_index + 2) % n
+            start_index = (bb_index + 1) % n
         else:
-            base_index = (btn_index + 1) % len(seats)
-        # アクション順を作成（active_seatsを base_index から時計回りに並べる）
+            # BTNの次のアクティブプレイヤー（通常ストリート）
+            start_index = (self.table.btn_index + 1) % n
+    
+        # start_index から時計回りにアクティブプレイヤーを並べる
         ordered = []
-        for i in range(len(seats)):
-            idx = (base_index + i) % len(seats)
+        for i in range(n):
+            idx = (start_index + i) % n
             seat = seats[idx]
             if seat in active_seats:
                 ordered.append(seat)
-
+    
         return ordered
+
+    def find_next_active_index(self, start_index: int) -> int:
+        """start_index から時計回りに最初にアクティブなプレイヤーを見つける"""
+        seats = self.table.seats
+        n = len(seats)
+        for i in range(n):
+            idx = (start_index + i) % n
+            seat = seats[idx]
+            if seat.player and seat.player.is_active:
+                return idx
+        raise RuntimeError("アクティブプレイヤーが存在しません")
 
     def get_current_seat(self) -> Optional[Seat]:
         while self.action_index < len(self.action_order):
