@@ -1,6 +1,6 @@
 # models/human_player.py
 from backend.models.player import Player
-from backend.models.action import Action
+from backend.services.action import Action
 
 class HumanPlayer(Player):
     def __init__(self, name="YOU", stack=10000):

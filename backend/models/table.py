@@ -2,7 +2,7 @@
 from backend.models.deck import Deck
 from backend.models.player import Player
 from backend.models.human_player import HumanPlayer
-from backend.models.ai_player import AIPlayer
+from backend.ai.ai_player import AIPlayer
 from backend.models.position import PositionManager
 from backend.models.enum import Round, Position
 from typing import List, Optional # None の可能性を型で明示

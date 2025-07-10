@@ -1,5 +1,5 @@
 from backend.models.enum import Action, Status
-from backend.models.round import RoundManager
+from backend.services.round import RoundManager
 from backend.models.table import Table
 from backend.models.player import Player
 

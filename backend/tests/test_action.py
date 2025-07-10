@@ -1,5 +1,5 @@
 import pytest
-from backend.models.action import ActionManager
+from backend.services.action import ActionManager
 from backend.models.enum import Action
 
 

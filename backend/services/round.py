@@ -2,7 +2,7 @@
 from typing import List, Optional
 from backend.models.table import Table, Seat
 from backend.models.enum import Round, Status
-from backend.models.action import ActionManager, Action
+from backend.services.action import ActionManager, Action
 
 
 class RoundLogic:
