@@ -44,10 +44,13 @@ class RoundManager:
 
     def compute_action_order(self, last_raiser: Optional[Seat] = None) -> List[Seat]:
         """ラウンドごとのアクション順を構築。初期 or レイズ後対応。"""
+        if last_raiser is None:
+            last_raiser = self.table.last_raiser
+
         seats = self.table.seats
         active_seats = self.table.get_active_seats()
         n = len(seats)
-    
+
         if len(active_seats) < 2:
             raise ValueError("アクティブプレイヤーが2人未満ではアクション順を構成できません")
     

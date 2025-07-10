@@ -8,7 +8,6 @@ class Player(ABC):  # ABCを継承して「抽象クラス」とする
         self.hand = []
         self.position: str = None
         self.bet_total = 0
-        self.seat_number: int = None
         
         self.last_action: str = None
         self.folded = False
@@ -44,7 +43,5 @@ class Player(ABC):  # ABCを継承して「抽象クラス」とする
             "position": self.position,
             "bet_total": self.bet_total,
             "last_action": self.last_action,
-
-            "seat_number": self.seat_number,
         }
         return data
