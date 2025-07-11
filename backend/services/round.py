@@ -1,4 +1,4 @@
-# backend/models/round.py
+#  services/models/round.py
 from typing import List, Optional
 from backend.models.table import Table, Seat
 from backend.models.enum import Round, Status
