@@ -45,3 +45,13 @@ class Player(ABC):  # ABCを継承して「抽象クラス」とする
             "last_action": self.last_action,
         }
         return data
+    
+    def to_schema(self):
+        from backend.schemas.game_state_schema import PlayerState
+        return PlayerState(
+            name=self.name,
+            stack=self.stack,
+            bet=self.bet,
+            position=self.position,
+            is_active=self.is_active
+        )
