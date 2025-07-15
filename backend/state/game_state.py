@@ -38,10 +38,9 @@ class GameState:
         else:
             self.status = self.round_manager.proceed()
 
-    def get_state(self) -> dict:
-        """現在の状態をシリアライズして返す"""
-        return self.table.to_dict()
-
+    def get_state(self) -> GameStateSchema:
+        return GameStateSchema.from_table(self.table)
+        
     def is_game_over(self) -> bool:
         """アクティブプレイヤーが1人ならゲーム終了"""
         return len(self.table.get_active_seats()) <= 1
