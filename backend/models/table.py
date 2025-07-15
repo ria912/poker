@@ -21,6 +21,13 @@ class Seat:
             "index": self.index,
             "player": self.player.base_dict(show_hand=show_hand) if self.player else None
         }
+    
+    def to_schema(self):
+        from backend.schemas.game_state_schema import SeatState
+        return SeatState(
+            index=self.index,
+            player=self.player.to_schema() if self.player else None
+        )
    
 class Table:
     def __init__(self, small_blind=50, big_blind=100, seat_count: int = 6):
