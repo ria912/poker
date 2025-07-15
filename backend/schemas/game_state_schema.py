@@ -1,31 +1,45 @@
-# backend/schemas/game_state_schema.py
+# schemas/game_state_schema.py
 from pydantic import BaseModel
 from typing import List, Optional
-from backend.models.enum import Action, Round, Position, Status
+from backend.models.enum import Round, Position
 
-class PlayerInfo(BaseModel):
+
+class PlayerState(BaseModel):
     name: str
-    position: Optional[Position]    
     stack: int
-    bet_total: int
-
-    last_action: Optional[Action]  # 最後のアクション（例: "bet", "fold"）
-    folded: bool
-    all_in: bool
-
-    sitting_out: bool = False  # 座っていない場合はTrue
+    bet: int
+    position: Optional[Position]
+    is_active: bool
 
 
-class GameStateResponse(BaseModel):
+class SeatState(BaseModel):
+    index: int
+    player: Optional[PlayerState]
+
+
+class GameStateSchema(BaseModel):
     round: Round
     pot: int
-    board: List[str]  # 例: ["Ah", "7d", "Qc"]
-    seats: List[PlayerInfo]
-    current_turn: Optional[str]  # プレイヤー名 or None
+    board: List[str]
+    seats: List[SeatState]
 
-    legal_actions: List[str] = []  # 例: ["fold", "call", "raise"]
-
-    status: Optional[Status] = None
-
-class MessageResponse(BaseModel):
-    message: str
+    @classmethod
+    def from_table(cls, table) -> "GameStateSchema":
+        return cls(
+            round=table.round,
+            pot=table.pot,
+            board=table.board,
+            seats=[
+                SeatState(
+                    index=i,
+                    player=PlayerState(
+                        name=seat.player.name,
+                        stack=seat.player.stack,
+                        bet=seat.player.bet,
+                        position=seat.player.position,
+                        is_active=seat.player.is_active
+                    ) if seat.player else None
+                )
+                for i, seat in enumerate(table.seats)
+            ]
+        )
