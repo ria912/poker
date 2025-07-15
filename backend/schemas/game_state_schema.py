@@ -29,17 +29,5 @@ class GameStateSchema(BaseModel):
             round=table.round,
             pot=table.pot,
             board=table.board,
-            seats=[
-                SeatState(
-                    index=i,
-                    player=PlayerState(
-                        name=seat.player.name,
-                        stack=seat.player.stack,
-                        bet=seat.player.bet,
-                        position=seat.player.position,
-                        is_active=seat.player.is_active
-                    ) if seat.player else None
-                )
-                for i, seat in enumerate(table.seats)
-            ]
+            seats=[seat.to_schema() for seat in table.seats]
         )
