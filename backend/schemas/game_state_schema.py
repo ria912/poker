@@ -6,9 +6,10 @@ from backend.models.enum import Round, Position
 
 class PlayerState(BaseModel):
     name: str
+    hand: List[str]
+    position: Optional[Position]
     stack: int
     bet: int
-    position: Optional[Position]
     is_active: bool
 
 
