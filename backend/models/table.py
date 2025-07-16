@@ -4,7 +4,7 @@ from backend.models.player import Player
 from backend.models.human_player import HumanPlayer
 from backend.ai.ai_player import AIPlayer
 from backend.models.position import PositionManager
-from backend.models.enum import Round, Position
+from backend.models.enum import Round, Position, Status
 from typing import List, Optional # None の可能性を型で明示
 
 class Seat:
@@ -46,7 +46,8 @@ class Table:
         
         self.last_raiser = None
         self.action_log = []
-        
+        self.status = Status.ROUND_CONTINUE
+
     def assign_players_to_seats(self, human_included=True):
         # seat[0] に HumanPlayer、それ以降に AIPlayer を順に割り当てる。
         if human_included:
