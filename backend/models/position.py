@@ -47,7 +47,11 @@ class PositionManager:
         if n < 2:
             raise ValueError("2人以上のアクティブプレイヤーが必要")
 
-        valid_positions = cls.get_positions_for(n)
+        valid_positions = sorted(
+            cls.get_positions_for(n),
+            key=lambda pos: pos.value
+        )
+        
         ordered_seats = get_circular_order(
             table.seats,
             start_index=(table.btn_index + 1),
