@@ -1,13 +1,15 @@
 #backend/state/single_game_state.py
 from backend.models.table import Table
-from backend.services.models.round import RoundManager
+from backend.services.round import RoundManager
 from backend.models.position import PositionManager
 from backend.models.deck import Deck
 
 from backend.models.human_player import HumanPlayer
-from backend.models.ai_player import AIPlayer
+from backend.ai.ai_player import AIPlayer
 
 from backend.models.enum import Status
+
+from backend.schemas.game_state_schema import GameStateSchema
 
 
 class GameState:
