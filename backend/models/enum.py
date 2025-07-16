@@ -10,9 +10,6 @@ class Position(str, Enum):
     BTN = auto()
     BTN_SB = auto()
 
-    ALL_POSITIONS = [BTN, SB, BB, CO, HJ, LJ]
-    ASSIGN_ORDER = [SB, BB, LJ, HJ, CO, BTN, BTN_SB]
-
 class Round(str, Enum):
     PREFLOP = "preflop"
     FLOP = "flop"
