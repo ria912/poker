@@ -28,24 +28,24 @@ class Dealer:
                 continue
 
             if player.position in (Position.SB, Position.BTN_SB):
-                blind = min(table.small_blind, player.stack)
+                blind = min(self.table.small_blind, player.stack)
                 player.stack -= blind
                 player.bet_total = blind
-                table.pot += blind
+                self.table.pot += blind
                 if player.stack == 0:
                     player.has_all_in = True
 
             elif player.position == Position.BB:
-                blind = min(table.big_blind, player.stack)
+                blind = min(self.table.big_blind, player.stack)
                 player.stack -= blind
                 player.bet_total = blind
                 player.all_in = player.stack == 0
-                table.pot += blind
-                table.current_bet = blind
-                table.min_bet = blind
+                self.table.pot += blind
+                self.table.current_bet = blind
+                self.table.min_bet = blind
 
     def deal_hole_cards(self):
-        ...
+        self.table.deck.deal_hands(self.table.seats)
 
     def deal_board_cards(self, round_name):
         ...
