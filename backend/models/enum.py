@@ -1,17 +1,14 @@
 # models/enum.py
-from enum import Enum
+from enum import Enum, auto
 
 class Position(str, Enum):
-    SB = 'sb'
-    BB = 'bb'
-    LJ = 'lj'
-    HJ = 'hj'
-    CO = 'co'
-    BTN = 'btn'
-    BTN_SB = "btn_sb"
-
-    ALL_POSITIONS = [BTN, SB, BB, CO, HJ, LJ]
-    ASSIGN_ORDER = [SB, BB, LJ, HJ, CO, BTN, BTN_SB]
+    SB = auto()
+    BB = auto()
+    LJ = auto()
+    HJ = auto()
+    CO = auto()
+    BTN = auto()
+    BTN_SB = auto()
 
 class Round(str, Enum):
     PREFLOP = "preflop"

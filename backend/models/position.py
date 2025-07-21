@@ -3,9 +3,23 @@ from typing import List
 from backend.utils.order_utils import get_circular_order
 
 class PositionManager:
-    ALL_POSITIONS = [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ]
-    ASSIGN_ORDER = [Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO, Position.BTN]
+    # 明示的な順序定義（順番の責務を担う、テスト性・保守性の観点で有用）
+    ALL_POSITIONS: List[Position] = [
+        Position.BTN,
+        Position.SB,
+        Position.BB,
+        Position.CO,
+        Position.HJ,
+        Position.LJ,
+    ]
 
+    @classmethod
+    def get_positions_for(cls, num_players: int) -> List[Position]:
+        """
+        プレイヤー数に応じた使用ポジションを返す（例：6maxなどに対応）
+        """
+        return cls.ALL_POSITIONS[:num_players]
+        
     @staticmethod
     def set_btn_index(table) -> int:
         seat_count = len(table.seats)
@@ -33,7 +47,11 @@ class PositionManager:
         if n < 2:
             raise ValueError("2人以上のアクティブプレイヤーが必要")
 
-        valid_positions = cls.ASSIGN_ORDER[:n]
+        valid_positions = sorted(
+            cls.get_positions_for(n),
+            key=lambda pos: pos.value
+        )
+        
         ordered_seats = get_circular_order(
             table.seats,
             start_index=(table.btn_index + 1),
