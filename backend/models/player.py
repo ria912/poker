@@ -1,57 +1,31 @@
-# models/player.py
-from abc import ABC, abstractmethod
+# backend/models/player.py
+from typing import List, Optional
+from backend.models.enum import Position, Action
 
-class Player(ABC):  # ABCを継承して「抽象クラス」とする
-    def __init__(self, name="Player", stack=10000):
+class Player:
+    def __init__(self, name: str, stack: int, is_human: bool = False):
         self.name = name
         self.stack = stack
-        self.hand = []
-        self.position: str = None
+        self.position: Optional[Position] = None
+        self.hole_cards: List[int] = []
         self.bet_total = 0
-        
-        self.last_action: str = None
         self.folded = False
-        self.all_in = False
-        self.sitting_out = False
+        self.last_action: Optional[Action] = None
+        self.is_human = is_human
 
-        self.is_human = False # AIで初期化
+    def deal_hole_cards(self, cards: List[int]):
+        self.hole_cards = cards
 
-    def reset(self, hand_over=False):
+    def bet(self, amount: int):
+        self.stack -= amount
+        self.bet_total += amount
+
+    def fold(self):
+        self.folded = True
+        self.last_action = "FOLD"
+
+    def reset_for_new_hand(self):
+        self.hole_cards = []
         self.bet_total = 0
+        self.folded = False
         self.last_action = None
-        
-        if hand_over:
-            self.folded = False
-            self.all_in = False
-            self.hand = []
-            if self.stack == 0:
-                self.sitting_out = True
-
-    @property
-    def is_active(self):
-        return not self.folded and not self.all_in and not self.sitting_out
-
-    @abstractmethod
-    def act(self, table):
-        pass
-
-    def base_dict(self, show_hand = False):
-        data = {
-            "name": self.name,
-            "hand": self.hand if show_hand else [],
-            "stack": self.stack,
-            "position": self.position,
-            "bet_total": self.bet_total,
-            "last_action": self.last_action,
-        }
-        return data
-    
-    def to_schema(self):
-        from backend.schemas.game_state_schema import PlayerState
-        return PlayerState(
-            name=self.name,
-            stack=self.stack,
-            bet=self.bet,
-            position=self.position,
-            is_active=self.is_active
-        )

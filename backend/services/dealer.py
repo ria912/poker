@@ -1,119 +1,54 @@
 # backend/services/dealer.py
-
-from backend.models.table import Table
-from backend.models.enum import Position, Status, Round
-from backend.models.player import Player
+from backend.models.deck import Deck
+from backend.models.table import Table, Seat
+from backend.models.enum import Position
+from backend.utils.order_utils import get_circular_order
 
 class Dealer:
     def __init__(self, table: Table):
         self.table = table
+        self.deck = Deck()
+        self.button_index = 0  # ボタン位置のインデックス
 
-    def run_hand(self):
-        self.post_blinds()
-        self.deal_hole_cards()
-        for round_name in [Round.PREFLOP, Round.FLOP, Round.TURN, Round.RIVER]:
-            self.table.round = Round(round_name)
-            self.run_betting_round()
-            if self.table.status == Status.HAND_OVER:
-                break
-            self.deal_board_cards(round_name)
-        self.run_showdown()
-        self.award_pot()
+    def assign_positions(self):
+        """現在の着席状況に応じてポジションを割り当てる"""
+        occupied_seats = [seat for seat in self.table.seats if seat.is_occupied()]
+        player_count = len(occupied_seats)
+        positions = list(Position)[-player_count:]  # BTN〜LJ のうち必要数を使用
+        ordered_seats = get_circular_order(occupied_seats, start=self.button_index)
 
-    def post_blinds(self):
-        """スモール/ビッグブラインドを投稿し、pot, current_bet を更新"""
-        for seat in self.table.seats:
-            player = seat.player
-            if not player:
-                continue
-
-            if player.position in (Position.SB, Position.BTN_SB):
-                blind = min(self.table.small_blind, player.stack)
-                player.stack -= blind
-                player.bet_total = blind
-                self.table.pot += blind
-                if player.stack == 0:
-                    player.has_all_in = True
-
-            elif player.position == Position.BB:
-                blind = min(self.table.big_blind, player.stack)
-                player.stack -= blind
-                player.bet_total = blind
-                player.all_in = player.stack == 0
-                self.table.pot += blind
-                self.table.current_bet = blind
-                self.table.min_bet = blind
+        for seat, pos in zip(ordered_seats, reversed(positions)):
+            seat.player.position = pos
 
     def deal_hole_cards(self):
-        self.table.deck.deal_hands(self.table.seats)
+        """全プレイヤーに2枚ずつ配る"""
+        for seat in self.table.seats:
+            if seat.is_occupied():
+                cards = self.deck.draw(2)
+                seat.player.deal_hole_cards(cards)
 
-    def deal_board_cards(self, round_name):
-        ...
-
-    def run_betting_round(self):
-        ...
-
-    def run_showdown(self):
-        ...
-
-    def award_pot(self):
-        ...
-
-class Dealer:
-    @staticmethod
-    def post_blinds(table: Table):
-        """スモール/ビッグブラインドを投稿し、pot, current_bet を更新"""
-        for seat in table.seats:
-            player = seat.player
-            if not player:
+    def post_blinds(self):
+        """SBとBBにブラインドを投稿させる"""
+        for seat in self.table.seats:
+            if not seat.is_occupied():
                 continue
+            pos = seat.player.position
+            if pos == Position.SB:
+                self.table.post_blind(seat, amount=10)
+            elif pos == Position.BB:
+                self.table.post_blind(seat, amount=20)
 
-            if player.position in (Position.SB, Position.BTN_SB):
-                blind = min(table.small_blind, player.stack)
-                player.stack -= blind
-                player.bet_total = blind
-                table.pot += blind
-                if player.stack == 0:
-                    player.has_all_in = True
+    def deal_community_cards(self, round_name):
+        """フロップ、ターン、リバーのカードを配る"""
+        if round_name == "FLOP":
+            self.table.board.extend(self.deck.draw(3))
+        elif round_name in {"TURN", "RIVER"}:
+            self.table.board.extend(self.deck.draw(1))
 
-            elif player.position == Position.BB:
-                blind = min(table.big_blind, player.stack)
-                player.stack -= blind
-                player.bet_total = blind
-                player.all_in = player.stack == 0
-                table.pot += blind
-                table.current_bet = blind
-                table.min_bet = blind
-                
-
-    @staticmethod
-    def deal_hole_cards(table: Table):
-        """各プレイヤーに2枚ずつ配布"""
-        table.deck.deal_hands(table.seats)
-
-    @staticmethod
-    def distribute_pot(table: Table):
-        """
-        ショーダウン後、勝者にポットを分配する。
-        （現在はランダムまたは最初のプレイヤーに渡す仮実装）
-        """
-        from random import choice
-
-        # アクティブプレイヤーを取得
-        active_players = [seat.player for seat in table.get_active_seats() if seat.player]
-
-        if not active_players:
-            return Status.ERROR
-
-        # 仮：ランダムな勝者
-        winner = choice(active_players)
-        winner.stack += table.pot
-
-        # ログに記録（UI表示用に残すなども検討可能）
-        table.action_log.append(f"{winner.name} wins the pot of {table.pot}")
-
-        # ポットクリア
-        table.pot = 0
-
-        # 次のハンドに備えてラウンドをSHOWDOWNに設定
-        return Status.HAND_OVER
+    def distribute_pot(self):
+        """簡易版：残っている中で1人だけならその人にポットを全額渡す"""
+        active_seats = self.table.get_active_seats()
+        if len(active_seats) == 1:
+            winner = active_seats[0].player
+            winner.stack += self.table.pot
+            self.table.pot = 0
