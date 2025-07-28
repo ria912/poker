@@ -1,4 +1,4 @@
-# backend/services/position_manager.py
+# backend/models/position_manager.py
 from backend.models.enum import Position
 from backend.models.table import Table, Seat
 from backend.utils.order_utils import get_circular_order

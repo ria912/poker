@@ -22,6 +22,7 @@ class Seat:
 
 class Table:
     def __init__(self, max_seats: int = 6):
+        self.max_seats = max_seats
         self.seats: List[Seat] = [Seat(i) for i in range(max_seats)]
         self.board: List[int] = []
         self.pot = 0

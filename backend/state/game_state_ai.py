@@ -1,7 +1,7 @@
 # backend/state/single_game_state_ai.py
 from backend.models.table import Table, Seat
 from backend.services.round import RoundManager
-from backend.services.action import Action
+from backend.services.action_manager import Action
 from backend.models.enum import Status
 from backend.schemas import GameStateResponse, PlayerInfo
 from fastapi import HTTPException

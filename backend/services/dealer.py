@@ -8,17 +8,6 @@ class Dealer:
     def __init__(self, table: Table):
         self.table = table
         self.deck = Deck()
-        self.button_index = 0  # ボタン位置のインデックス
-
-    def assign_positions(self):
-        """現在の着席状況に応じてポジションを割り当てる"""
-        occupied_seats = [seat for seat in self.table.seats if seat.is_occupied()]
-        player_count = len(occupied_seats)
-        positions = list(Position)[-player_count:]  # BTN〜LJ のうち必要数を使用
-        ordered_seats = get_circular_order(occupied_seats, start=self.button_index)
-
-        for seat, pos in zip(ordered_seats, reversed(positions)):
-            seat.player.position = pos
 
     def deal_hole_cards(self):
         """全プレイヤーに2枚ずつ配る"""

@@ -1,9 +1,9 @@
-# backend/schemas/game_schemas.py
+# backend/schemas/game_dict.py
 
 from backend.models.enum import Round
 from backend.models.table import Table
 from backend.models.player import Player
-from backend.models.seat import Seat
+from backend.models.table import Seat
 from backend.services.action_manager import ActionManager
 
 

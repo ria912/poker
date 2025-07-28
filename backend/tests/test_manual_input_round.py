@@ -3,9 +3,9 @@
 from backend.models.table import Table
 from backend.models.player import Player
 from backend.services.dealer import Dealer
-from backend.services.round_manager import RoundManager
+from backend.services.round import RoundManager
 from backend.services.action_manager import ActionManager
-from backend.schemas import table_to_dict, action_info_to_dict
+from backend.schemas.game_dict import table_to_dict, action_info_to_dict
 
 def display_table_state(table: Table):
     print("\n=== テーブル情報 ===")
