@@ -1,112 +1,92 @@
-from backend.models.enum import Action, Status
-from backend.services.round import RoundManager
+# backend/tests/test_manual_simulation.py
+
 from backend.models.table import Table
 from backend.models.player import Player
+from backend.services.dealer import Dealer
+from backend.services.round_manager import RoundManager
+from backend.services.action_manager import ActionManager
+from backend.schemas import table_to_dict, action_info_to_dict
+
+def display_table_state(table: Table):
+    print("\n=== テーブル情報 ===")
+    info = table_to_dict(table)
+    print(f"ラウンド: {info['round']}")
+    print(f"ポット: {info['pot']} | 現在のベット: {info['current_bet']}")
+    print(f"ボード: {' '.join(info['board']) if info['board'] else '(なし)'}")
+
+    for p in info['players']:
+        hand_str = ' '.join(p['hand'])
+        print(f"[{p['seat']}] {p['position']} {p['name']} | stack: {p['stack']} | "
+              f"bet: {p['bet_total']} | hand: {hand_str} | action: {p['last_action']}")
 
 
-class InteractivePlayer(Player):
-    def __init__(self, name):
-        super().__init__(name)
+def display_action_options(player: Player, table: Table):
+    print(f"\n--- アクション選択: {player.name} ({player.position.name}) ---")
+    action_info = action_info_to_dict(player, table)
+    options = action_info['legal_actions']
 
-    def act(self, table):
-        print(f"\n▶ {self.name} の番です（ポジション: {self.position}）")
-        print("選択肢: 1=FOLD, 2=CHECK, 3=CALL, 4=BET, 5=RAISE")
-
-        action_map = {
-            "1": Action.FOLD,
-            "2": Action.CHECK,
-            "3": Action.CALL,
-            "4": Action.BET,
-            "5": Action.RAISE,
-        }
-
-        while True:
-            choice = input("アクション番号を入力してください: ").strip()
-            if choice in action_map:
-                action = action_map[choice]
-                break
-            print("無効な入力です。1〜5を入力してください。")
-
-        # amount の入力が必要なアクション
-        amount = 0
-        if action in [Action.BET, Action.RAISE]:
-            while True:
-                try:
-                    amount = int(input("金額を入力してください（整数）: ").strip())
-                    if amount >= 0:
-                        break
-                    print("金額は0以上の整数で入力してください。")
-                except ValueError:
-                    print("無効な入力です。整数を入力してください。")
-
-        self.last_action = action
-        print(f"✅ {self.name} は {action.name}（{amount}）を選択")
-
-        return action, amount
-
-def create_interactive_table():
-    table = Table()
-    names = ["P1", "P2", "P3", "P4"]
-
-    for i in range(4):
-        table.seats[i].player = InteractivePlayer(names[i])
-        table.seats[i].index = i  # ✅ Seat.index を明示的に設定（重要！）
-
-    table.btn_index = 0
-    table.starting_new_hand()
-    return table
+    for i, option in enumerate(options):
+        action = option["action"]
+        min_amt = option.get("min")
+        max_amt = option.get("max")
+        if min_amt is not None and max_amt is not None:
+            print(f"{i}: {action} ({min_amt} - {max_amt})")
+        else:
+            print(f"{i}: {action}")
+    return options
 
 
-def print_players(table: Table):
-    print("\n🎮 プレイヤー情報:")
-    for seat in table.seats:
-        p = seat.player
-        if p:
-            print(f"・{p.name}: position={p.position}, stack={p.stack}, bet={p.bet_total}")
-
-
-def run_manual_round():
-    table = create_interactive_table()
-    manager = RoundManager(table)
-    manager.reset()
-
-    print("\n=== 🃏 手動操作テスト開始 ===")
-    print_players(table)
-
-    round_name = table.round.name
-    print(f"\n🕐 ラウンド開始: {round_name}")
-
+def manual_action_input(player: Player, table: Table):
+    options = display_action_options(player, table)
     while True:
-        prev_round = table.round  # ← ラウンド変化を検知するため保持
-        status = manager.proceed()
+        try:
+            choice = int(input("アクション番号を入力: "))
+            if choice < 0 or choice >= len(options):
+                raise ValueError("無効な番号")
+            selected = options[choice]
+            action = selected["action"]
 
-        # ✅ アクション適用後の bet_total 表示
-        print("\n💡 各プレイヤーのベット状況:")
-        for i, seat in enumerate(table.seats):
-            if seat.player:
-                print(f"  - {seat.player.name} (seat {i}): bet_total = {seat.player.bet_total}")
+            if "min" in selected and "max" in selected:
+                amount = int(input(f"額を入力 ({selected['min']}〜{selected['max']}): "))
+            else:
+                amount = 0
 
-        # ✅ ラウンドが変わったらボード表示
-        if table.round != prev_round:
-            round_name = table.round.name
-            print(f"\n💡 ラウンド進行 → {round_name}")
-            print(f"🃍 ボード: {table.board}")
-
-        print(f"\n💰 ポット: {table.pot} / ステータス: {status.name}")
-
-        if status == Status.ROUND_OVER:
-            print("\n✅ ラウンド終了")
+            ActionManager.apply_action(player, action, amount, table)
+            print(f"{player.name} → {action} {amount if amount > 0 else ''}")
             break
-        elif status == Status.HAND_OVER:
-            print("\n🏁 ハンド終了")
-            break
+        except Exception as e:
+            print(f"エラー: {e}. 再入力してください。")
 
-    print("\n🎯 最終ボード:", table.board)
-    for seat in table.seats:
-        p = seat.player
-        if p:
-            print(f"{p.name}: action={p.last_action}, stack={p.stack}, folded={p.folded}")
+
+def run_manual_simulation():
+    # プレイヤー初期化
+    players = [
+        Player(name="Alice", stack=100),
+        Player(name="Bob", stack=100),
+        Player(name="Carol", stack=100),
+        Player(name="Dave", stack=100),
+    ]
+    table = Table(players=players)
+    dealer = Dealer(table)
+    dealer.prepare_new_hand()
+
+    print("\n=== プリフロップ開始 ===")
+    round_manager = RoundManager(table)
+    display_table_state(table)
+
+    while not round_manager.is_hand_over():
+        current_player = round_manager.get_next_player()
+        if current_player is None:
+            round_manager.advance_round()
+            display_table_state(table)
+            continue
+
+        manual_action_input(current_player, table)
+        display_table_state(table)
+
+    print("\n=== ハンド終了 ===")
+    display_table_state(table)
 
 
 if __name__ == "__main__":
-    run_manual_round()
+    run_manual_simulation()
