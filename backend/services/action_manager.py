@@ -9,7 +9,7 @@ class ActionManager:
         min_bet = table.min_bet
         to_call = current_bet - player.bet_total
 
-        actions.append(Action.FOLD)
+        actions.append(Action.MACK)
 
         if current_bet == player.bet_total:
             actions.append(Action.CHECK)
@@ -18,6 +18,7 @@ class ActionManager:
             elif current_bet > 0:
                 actions.append(Action.RAISE)
         else:
+            actions.append(Action.FOLD)
             actions.append(Action.CALL)
             if player.stack >= to_call + min_bet:
                 actions.append(Action.RAISE)
@@ -75,9 +76,6 @@ class ActionManager:
         player.stack -= total
         player.bet_total += total
         table.pot += total
-
-        if player.bet_total > table.current_bet:
-            table.current_bet = player.bet_total
 
     @staticmethod
     def _apply_raise(player, table, amount:int):
