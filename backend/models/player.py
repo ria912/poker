@@ -10,6 +10,7 @@ class Player:
         self.hole_cards: List[int] = []
         self.bet_total = 0
         self.folded = False
+        self.is_all_in = False
         self.last_action: Optional[Action] = None
         self.is_human = is_human
 
@@ -22,7 +23,7 @@ class Player:
 
     def fold(self):
         self.folded = True
-        self.last_action = "FOLD"
+        self.last_action = Action.FOLD
 
     def reset_for_new_hand(self):
         self.hole_cards = []
