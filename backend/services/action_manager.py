@@ -9,7 +9,7 @@ class ActionManager:
         min_bet = table.min_bet
         to_call = current_bet - player.bet_total
 
-        actions.append(Action.MACK)
+        actions.append(Action.FOLD)
 
         if current_bet == player.bet_total:
             actions.append(Action.CHECK)
@@ -35,7 +35,7 @@ class ActionManager:
     @staticmethod
     def apply_action(player, table, action, amount: int):
         if action == Action.FOLD:
-            player.has_folded = True
+            player.folded = True
         elif action == Action.CHECK:
             pass
         elif action == Action.CALL:
@@ -50,7 +50,7 @@ class ActionManager:
         player.last_action = action
 
         if player.stack == 0:
-            player.has_all_in = True
+            player.is_all_in = True
 
     @staticmethod
     def _apply_bet(player, table, amount:int):
