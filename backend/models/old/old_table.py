@@ -23,7 +23,7 @@ class Seat:
         }
     
     def to_schema(self):
-        from backend.schemas.game_state_schema import SeatState
+        from backend.schemas.game_schema import SeatState
         return SeatState(
             index=self.index,
             player=self.player.to_schema() if self.player else None

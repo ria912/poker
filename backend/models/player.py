@@ -1,6 +1,6 @@
 # backend/models/player.py
 from typing import List, Optional
-from backend.models.enum import Position, Action
+from backend.models.enum import Position, Action, State
 
 class Player:
     def __init__(self, name: str, stack: int, is_human: bool = False):
@@ -9,8 +9,7 @@ class Player:
         self.position: Optional[Position] = None
         self.hole_cards: List[int] = []
         self.bet_total = 0
-        self.folded = False
-        self.is_all_in = False
+        self.state: State = State.ACTIVE
         self.last_action: Optional[Action] = None
         self.is_human = is_human
 
@@ -22,7 +21,7 @@ class Player:
         self.bet_total += amount
 
     def fold(self):
-        self.folded = True
+        self.state = State.FOLDED
         self.last_action = Action.FOLD
 
     def reset_for_new_hand(self):

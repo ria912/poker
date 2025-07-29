@@ -24,3 +24,9 @@ class Position(Enum):
     BTN = auto()  # Button
     SB = auto()   # Small Blind
     BB = auto()   # Big Blind
+
+class State(Enum):
+    ACTIVE = auto()
+    FOLDED = auto()
+    ALL_IN = auto()
+    OUT = auto()
