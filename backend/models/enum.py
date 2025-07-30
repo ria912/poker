@@ -25,12 +25,12 @@ class Round(Enum):
 
 
 class Position(Enum):
-    LJ = auto()   # Lowjack (UTG相当)
-    HJ = auto()   # Hijack
-    CO = auto()   # Cutoff
-    BTN = auto()  # Button
-    SB = auto()   # Small Blind
-    BB = auto()   # Big Blind
+    LJ = auto(）
+    HJ = auto()
+    CO = auto()
+    BTN = auto()
+    SB = auto()
+    BB = auto()
 
 class State(Enum):
     ACTIVE = auto()
