@@ -22,14 +22,18 @@ class Seat:
 
 
 class Table:
-    def __init__(self, max_seats: int = 6):
+    def __init__(self, max_seats: int = 6, small_blind: int = 50, big_blind: int = 100):
         self.max_seats = max_seats
+        self.small_blind = small_blind
+        self.big_blind = big_blind
+        
         self.seats: List[Seat] = [Seat(i) for i in range(max_seats)]
         self.round: Optional[Round] = None
         self.board: List[int] = []
         self.pot = 0
         self.current_bet = 0
         self.min_bet = 0
+        
         self.btn_index: Optional[int] = None
 
     def get_active_seats(self) -> List[Seat]:
