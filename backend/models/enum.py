@@ -27,10 +27,10 @@ class Round(Enum):
 class Position(Enum):
     LJ = auto(）
     HJ = auto()
-    CO = auto()
-    BTN = auto()
-    SB = auto()
-    BB = auto()
+    CO = auto(）
+    BTN = auto(）
+    SB = auto(）
+    BB = auto(）
 
 class State(Enum):
     ACTIVE = auto()
