@@ -4,6 +4,15 @@ from backend.models.table import Table, Seat
 from backend.utils.order_utils import get_circular_order
 
 class PositionManager:
+    POSITION_ORDER = [
+        Position.LJ,
+        Position.HJ,
+        Position.CO,
+        Position.BTN,
+        Position.SB,
+        Position.BB,
+    ]
+
     def __init__(self, table: Table, button_index: int):
         self.table = table
         self.button_index = button_index
@@ -18,23 +27,22 @@ class PositionManager:
                 break
 
     def assign_positions(self):
-        """現在のボタン位置から順にポジションを割り当てる"""
         occupied_seats = [seat for seat in self.table.seats if seat.is_occupied()]
         player_count = len(occupied_seats)
 
-        position_usage = {
-            2: [Position.BTN, Position.BB],  # BTNがSBも兼ねるケース
-            3: [Position.BTN, Position.SB, Position.BB],
-            4: [Position.BTN, Position.SB, Position.BB, Position.CO],
-            5: [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ],
-            6: [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ],
-        }
+        if player_count == 2:
+            positions = [Position.BTN, Position.BB]
+        else:
+            # 使用するポジションをスライスで取得
+            positions = self.POSITION_ORDER[-player_count:]
 
-        positions = position_usage[player_count]  # 使用するポジション（例: 6人なら LJ〜BB）
+            # BTN(-3)を起点に回転させる
+            positions = positions[-3:] + positions[:-3]
 
-        # ボタンを起点に座席を並び替え
-        ordered_seats = get_circular_order(occupied_seats, start=self.button_index)
+        # BTN座席から回転
+        btn_seat = self.table.seats[self.button_index]
+        btn_index_in_occupied = occupied_seats.index(btn_seat)
+        ordered_seats = get_circular_order(occupied_seats, start=btn_index_in_occupied)
 
-        # 座席へポジション割り当て
         for seat, pos in zip(ordered_seats, positions):
             seat.player.position = pos
