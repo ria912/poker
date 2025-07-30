@@ -1,39 +1,41 @@
 # backend/models/enum.py
-from enum import Enum, auto
-
-class Action(Enum):
-    FOLD = auto()
-    CHECK = auto()
-    CALL = auto()
-    BET = auto()
-    RAISE = auto()
+from enum import Enum
 
 
-class Round(Enum):
-    PREFLOP = auto()
-    FLOP = auto()
-    TURN = auto()
-    RIVER = auto()
-    SHOWDOWN = auto()
-    
-    def next(self):
+class Action(str, Enum):
+    FOLD = "FOLD"
+    CHECK = "CHECK"
+    CALL = "CALL"
+    BET = "BET"
+    RAISE = "RAISE"
+
+
+class Round(str, Enum):
+    PREFLOP = "PREFLOP"
+    FLOP = "FLOP"
+    TURN = "TURN"
+    RIVER = "RIVER"
+    SHOWDOWN = "SHOWDOWN"
+
+    def next(self) -> "Round":
         members = list(Round)
         idx = members.index(self)
         if idx + 1 < len(members):
             return members[idx + 1]
-        return Round.SHOWDOWN  # 最終ラウンドでは SHOWDOWN を維持
+        return Round.SHOWDOWN  # 最終ラウンド
 
 
-class Position(Enum):
-    LJ = auto(）
-    HJ = auto()
-    CO = auto(）
-    BTN = auto(）
-    SB = auto(）
-    BB = auto(）
+class Position(str, Enum): 
+    BTN = "BTN"
+    SB = "SB"
+    BB = "BB"
+    LJ = "LJ"
+    HJ = "HJ"
+    CO = "CO"
 
-class State(Enum):
-    ACTIVE = auto()
-    FOLDED = auto()
-    ALL_IN = auto()
-    OUT = auto()
+
+class State(str, Enum):
+    ACTIVE = "ACTIVE"
+    FOLDED = "FOLDED"
+    ALL_IN = "ALL_IN"
+    OUT = "OUT"

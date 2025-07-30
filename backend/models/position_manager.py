@@ -21,11 +21,20 @@ class PositionManager:
         """現在のボタン位置から順にポジションを割り当てる"""
         occupied_seats = [seat for seat in self.table.seats if seat.is_occupied()]
         player_count = len(occupied_seats)
-        positions = list(Position)[-player_count:]  # 使用するポジション（例: 6人なら LJ〜BB）
+
+        position_usage = {
+            2: [Position.BTN, Position.BB],  # BTNがSBも兼ねるケース
+            3: [Position.BTN, Position.SB, Position.BB],
+            4: [Position.BTN, Position.SB, Position.BB, Position.CO],
+            5: [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ],
+            6: [Position.BTN, Position.SB, Position.BB, Position.CO, Position.HJ, Position.LJ],
+        }
+
+        positions = position_usage[player_count]  # 使用するポジション（例: 6人なら LJ〜BB）
 
         # ボタンを起点に座席を並び替え
         ordered_seats = get_circular_order(occupied_seats, start=self.button_index)
 
-        # BTN → CO → HJ ... の順に座席へポジション割当（※使用順を逆から）
-        for seat, pos in zip(ordered_seats, reversed(positions)):
+        # 座席へポジション割り当て
+        for seat, pos in zip(ordered_seats, positions):
             seat.player.position = pos
