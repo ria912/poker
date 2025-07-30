@@ -15,6 +15,13 @@ class Round(Enum):
     TURN = auto()
     RIVER = auto()
     SHOWDOWN = auto()
+    
+    def next(self):
+        members = list(Round)
+        idx = members.index(self)
+        if idx + 1 < len(members):
+            return members[idx + 1]
+        return Round.SHOWDOWN  # 最終ラウンドでは SHOWDOWN を維持
 
 
 class Position(Enum):
