@@ -29,21 +29,21 @@ class PlayerSchema(BaseModel):
     name: str
     is_human: bool
     stack: int
-    bet_total: int
-    hand: Optional[List[str]]  # 表示は ['Ah', 'Kd'] のような形式
+    hole_cards: Optional[List[str]]  # 表示は ['Ah', 'Kd'] のような形式
     position: Position
+    bet_total: int
     last_action: Optional[Action] = None
 
 
 class TableSchema(BaseModel):
-    round: Round
+    current_round: Round
     pot: int
     current_bet: int
-    board: List[str]  # 表示は ['2c', '7d', 'Jh'] のような形式
+    community_cards: List[str]  # 表示は ['2c', '7d', 'Jh'] のような形式
 
 
 class ActionHistorySchema(BaseModel):
-    round: Round
+    current_round: Round
     seat_index: int
     player_name: str
     action: Action

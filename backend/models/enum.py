@@ -39,3 +39,4 @@ class State(str, Enum):
     FOLDED = "FOLDED"
     ALL_IN = "ALL_IN"
     OUT = "OUT"
+    SITTING_OUT = "SITTING_OUT"
