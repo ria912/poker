@@ -1,0 +1,24 @@
+backend/
+├── main.py                     # FastAPIエントリポイント
+├── game_service.py            # アプリケーションサービス（1ハンド進行の起点）
+├── models/                    # データモデル（状態を保持する構造体）
+│   ├── __init__.py
+│   ├── enum.py                # Enum定義（Round, Status, Action, Positionなど）
+│   ├── player.py              # プレイヤー情報（スタック、カード、アクション状態）
+│   ├── seat.py                # テーブル座席情報（プレイヤー保持など）
+│   └── table.py               # テーブル全体（ポット、ボタン位置、デッキなど）
+├── schemas/                   # Pydanticベースのリクエスト/レスポンススキーマ
+│   └── (未定義 or 今後追加予定)
+├── services/                  # ドメインロジック（制御やルールを実装）
+│   ├── __init__.py
+│   ├── action_manager.py      # アクション適用ロジック（BET, CALLなど）
+│   ├── dealer.py              # デッキ管理、カード配布
+│   ├── round_manager.py       # ラウンド進行制御（PREFLOP〜SHOWDOWN）
+│   └── position_manager.py    # ポジション割当とボタンの回転
+├── states/                    # 状態管理（GameStateなど）
+│   └── game_state.py
+├── utils/                     # 汎用ユーティリティ（順序処理など）
+│   └── order_utils.py         # ボタン起点での巡回順取得（get_circular_orderなど）
+
+# 補足：
+- 使用ライブラリに `treys` を明示的に使用（ハンド強さ評価などに利用予定）
