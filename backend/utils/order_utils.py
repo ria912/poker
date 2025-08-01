@@ -4,9 +4,9 @@ T = TypeVar('T')
 
 def get_circular_order(
     items: List[T],
-    start_index: int,
-    condition: Optional[Callable[[T], bool]] = None,
-    exclude: Optional[T] = None
+    start_index: int,  # 開始インデックス
+    condition: Optional[Callable[[T], bool]] = None,  # 条件指定
+    exclude: Optional[T] = None  # 除外対象
 ) -> List[T]:
     """
     リストを start_index から時計回りに回しながら、

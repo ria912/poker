@@ -44,6 +44,12 @@ class Table:
     
     def get_active_seat_indices(self) -> List[int]:
         return [seat.index for seat in self.get_active_seats()]
+    
+    def get_index_by_position(self, position: Position) -> Optional[int]:
+        for seat in self.seats:
+            if seat.player and seat.player.position == position:
+                return seat.index
+        return None
 
     def add_to_pot(self, amount: int):
         self.pot += amount

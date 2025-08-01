@@ -1,33 +1,28 @@
 from typing import List, Optional
 from backend.models.table import Table, Seat
-from backend.models.enum import Round, Status
-from backend.services.action_manager import ActionManager, Action
+from backend.models.enum import Round, Status, Position
+from services import ActionManager, Dealer
 from backend.utils.order_utils import get_circular_order, get_next_index
 
 
 class RoundLogic:
-    def __init__(self, table: Table):
-        self.table = table
-
-    def advance_round(self):
-        if len(self.table.get_active_seats()) == 1:
+    def advance_round(table: Table) -> Status:
+        if len(table.get_active_seats()) == 1:
             return Status.ROUND_OVER
 
-        self.table.round = Round.next(self.table.round)
+        table.round = Round.next(table.round)
 
-        if self.table.round == Round.SHOWDOWN:
+        if table.round == Round.SHOWDOWN:
             return Status.ROUND_OVER
 
-        self.table.reset()
-        self.table.deck.deal_board(self.table)
+        table.reset_round()
+        Dealer.deal_community_cards(table)
         return Status.ROUND_CONTINUE
 
 
 class RoundManager:
-    def __init__(self, table: Table):
-        self.table = table
-        self.round_logic = RoundLogic(table)
-        self.status: Optional[Status] = Status.ROUND_CONTINUE
+    def __init__(self):
+        self.round_logic = RoundLogic()
         self.action_order: List[Seat] = []
         self.action_index = 0
         self.current_seat: Optional[Seat] = None
@@ -36,9 +31,9 @@ class RoundManager:
         self.action_order = self.compute_action_order()
         self.action_index = 0
 
-    def compute_action_order(self, last_raiser: Optional[Seat] = None) -> List[Seat]:
-        seats = self.table.seats
-        active_seats = self.table.get_active_seats()
+    def compute_action_order(self, table: Table, last_raiser: Optional[Seat] = None) -> List[Seat]:
+        seats = table.seats
+        active_seats = table.get_active_seats()
         n = len(seats)
 
         if len(active_seats) < 2:
@@ -52,11 +47,11 @@ class RoundManager:
                 exclude=last_raiser
             )
 
-        if self.table.round == Round.PREFLOP:
-            bb_index = (self.table.btn_index + 2) % n
-            start_index = (bb_index + 1) % n
+        if table.round == Round.PREFLOP:
+            bb_index = table.get_index_by_position(Position.BB)
+            start_index = self.find_next_active_index(bb_index)
         else:
-            start_index = (self.table.btn_index + 1) % n
+            start_index = self.find_next_active_index(table.btn_index)
 
         return get_circular_order(
             seats,
@@ -64,9 +59,9 @@ class RoundManager:
             condition=lambda s: s in active_seats
         )
 
-    def find_next_active_index(self, start_index: int) -> int:
+    def find_next_active_index(self, table: Table, start_index: int) -> int:
         return get_next_index(
-            self.table.seats,
+            table.seats,
             start_index=start_index,
             condition=lambda s: s.player and s.player.is_active
         )

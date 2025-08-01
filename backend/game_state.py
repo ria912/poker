@@ -4,7 +4,7 @@ from typing import List, Optional
 from backend.models.table import Table
 from backend.models.player import Player
 from backend.services.dealer import Dealer
-from backend.models.position_manager import PositionManager
+from backend.services.position_manager import PositionManager
 from backend.models.enum import Round
 
 class GameState:

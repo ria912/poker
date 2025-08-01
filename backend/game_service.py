@@ -1,5 +1,4 @@
-from backend.models.table import Table
-from backend.models.player import Player
+from models import Deck, Player, Table, Enum
 from backend.models.enum import Action
 from backend.services.dealer import Dealer
 from backend.services.action_manager import ActionManager
