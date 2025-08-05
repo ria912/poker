@@ -1,27 +1,38 @@
 # models/action.py
-from backend.models.enum import Action
+from backend.models.enum import Action, State, Status
+from models import Player, Table
+from typing import List, Dict, Optional
+
 
 class ActionManager:
     @staticmethod
-    def get_legal_actions_info(player, table):
+    def get_legal_actions_info(player: Player, table: Table) -> Dict[str, Optional[List[str]]]:
         actions = []
         current_bet = table.current_bet
         min_bet = table.min_bet
         to_call = current_bet - player.bet_total
-
-        actions.append(Action.FOLD)
+    
+        if current_bet > 0:
+            actions.append(Action.FOLD)
 
         if current_bet == player.bet_total:
             actions.append(Action.CHECK)
-            if current_bet == 0:
-                actions.append(Action.BET)
-            elif current_bet > 0:
-                actions.append(Action.RAISE)
         else:
-            actions.append(Action.FOLD)
-            actions.append(Action.CALL)
-            if player.stack >= to_call + min_bet:
-                actions.append(Action.RAISE)
+            if player.stack >= to_call:
+                actions.append(Action.CALL)
+            elif player.stack > 0:
+                actions.append(Action.CALL)  # オールインCALL
+
+        if current_bet == 0:
+            if player.stack >= min_bet:
+                actions.append(Action.BET)
+            elif player.stack > 0:
+                actions.append(Action.BET)  # オールインBET
+
+        if current_bet > 0 and player.stack >= to_call + min_bet:
+            actions.append(Action.RAISE)
+
+
 
         return {
             "legal_actions": actions,
@@ -33,63 +44,59 @@ class ActionManager:
 
 
     @staticmethod
-    def apply_action(player, table, action, amount: int):
+    def apply_action(player: Player, table: Table, action: Action, amount: int):
         if action == Action.FOLD:
-            player.folded = True
+            player.act(action)
+
         elif action == Action.CHECK:
-            pass
+            if table.current_bet == player.bet_total:
+                player.act(action)
+            else:
+                raise ValueError("ベットが存在しているため、チェックはできません")
+
         elif action == Action.CALL:
-            ActionManager._apply_call(player, table)
+            to_call = table.current_bet - player.bet_total
+            actual_amount = min(player.stack, to_call)
+
+            player.bet_total += actual_amount
+            table.pot += actual_amount
+
+            player.act(action, actual_amount)
+
         elif action == Action.BET:
             ActionManager._apply_bet(player, table, amount)
             table.last_raiser = player
+
         elif action == Action.RAISE:
             ActionManager._apply_raise(player, table, amount)
             table.last_raiser = player
 
-        player.last_action = action
-
-        if player.stack == 0:
-            player.is_all_in = True
-
     @staticmethod
-    def _apply_bet(player, table, amount:int):
-        if amount < 0:
-            raise ValueError(f"Invalid Bet amount: {amount}. Must be >= 0.")
-        min_bet = table.min_bet
-        total = amount + min_bet
-        total = min(player.stack, total)
+    def _apply_bet(player: Player, table: Table, amount: int):
+        if amount < table.min_bet:
+            raise ValueError(f"BET金額はmin_bet以上である必要があります: {table.min_bet}")
 
-        player.stack -= total
-        player.bet_total += total
+        bet_amount = min(player.stack, amount)
+        player.bet_total += bet_amount
         table.current_bet = player.bet_total
-        table.pot += total
+        table.pot += bet_amount
 
-        if total > table.min_bet:
-            table.min_bet = total
-
-    @staticmethod
-    def _apply_call(player, table):      
-        to_call = table.current_bet - player.bet_total
-        total = min(player.stack, to_call)
-
-        player.stack -= total
-        player.bet_total += total
-        table.pot += total
+        table.min_bet = bet_amount  # BET後にmin_betを更新
+        player.act(Action.BET, bet_amount)
 
     @staticmethod
-    def _apply_raise(player, table, amount:int):
-        if amount < 0:
-            raise ValueError(f"Invalid Bet/Raise amount: {amount}. Must be >= 0.")
-        min_bet = table.min_bet
+    def _apply_raise(player: Player, table: Table, amount: int):
+        if amount < table.min_bet:
+            raise ValueError(f"RAISE金額はmin_bet以上である必要があります: {table.min_bet}")
+
         call_amount = table.current_bet - player.bet_total
-        total = amount + min_bet + call_amount
-        total = min(player.stack, total)
+        raise_amount = min(player.stack, amount)
+        total = call_amount + raise_amount
 
-        player.stack -= total
-        player.bet_total += total
-        table.pot += total
+        actual_total = min(player.stack, total)
+        player.bet_total += actual_total
         table.current_bet = player.bet_total
+        table.pot += actual_total
 
-        raise_amount = total - call_amount
         table.min_bet = raise_amount
+        player.act(Action.RAISE, actual_total)

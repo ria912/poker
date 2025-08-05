@@ -38,6 +38,7 @@ class Table:
         self.min_bet = 0
 
         self.btn_index: Optional[int] = None
+        self.last_raiser: Optional[Player] = None
         
     def get_active_seats(self) -> List[Seat]:
         return [seat for seat in self.seats if seat.is_active()]

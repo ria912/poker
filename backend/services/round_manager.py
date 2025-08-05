@@ -6,6 +6,7 @@ from backend.utils.order_utils import get_circular_order, get_next_index
 
 
 class RoundLogic:
+    @staticmethod
     def advance_round(table: Table) -> Status:
         if len(table.get_active_seats()) == 1:
             return Status.ROUND_OVER
@@ -21,8 +22,8 @@ class RoundLogic:
 
 
 class RoundManager:
-    def __init__(self):
-        self.round_logic = RoundLogic()
+    def __init__(self, table: Table):
+        self.table = table
         self.action_order: List[Seat] = []
         self.action_index = 0
         self.current_seat: Optional[Seat] = None
@@ -30,11 +31,11 @@ class RoundManager:
     def reset(self):
         self.action_order = self.compute_action_order()
         self.action_index = 0
+        self.current_seat = None
 
-    def compute_action_order(self, table: Table, last_raiser: Optional[Seat] = None) -> List[Seat]:
-        seats = table.seats
-        active_seats = table.get_active_seats()
-        n = len(seats)
+    def compute_action_order(self, last_raiser: Optional[Seat] = None) -> List[Seat]:
+        seats = self.table.seats
+        active_seats = self.table.get_active_seats()
 
         if len(active_seats) < 2:
             raise ValueError("アクティブプレイヤーが2人未満です")
@@ -47,11 +48,11 @@ class RoundManager:
                 exclude=last_raiser
             )
 
-        if table.round == Round.PREFLOP:
-            bb_index = table.get_index_by_position(Position.BB)
+        if self.table.round == Round.PREFLOP:
+            bb_index = self.table.get_index_by_position(Position.BB)
             start_index = self.find_next_active_index(bb_index)
         else:
-            start_index = self.find_next_active_index(table.btn_index)
+            start_index = self.find_next_active_index(self.table.btn_index)
 
         return get_circular_order(
             seats,
@@ -59,9 +60,9 @@ class RoundManager:
             condition=lambda s: s in active_seats
         )
 
-    def find_next_active_index(self, table: Table, start_index: int) -> int:
+    def find_next_active_index(self, start_index: int) -> int:
         return get_next_index(
-            table.seats,
+            self.table.seats,
             start_index=start_index,
             condition=lambda s: s.player and s.player.is_active
         )
@@ -69,22 +70,22 @@ class RoundManager:
     def get_current_seat(self) -> Optional[Seat]:
         while self.action_index < len(self.action_order):
             seat = self.action_order[self.action_index]
-            if seat.player:
+            if seat.player and seat.player.is_active:
                 self.current_seat = seat
                 return seat
             self.action_index += 1
         return None
 
-    def proceed(self):
-        current = self.get_current_seat()
+    def proceed(self) -> Status:
+        seat = self.get_current_seat()
 
-        if current and current.player:
-            self._process_action(current)
+        if seat:
+            self._process_action(seat)
             self.action_index += 1
             return Status.PLAYER_ACTED
 
         elif self.table.is_round_complete():
-            return self.round_logic.advance_round()
+            return RoundLogic.advance_round(self.table)
 
         else:
             self.reset()

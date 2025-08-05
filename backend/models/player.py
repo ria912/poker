@@ -12,23 +12,45 @@ class Player:
         self.position: Optional[Position] = None
         self.hole_cards: List[int] = []
         self.bet_total: int = 0
-        self.state: State = State.ACTIVE
+        self.state: Optional[State] = None
         self.last_action: Optional[Action] = None
 
     @property
     def is_active(self) -> bool:
-        return self.state == State.ACTIVE and self.stack > 0
+        return self.stack > 0 and self.state not in {State.FOLDED, State.ALL_IN, State.SITTING_OUT}
 
-    def deal_hole_cards(self, cards: List[int]):
-        self.hole_cards = cards
+    def act(self, action: Action, amount: int = 0):
+        if action == Action.FOLD:
+            self.last_action = Action.FOLD
+            self.state = State.FOLDED
 
-    def bet(self, amount: int):
-        self.stack -= amount
-        self.bet_total += amount
+        elif action == Action.CHECK:
+            self.last_action = Action.CHECK
+            self.state = State.ACTED
+            
+        elif action == Action.CALL:
+            self.last_action = Action.CALL
+            self.stack -= amount
+            if self.stack == 0:
+                self.state = State.ALL_IN
+            else:
+                self.state = State.ACTED
 
-    def fold(self):
-        self.state = State.FOLDED
-        self.last_action = Action.FOLD
+        elif action == Action.BET or action == Action.RAISE:
+            self.last_action = action
+            self.stack -= amount
+            if self.stack == 0:
+                self.state = State.ALL_IN
+            else:
+                self.state = State.ACTED
+        else:
+            raise ValueError(f"Unknown action or amount: {action}, {amount}")
+
+    def reset_round(self):
+        if self.state == State.ACTED:
+            self.state = None
+        self.bet_total = 0
+        self.last_action = None
 
     def reset_for_new_hand(self):
         self.hole_cards = []
