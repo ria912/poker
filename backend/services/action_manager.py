@@ -15,7 +15,7 @@ class ActionManager:
         if current_bet > 0:
             actions.append(Action.FOLD)
 
-        if current_bet == player.bet_total:
+        if to_call == 0:
             actions.append(Action.CHECK)
         else:
             if player.stack >= to_call:
