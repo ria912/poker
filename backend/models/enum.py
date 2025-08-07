@@ -8,6 +8,7 @@ class Action(str, Enum):
     CALL = "CALL"
     BET = "BET"
     RAISE = "RAISE"
+    ALL_IN = "ALL_IN"
 
     MUCK = "MUCK"  # カードを公開せずに捨てる(負けを認める)
 

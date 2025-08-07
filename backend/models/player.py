@@ -31,6 +31,7 @@ class Player:
         elif action == Action.CALL:
             self.last_action = Action.CALL
             self.stack -= amount
+            self.bet_total += amount
             if self.stack == 0:
                 self.state = State.ALL_IN
             else:
@@ -39,10 +40,17 @@ class Player:
         elif action == Action.BET or action == Action.RAISE:
             self.last_action = action
             self.stack -= amount
+            self.bet_total += amount
             if self.stack == 0:
                 self.state = State.ALL_IN
             else:
                 self.state = State.ACTED
+        
+        elif action == Action.ALL_IN:
+            self.last_action = Action.ALL_IN
+            self.stack = 0
+            self.bet_total += self.stack
+            self.state = State.ALL_IN
         else:
             raise ValueError(f"Unknown action or amount: {action}, {amount}")
 
