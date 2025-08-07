@@ -1,96 +1,54 @@
-from models import Deck, Player, Table, Enum
+from fastapi import APIRouter, HTTPException
+from backend.states.game_state import GameState
 from backend.models.enum import Action
-from backend.services.dealer import Dealer
-from backend.services.action_manager import ActionManager
 from backend.schemas.game_schema import (
-    StartGameRequest,
-    PlayerActionRequest,
+    StartGameRequest, 
+    ActionRequest,
     GameStateResponse,
-    PlayerSchema,
-    TableSchema,
-    ActionHistorySchema,
-    LegalActionSchema,
+    WinnerInfoResponse
 )
 
-from typing import Optional, List
-from treys import Card
+router = APIRouter()
 
+# グローバルなGameState（簡易なセッション用）
+game_state: GameState = None
 
-class GameService:
-    def __init__(self):
-        self.table: Optional[Table] = None
-        self.dealer: Optional[Dealer] = None
-        self.action_history: List[ActionHistorySchema] = []
+@router.post("/start_game")
+def start_game(request: StartGameRequest) -> GameStateResponse:
+    global game_state
+    game_state = GameState(player_num=request.player_num)
+    game_state.reset()
+    return GameStateResponse(**game_state.get_observation())
 
-    def start_new_game(self, req: StartGameRequest) -> GameStateResponse:
-        self.table = Table(player_count=req.player_count)
-        self.dealer = Dealer(self.table)
-        self.dealer.setup_game()
-        self.action_history = []
-        return self._build_game_state()
+@router.post("/action")
+def play_action(request: ActionRequest) -> GameStateResponse:
+    if game_state is None:
+        raise HTTPException(status_code=400, detail="Game not started")
+    game_state.step(request.action, request.amount or 0)
+    return GameStateResponse(**game_state.get_observation())
 
-    def apply_player_action(self, req: PlayerActionRequest) -> GameStateResponse:
-        player_seat = self.table.seats[req.seat_id]
-        ActionManager.apply_action(player_seat.player, self.table, req.action, req.amount)
+@router.get("/state")
+def get_state() -> GameStateResponse:
+    if game_state is None:
+        raise HTTPException(status_code=400, detail="Game not started")
+    return GameStateResponse(**game_state.get_observation())
 
-        self.action_history.append(ActionHistorySchema(
-            seat_id=req.seat_id,
-            action=req.action,
-            amount=req.amount,
-        ))
+@router.post("/simulate_ai")
+def simulate_ai() -> GameStateResponse:
+    if game_state is None:
+        raise HTTPException(status_code=400, detail="Game not started")
 
-        # ラウンド完了チェックと進行
-        if self.table.is_round_complete():
-            self.dealer.proceed_to_next_round()
+    # 人間以外のAIプレイヤーにアクションさせる（簡易ロジック）
+    while not game_state.is_hand_over() and not game_state.table.get_current_seat().is_human:
+        legal_actions = game_state.get_legal_actions()
+        first_action = legal_actions[0]["action"]
+        amount = legal_actions[0].get("amount", 0)
+        game_state.step(Action[first_action], amount)
+    
+    return GameStateResponse(**game_state.get_observation())
 
-        return self._build_game_state()
-
-    def _build_game_state(self) -> GameStateResponse:
-        players = []
-        for seat in self.table.seats:
-            player = seat.player
-            hand = [Card.int_to_pretty_str(c) for c in player.hand] if player.hand else None
-
-            players.append(PlayerSchema(
-                seat_id=seat.seat_id,
-                is_human=player.is_human,
-                name=player.name,
-                position=player.position,
-                stack=player.stack,
-                bet_total=player.bet_total,
-                hand=hand if self._show_hand(player) else None,
-                is_folded=player.is_folded,
-                last_action=player.last_action,
-            ))
-
-        board = [Card.int_to_pretty_str(c) for c in self.table.board]
-        table_info = TableSchema(
-            round=self.table.round,
-            pot=self.table.pot,
-            current_bet=self.table.current_bet,
-            board=board,
-        )
-
-        current_seat = self.table.get_action_seat()
-        legal_actions = None
-        if current_seat:
-            legal_actions = [
-                LegalActionSchema(
-                    action=info["action"],
-                    min_amount=info.get("min"),
-                    max_amount=info.get("max")
-                )
-                for info in ActionManager.get_legal_actions_info(current_seat.player, self.table)
-            ]
-
-        return GameStateResponse(
-            players=players,
-            table=table_info,
-            action_history=self.action_history,
-            current_seat_id=current_seat.seat_id if current_seat else None,
-            legal_actions=legal_actions,
-            is_hand_over=self.table.round.name == "SHOWDOWN"
-        )
-
-    def _show_hand(self, player: Player) -> bool:
-        return player.is_human or self.table.round.name == "SHOWDOWN"
+@router.get("/result")
+def get_result() -> WinnerInfoResponse:
+    if game_state is None or not game_state.is_hand_over():
+        raise HTTPException(status_code=400, detail="Hand not over yet")
+    return WinnerInfoResponse(**game_state.get_winner_info())

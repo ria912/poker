@@ -8,6 +8,10 @@ class Dealer:
     def __init__(self, table: Table):
         self.table = table
         self.deck = Deck()
+    
+    def shuffle_deck(self):
+        """デッキをシャッフルします。"""
+        self.deck.reset()
 
     def deal_hole_cards(self):
         """全プレイヤーに2枚ずつ配る"""
