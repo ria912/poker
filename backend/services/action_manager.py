@@ -6,11 +6,13 @@ from typing import List, Dict, Optional
 
 class ActionManager:
     @staticmethod
-    def get_legal_actions_info(player: Player, table: Table) -> Dict[str, Optional[List[str]]]:
-        actions = []
+    def get_legal_actions_info(player: Player, table: Table) -> Dict[str, Optional[str, int]]:
+        actions: Dict[str, Optional[str, int]] = {}
+        
         current_bet = table.current_bet
         min_bet = table.min_bet
         to_call = current_bet - player.bet_total
+        min_raise = to_call + min_bet
     
         if current_bet > 0:
             actions.append(Action.FOLD)
