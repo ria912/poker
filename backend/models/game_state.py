@@ -41,7 +41,7 @@ class PlayerState(BaseModel):
     stack: int                    # 残りチップ
     hand: Optional[List[str]] = None  # 例: ["Ah", "Ks"]
     position: Position
-    current_bet: int = 0          # このラウンドでのベット額
+    bet_total: int
     status: Optional[PlayerStatus] = None
     last_action: Optional[Action] = None
 
