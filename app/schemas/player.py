@@ -1,6 +1,6 @@
 # backend/models/player.py
 from typing import List, Optional
-from backend.models.enum import Position, Action, State
+from models.enum import Position, Action, State
 
 class Player:
     def __init__(self, player_id: int, name: str, stack: int=10000, is_human: bool = False):
