@@ -54,6 +54,9 @@ class Table:
 
     def add_to_pot(self, amount: int):
         self.pot += amount
+    
+    def update_min_bet(self, amount: int):
+        self.min_bet = amount
 
     def reset_round(self):
         self.current_bet = 0
