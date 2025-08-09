@@ -27,7 +27,7 @@ class PlayerState(BaseModel):
 
 class Seat(BaseModel):
     index: int
-    player: Optional[PlayerState]
+    player: Optional[PlayerState] = None
 
 class TableState(BaseModel):
     small_blind: int
