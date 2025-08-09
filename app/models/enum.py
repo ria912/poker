@@ -1,7 +1,6 @@
 # backend/models/enum.py
 from enum import Enum
 
-
 class Action(str, Enum):
     FOLD = "FOLD"
     CHECK = "CHECK"
@@ -9,8 +8,6 @@ class Action(str, Enum):
     BET = "BET"
     RAISE = "RAISE"
     ALL_IN = "ALL_IN"
-
-    MUCK = "MUCK"  # カードを公開せずに捨てる(負けを認める)
 
 
 class Round(str, Enum):
