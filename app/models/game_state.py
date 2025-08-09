@@ -16,25 +16,26 @@ class PlayerStatus(str, Enum):
     ALL_IN = "all_in"
 
 class PlayerState(BaseModel):
-    id: str
+    id: int
     name: str
     stack: int
-    hand: Optional[List[str]] = None  # 例: ["Ah", "Ks"]
+    hand: Optional[List[str]] = None
     position: Position
     bet: int
     status: PlayerStatus
     last_action: Optional[Action] = None
 
 class TableState(BaseModel):
-    id: str
+    id: int
     small_blind: int
     big_blind: int
     pot: int
+    current_bet: int
     community_cards: List[str]
     players: List[PlayerState]
 
 class GameState(BaseModel):
-    round_phase: RoundPhase
+    table: TableState
     dealer_position: int
     current_player_position: int
     pot: int
