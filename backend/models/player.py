@@ -45,23 +45,16 @@ class Player:
                 self.state = State.ALL_IN
             else:
                 self.state = State.ACTED
-        
-        elif action == Action.ALL_IN:
-            self.last_action = Action.ALL_IN
-            self.stack = 0
-            self.bet_total += self.stack
-            self.state = State.ALL_IN
-        else:
-            raise ValueError(f"Unknown action or amount: {action}, {amount}")
 
-    def reset_round(self):
+    def reset_ror_new_round(self):
         if self.state == State.ACTED:
             self.state = None
         self.bet_total = 0
         self.last_action = None
 
     def reset_for_new_hand(self):
+        if self.state != State.OUT:
+            self.state = None
         self.hole_cards = []
         self.bet_total = 0
-        self.folded = False
         self.last_action = None
