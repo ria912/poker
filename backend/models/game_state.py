@@ -56,6 +56,7 @@ class Seat(BaseModel):
 # ===== テーブルの状態 =====
 
 class TableState(BaseModel):
+    max_seats: int
     small_blind: int
     big_blind: int
 
