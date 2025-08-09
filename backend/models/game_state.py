@@ -42,7 +42,7 @@ class PlayerState(BaseModel):
     hand: Optional[List[str]] = None  # 例: ["Ah", "Ks"]
     position: Position
     current_bet: int = 0          # このラウンドでのベット額
-    status: PlayerStatus = PlayerStatus.ACTIVE
+    status: Optional[PlayerStatus] = None
     last_action: Optional[Action] = None
 
 
