@@ -25,20 +25,27 @@ class PlayerState(BaseModel):
     status: PlayerStatus
     last_action: Optional[Action] = None
 
+class Seat(BaseModel):
+    index: int
+    player: Optional[PlayerState]
+
 class TableState(BaseModel):
-    id: int
     small_blind: int
     big_blind: int
-    pot: int
-    current_bet: int
-    community_cards: List[str]
-    players: List[PlayerState]
 
+    btn_index: int
+    current_player_index: int
+    
+    current_bet: int
+    min_bet: int
+    
+    round_phase: RoundPhase
+    pot: int
+    community_cards: List[str]
+    seats: List[Seat]
+    
 class GameState(BaseModel):
     table: TableState
-    dealer_position: int
-    current_player_position: int
-    pot: int
-    community_cards: List[str]
-    players: List[PlayerState]
-    last_action: Optional[str] = None
+    
+    
+    
