@@ -1,4 +1,4 @@
-# backend/models/deck.py
+# backend/services/deck.py
 from treys import Deck as TreysDeck
 
 class Deck:

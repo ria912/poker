@@ -1,8 +1,7 @@
 # backend/models/table.py
 from typing import List, Optional
-from backend.models.deck import Deck
 from backend.models.player import Player
-from backend.models.enum import Round, Position, State
+from backend.models.enum import Round, Position
 
 class Seat:
     def __init__(self, index: int):
@@ -28,7 +27,6 @@ class Table:
         self.small_blind = small_blind
         self.big_blind = big_blind
 
-        self.deck: Deck = Deck()
         self.seats: List[Seat] = [Seat(i) for i in range(max_seats)]
 
         self.current_round: Optional[Round] = None
