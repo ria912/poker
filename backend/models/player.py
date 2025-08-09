@@ -3,7 +3,7 @@ from typing import List, Optional
 from backend.models.enum import Position, Action, State
 
 class Player:
-    def __init__(self, player_id: int, name: str, stack: int, is_human: bool = False):
+    def __init__(self, player_id: int, name: str, stack: int=10000, is_human: bool = False):
         self.player_id = player_id
         self.name = name
         self.stack = stack
