@@ -34,15 +34,14 @@ class Position(str, Enum):
     CO = "CO"
 
 
-class State(str, Enum):
-    WAITING = "WAITING"
+class PlayerState(str, Enum):
     ACTED = "ACTED"     # アクション済み
     FOLDED = "FOLDED"
     ALL_IN = "ALL_IN"
     OUT = "OUT"
     SITTING_OUT = "SITTING_OUT"
 
-class Status(str, Enum):
+class GameStatus(str, Enum):
     WAITING       = "WAITING"          # ゲーム開始前の待機状態
     GAME_CONTINUE = "GAME_CONTINUE"    # ゲーム進行中
     ROUND_CONTINUE = "ROUND_CONTINUE"   # 現在のラウンドの進行中（次のアクションを求める）

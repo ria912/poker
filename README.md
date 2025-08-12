@@ -24,7 +24,7 @@ backend/
 │   │   ├── action_manager.py   # アクション実行ロジック（bet/call/fold等）
 │   │   ├── position_manager.py # BTN/SB/BB割り当てロジック
 │   │   ├── round_manager.py    # ラウンド進行管理
-│   │   └── winner_determiner.py# 勝者判定ロジック
+│   │   └── evoluter.py         # 勝者判定ロジック
 │   │
 │   ├── table_service.py        # 座席・ポット・ラウンドリセットなどテーブル操作
 │   ├── player_service.py       # プレイヤー状態・アクション処理

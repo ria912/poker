@@ -1,21 +1,17 @@
 from fastapi import FastAPI
-from app.routers import game  # gameルーターをインポート
+from .api import table_router, game_router, player_router
 
-# FastAPIのインスタンスを作成します
 app = FastAPI(
-    title="Poker API",
-    description="テキサスホールデムポーカーをプレイするためのAPI",
-    version="0.1.0",
+    title="Poker Game API",
+    description="A simple API for a Texas Hold'em poker game.",
+    version="1.0.0",
 )
 
-# appにgameルーターを登録します
-app.include_router(game.router)
+# 各ルーターをアプリケーションに含める
+app.include_router(table_router.router)
+app.include_router(game_router.router)
+app.include_router(player_router.router)
 
-# ルートURL ("/") へのGETリクエストを処理するエンドポイントを定義します
 @app.get("/")
 def read_root():
-    """
-    ルートエンドポイント。アプリケーションが動作していることを確認するための
-    シンプルなメッセージを返します。
-    """
-    return {"message": "Welcome to Poker API!"}
+    return {"message": "Welcome to the Poker Game API!"}

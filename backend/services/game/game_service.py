@@ -3,7 +3,7 @@ from backend.models.table import Table
 from backend.services.game.dealer import Dealer
 from backend.services.game.position_manager import PositionManager
 
-class GameManager:
+class GameService:
     def __init__(self, table: Table):
         self.table = table
         self.dealer = Dealer(table)

@@ -1,5 +1,5 @@
 # backend/services/dealer.py
-from backend.services.deck import Deck
+from backend.models.deck import Deck
 from backend.models.table import Table, Seat
 from backend.models.enum import Position
 from backend.utils.order_utils import get_circular_order
