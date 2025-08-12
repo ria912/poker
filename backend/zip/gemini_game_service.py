@@ -1,7 +1,7 @@
 from models import Deck, Player, Table, Enum
 from backend.models.enum import Action
 from services import Dealer, RoundManager, ActionManager
-from backend.services.action_manager import ActionManager
+from backend.services.game.action_manager import ActionManager
 from backend.schemas.game_schema import (
     StartGameRequest,
     PlayerActionRequest,

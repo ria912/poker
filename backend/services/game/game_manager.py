@@ -1,7 +1,7 @@
 # backend/services/game_manager.py
 from backend.models.table import Table
-from backend.services.dealer import Dealer
-from backend.services.position_manager import PositionManager
+from backend.services.game.dealer import Dealer
+from backend.services.game.position_manager import PositionManager
 
 class GameManager:
     def __init__(self, table: Table):

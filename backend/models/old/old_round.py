@@ -1,7 +1,7 @@
 from typing import List, Optional
 from backend.models.table import Table, Seat
 from backend.models.enum import Round, Status
-from backend.services.action_manager import ActionManager, Action
+from backend.services.game.action_manager import ActionManager, Action
 from backend.utils.order_utils import get_circular_order, get_next_index
 
 

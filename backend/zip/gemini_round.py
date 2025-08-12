@@ -3,8 +3,8 @@ from typing import List, Optional
 from backend.models.table import Table, Seat
 from backend.models.player import Player
 from backend.models.enum import Round, Status, Position, Action
-from backend.services.action_manager import ActionManager
-from backend.services.dealer import Dealer  # Dealerをインポート
+from backend.services.game.action_manager import ActionManager
+from backend.services.game.dealer import Dealer  # Dealerをインポート
 from backend.utils.order_utils import get_circular_order
 
 class RoundLogic:

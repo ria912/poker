@@ -4,7 +4,7 @@ from backend.models.enum import Round
 from backend.models.table import Table
 from backend.models.player import Player
 from backend.models.table import Seat
-from backend.services.action_manager import ActionManager
+from backend.services.game.action_manager import ActionManager
 
 
 def format_card(card_int):

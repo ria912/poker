@@ -1,7 +1,7 @@
 # backend/api/game_api.py
 from fastapi import APIRouter
 from backend.schemas.game_schema import StartGameRequest, GameStateResponse
-from backend.services.game_manager import start_game_logic
+from backend.services.game.game_manager import start_game_logic
 
 router = APIRouter()
 

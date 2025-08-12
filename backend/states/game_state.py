@@ -1,9 +1,9 @@
 from backend.models.table import Table
 from backend.models.enum import Action, Status, Round
-from backend.services.dealer import Dealer
-from backend.services.round_manager import RoundManager
-from backend.services.position_manager import PositionManager
-from backend.services.action_manager import ActionManager
+from backend.services.game.dealer import Dealer
+from backend.services.game.round_manager import RoundManager
+from backend.services.game.position_manager import PositionManager
+from backend.services.game.action_manager import ActionManager
 
 class GameState:
     def __init__(self, player_num: int):
