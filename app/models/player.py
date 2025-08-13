@@ -15,7 +15,6 @@ class Player(BaseModel):
     position: Optional[Position] = None
     state: Optional[PlayerState] = None
     current_bet: int = 0  # このラウンドでのベット額
-    is_turn: bool = False # 現在アクションする番か
     
     class Config:
         # Pydantic V2

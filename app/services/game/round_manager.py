@@ -1,33 +1,32 @@
-from ...models.game_state import GameState
-from ...models.player import Player
-from ...models.enum import GameRound, PlayerState
-from ...utils import order_utils
+from app.models.game_state import GameState
+from app.models.player import Player
+from app.models.enum import Position, Round, PlayerState
+from utils import order_utils
 from typing import List
 
 # 他のサービスモジュール（今後作成）
 from . import evoluter
 from .. import table_service
 
-def start_preflop_round(game_state: GameState, active_players: List[Player]):
+def start_preflop_round(game_state: GameState):
     """
     プリフロップラウンドを開始し、最初のアクションプレイヤーを決定する。
     プリフロップでは、BBの次のプレイヤーからアクションが始まる。
     """
-    game_state.table.current_round = GameRound.PREFLOP
-    
+    game_state.table.current_round = Round.PREFLOP
+    active_seats = table_service.get_active_seats(game_state)
     # BBのプレイヤーを探す
-    bb_player = next((p for p in active_players if p.position == "BB"), None)
+    bb_player = table_service.get_player_by_position(game_state, Position.BB)
     if not bb_player:
         raise RuntimeError("Big Blind player not found.")
 
-    # BBのインデックスをactive_playersリストから取得
-    bb_player_index = active_players.index(bb_player)
-    
+    bb_player_index = active_seats.index(bb_player)
+
     # 次にアクションすべきプレイヤーのインデックスを見つける
     # order_utilsを使って、BBの次から循環的に探す
     condition = lambda p: p.state == PlayerState.ACTIVE
     next_player_index = order_utils.get_next_item_index(
-        items=active_players,
+        items=active_seats,
         start_index=bb_player_index,
         condition=condition
     )
@@ -38,8 +37,8 @@ def start_preflop_round(game_state: GameState, active_players: List[Player]):
         return
 
     # 次のアクションプレイヤーを設定
-    game_state.active_player_id = active_players[next_player_index].player_id
-    
+    game_state.active_player_id = active_seats[next_player_index].player.player_id
+
     # ベットの基準となるプレイヤー（アグレッサー）は最初はBB
     game_state.last_raiser_id = bb_player.player_id
     print(f"Pre-flop round started. Action is on {active_players[next_player_index].name}.")
@@ -168,4 +167,4 @@ def proceed_to_next_round(game_state: GameState):
     elif current_round == GameRound.RIVER:
         game_state.table.current_round = GameRound.SHOWDOWN
         # 勝者判定ロジックを呼び出す
-        ev Deuter.determine_winner(game_state)
+

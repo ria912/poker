@@ -1,83 +1,232 @@
-from ...models.game_state import GameState
-from ...models.enum import PlayerState, Round
+from typing import List
 
-# 他のサービスモジュール（今後作成）
-# これらは、各専門分野のロジックを担当します。
-from . import position_manager
-from . import action_manager
-from . import round_manager
+# modelsから必要なクラスとEnumをインポートします
+from models import (
+    GameState,
+    Player,
+    Round,
+    PlayerState,
+    GameStatus,
+    Position,
+    game_state,  # グローバルなゲーム状態インスタンス
+)
 
-# テーブルやプレイヤーの状態をリセットするためのサービス
-from .. import table_service
 
-# ゲームの定数（将来的には設定ファイルから読み込むのが望ましい）
-BIG_BLIND_AMOUNT = 20
-SMALL_BLIND_AMOUNT = 10
-
-def start_new_hand(game_state: GameState):
+class GameService:
     """
-    新しいハンドを開始するためのメイン関数。
-    司令塔として、各専門サービスを順番に呼び出していく。
+    ゲームの進行ロジックを担当するサービスクラス。
+    ハンドの開始、ラウンドの遷移、終了処理などを統括します。
     """
-    # 1. ゲーム開始の前提条件をチェック
-    _validate_can_start_hand(game_state)
 
-    # 2. 前のハンドの状態をリセット
-    table_service.reset_hand(game_state)
-    
-    # 3. アクティブなプレイヤーリストを作成
-    active_players = table_service.get_active_players_for_new_hand(game_state)
-    if len(active_players) < 2:
-        raise ValueError("Cannot start hand. Not enough active players (at least 2 required).")
+    def __init__(self, state: GameState):
+        """
+        コンストラクタ。操作対象のゲーム状態を受け取ります。
+        これにより、テスト時に特定の状態を注入しやすくなります。
+        """
+        self.game_state = state
 
-    # 4. デッキをシャッフル
-    game_state.deck.shuffle()
+    def start_new_hand(self, big_blind_amount: int = 20):
+        """
+        新しいハンドを開始します。
+        
+        - プレイヤーの状態をリセット
+        - ディーラーボタンの移動
+        - ポジションの割り当てとブラインドの強制徴収
+        - デッキのシャッフルとカードの配布
+        - プリフロップのアクション開始
+        """
+        print("--- 新しいハンドを開始します ---")
+        table = self.game_state.table
+        active_players = self._get_active_players_for_new_hand()
 
-    # 5. ポジションを決定し、ブラインド対象者情報を取得 (position_managerの仕事)
-    # ディーラーボタンを次に移し、SB, BBのプレイヤーを決定する
-    blind_players = position_manager.assign_positions_and_get_blinds(game_state, active_players)
-    
-    # 6. ブラインドを強制ベット (action_managerの仕事)
-    # SB, BBのプレイヤーからブラインドを徴収する
-    action_manager.post_blinds(
-        game_state=game_state,
-        sb_player=blind_players["sb_player"],
-        bb_player=blind_players["bb_player"],
-        sb_amount=SMALL_BLIND_AMOUNT,
-        bb_amount=BIG_BLIND_AMOUNT
-    )
+        # ゲーム開始に必要な最低人数をチェック
+        if len(active_players) < 2:
+            print("プレイヤーが2人未満のため、ゲームを開始できません。")
+            self.game_state.game_status = GameStatus.WAITING
+            return
 
-    # 7. 手札を配る
-    _deal_hole_cards(game_state, active_players)
+        # 1. テーブルとプレイヤーの状態をリセット
+        self._reset_table_and_players(active_players)
 
-    # 8. プリフロップラウンドを開始 (round_managerの仕事)
-    # ラウンド状態をPREFLOPに設定し、最初のアクション番のプレイヤーを決定する
-    round_manager.start_preflop_round(game_state, active_players)
+        # 2. ディーラーボタンを次のアクティブプレイヤーに移動
+        self._move_dealer_button(active_players)
 
-    print(f"--- New Hand Started (Game ID: {game_state.game_id}) ---")
-    print(f"Dealer is at seat {game_state.table.dealer_position}")
-    print(f"Pot: {game_state.table.pot}")
+        # 3. ポジションを割り当て、ブラインドを支払う
+        #    (本来は PositionManager が担当)
+        small_blind_amount = big_blind_amount // 2
+        self._assign_positions_and_post_blinds(active_players, small_blind_amount, big_blind_amount)
+
+        # 4. デッキをシャッフルし、各プレイヤーにホールカードを配る
+        self._deal_hole_cards(active_players)
+        
+        # 5. プリフロップのアクションを開始するプレイヤーを決定
+        #    (本来は RoundManager が担当)
+        self._set_preflop_starter()
+        
+        self.game_state.game_status = GameStatus.ROUND_CONTINUE
+        print(f"プリフロップを開始します。アクションは {self.game_state.table.get_player_by_id(self.game_state.active_player_id).name} からです。")
 
 
-def _validate_can_start_hand(game_state: GameState):
-    """ゲームを開始できるかどうかの検証"""
-    # 例えば、現在進行中のラウンドがないかなどをチェックできる
-    # ここではシンプルに、常に開始できると仮定
-    if game_state.table.current_round != Round.PREFLOP and game_state.table.pot > 0:
-         # 本来はもっと厳密なチェックが必要
-         print("Warning: Starting a new hand while another seems to be in progress.")
-    pass
+    def advance_to_next_round(self):
+        """
+        次のベッティングラウンドに進みます (フロップ -> ターン -> リバー)。
+        """
+        table = self.game_state.table
+        current_round = table.current_round
+        
+        # 最終ラウンドならショーダウンへ
+        if current_round == Round.RIVER:
+            self.game_state.game_status = GameStatus.SHOWDOWN
+            print("--- ショーダウン ---")
+            # ここで勝者判定ロジック (evaluter) を呼び出す
+            return
 
-def _deal_hole_cards(game_state: GameState, active_players: list):
-    """アクティブな各プレイヤーに手札を2枚ずつ配る"""
-    print("Dealing hole cards...")
-    for _ in range(2): # 2枚配るので2周する
-        for player in active_players:
+        # 次のラウンドへ進める
+        next_round_enum = current_round.next()
+        table.current_round = next_round_enum
+        print(f"--- {next_round_enum.value} に進みます ---")
+        
+        # 1. 各プレイヤーのラウンドベット額をリセット
+        for player in self.game_state.players:
             if player.state == PlayerState.ACTIVE:
-                card = game_state.deck.deal(1)
-                player.hand.extend(card)
-    
-    # デバッグ用に手札を表示
-    for player in active_players:
-        hand_str = [f"{c.rank}{c.suit}" for c in player.hand]
-        print(f"Player {player.name} received hand: {hand_str}")
+                player.current_bet = 0
+
+        # 2. コミュニティカードをディール
+        deck = self.game_state.deck
+        if next_round_enum == Round.FLOP:
+            table.community_cards.extend(deck.deal(3))
+        elif next_round_enum in [Round.TURN, Round.RIVER]:
+            table.community_cards.extend(deck.deal(1))
+
+        # 3. ポストフロップのアクションを開始するプレイヤーを決定
+        self._set_postflop_starter()
+        
+        self.game_state.game_status = GameStatus.ROUND_CONTINUE
+        print(f"コミュニティカード: {[card.treys_str for card in table.community_cards]}")
+        print(f"アクションは {self.game_state.table.get_player_by_id(self.game_state.active_player_id).name} からです。")
+
+
+    ### 以下は内部的に使われるヘルパーメソッドです ###
+
+    def _get_active_players_for_new_hand(self) -> List[Player]:
+        """新しいハンドに参加資格のあるプレイヤー（スタックが0より大きい）を取得します。"""
+        return [
+            seat.player for seat in self.game_state.table.seats 
+            if seat.is_occupied and seat.player.stack > 0
+        ]
+
+    def _reset_table_and_players(self, players: List[Player]):
+        """テーブルとプレイヤーの状態を新しいハンドのために初期化します。"""
+        self.game_state.table.pot = 0
+        self.game_state.table.community_cards = []
+        self.game_state.table.current_round = Round.PREFLOP
+        self.game_state.deck.reset_and_shuffle()
+        
+        for player in players:
+            player.hand = []
+            player.state = PlayerState.ACTIVE
+            player.current_bet = 0
+            player.position = None
+        print("テーブルとプレイヤーの状態をリセットしました。")
+
+
+    def _move_dealer_button(self, active_players: List[Player]):
+        """ディーラーボタンを次のアクティブなプレイヤーに移動させます。"""
+        table = self.game_state.table
+        
+        # 現在のディーラーの次の席から探索を開始
+        current_dealer_seat_index = table.dealer_position
+        num_seats = table.seat_count
+        
+        # 無限ループを避けるため、探索は1周だけ
+        for i in range(1, num_seats + 1):
+            next_seat_index = (current_dealer_seat_index + i) % num_seats
+            seat = table.seats[next_seat_index]
+            if seat.is_occupied and seat.player in active_players:
+                table.dealer_position = next_seat_index
+                print(f"ディーラーボタンは {seat.player.name} (シート{next_seat_index}) に移動しました。")
+                return
+
+
+    def _assign_positions_and_post_blinds(self, active_players: List[Player], sb_amount: int, bb_amount: int):
+        """ポジションを割り当て、SBとBBからブラインドを徴収します。"""
+        # このロジックは本来 PositionManager に実装されるべきものです
+        table = self.game_state.table
+        dealer_idx = table.dealer_position
+        player_seats = {p.player_id: s.seat_index for s in table.seats if s.is_occupied for p in [s.player]}
+
+        # ディーラーからの相対位置でプレイヤーをソート
+        sorted_players = sorted(
+            active_players,
+            key=lambda p: (player_seats[p.player_id] - dealer_idx + table.seat_count) % table.seat_count
+        )
+        
+        # SBとBBを決定（ヘッズアップも考慮）
+        sb_player = sorted_players[1] if len(sorted_players) > 2 else sorted_players[0]
+        bb_player = sorted_players[2] if len(sorted_players) > 2 else sorted_players[1]
+        
+        # SBの支払い
+        sb_player.position = Position.SB
+        sb_player.stack -= sb_amount
+        sb_player.current_bet = sb_amount
+        table.pot += sb_amount
+        print(f"{sb_player.name} がSBとして {sb_amount} を支払いました。")
+
+        # BBの支払い
+        bb_player.position = Position.BB
+        bb_player.stack -= bb_amount
+        bb_player.current_bet = bb_amount
+        table.pot += bb_amount
+        print(f"{bb_player.name} がBBとして {bb_amount} を支払いました。")
+
+
+    def _deal_hole_cards(self, active_players: List[Player]):
+        """アクティブな各プレイヤーに2枚のカードを配ります。"""
+        # SBから時計回りに配るのが一般的なルール
+        sb_player = self.game_state.table.get_player_by_position(Position.SB)
+        sb_seat_index = next(s.seat_index for s in self.game_state.table.seats if s.player == sb_player)
+
+        sorted_players_for_deal = sorted(
+            active_players,
+            key=lambda p: (
+                next(s.seat_index for s in self.game_state.table.seats if s.player == p) - sb_seat_index + self.game_state.table.seat_count
+            ) % self.game_state.table.seat_count
+        )
+        
+        for player in sorted_players_for_deal:
+            player.hand = self.game_state.deck.deal(2)
+            print(f"{player.name} にカードを配りました。")
+
+
+    def _set_preflop_starter(self):
+        """プリフロップで最初にアクションするプレイヤー（UTG/BBの次）を設定します。"""
+        # このロジックは本来 RoundManager に実装されるべきものです
+        bb_player = self.game_state.table.get_player_by_position(Position.BB)
+        bb_seat_index = next(s.seat_index for s in self.game_state.table.seats if s.player == bb_player)
+        
+        active_players = self._get_active_players_for_new_hand()
+        
+        for i in range(1, len(active_players) + 1):
+            next_seat_index = (bb_seat_index + i) % self.game_state.table.seat_count
+            seat = self.game_state.table.seats[next_seat_index]
+            if seat.player in active_players:
+                self.game_state.active_player_id = seat.player.player_id
+                return
+
+
+    def _set_postflop_starter(self):
+        """フロップ以降で最初にアクションするプレイヤー（ディーラーの次のアクティブプレイヤー）を設定します。"""
+        # このロジックは本来 RoundManager に実装されるべきものです
+        dealer_seat_index = self.game_state.table.dealer_position
+        active_players = [p for p in self.game_state.players if p.state == PlayerState.ACTIVE]
+        
+        for i in range(1, self.game_state.table.seat_count + 1):
+            next_seat_index = (dealer_seat_index + i) % self.game_state.table.seat_count
+            seat = self.game_state.table.seats[next_seat_index]
+            if seat.player in active_players:
+                self.game_state.active_player_id = seat.player.player_id
+                return
+
+# シングルトンとしてサービスインスタンスを作成
+# FastAPIのDIシステムを利用する場合は、このインスタンスを依存関係として提供します。
+game_service = GameService(game_state)

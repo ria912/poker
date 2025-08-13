@@ -18,24 +18,31 @@ class Card(BaseModel):
         rank_str = self.rank if self.rank != '10' else 'T'
         return f"{rank_str}{self.suit}"
 
+
+# 🌟 デッキを生成してシャッフルする関数を定義
+def create_shuffled_deck() -> List[Card]:
+    """シャッフル済みの新しいカードリストを生成する"""
+    treys_deck = treys.Deck()
+    cards = []
+    for card_int in treys_deck.cards:
+        card_str = treys.Card.int_to_str(card_int)
+        rank = card_str[0]
+        suit = card_str[1]
+        cards.append(Card(rank=rank, suit=suit))
+    return cards
+
 class Deck(BaseModel):
     """デッキ情報を保持するモデル"""
-    cards: List[Card] = Field(default_factory=list)
+    cards: List[Card] = Field(default_factory=create_shuffled_deck)
 
     def __init__(self, **data):
         super().__init__(**data)
         if not self.cards:
-            self.shuffle()
+            self.reset_and_shuffle()
 
-    def shuffle(self):
-        """デッキをシャッフルして52枚のカードを生成する"""
-        treys_deck = treys.Deck()
-        self.cards = []
-        for card_int in treys_deck.cards:
-            card_str = treys.Card.int_to_str(card_int)
-            rank = card_str[0]
-            suit = card_str[1]
-            self.cards.append(Card(rank=rank, suit=suit))
+    def reset_and_shuffle(self):
+        """デッキを新しいシャッフル済みの52枚のカードにリセットする"""
+        self.cards = create_shuffled_deck()
     
     def deal(self, num_cards: int) -> List[Card]:
         """指定された枚数のカードをデッキから配る"""

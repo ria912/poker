@@ -28,7 +28,7 @@ backend/
 │   │
 │   ├── table_service.py        # 座席・ポット・ラウンドリセットなどテーブル操作
 │   ├── player_service.py       # プレイヤー状態・アクション処理
-│   └── card_service.py         # カード配布・評価補助
+│   └── deck_service.py         # カード配布・評価補助
 │
 ├── dependencies.py             # DI設定（サービスインスタンス生成など）
 │

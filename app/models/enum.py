@@ -35,7 +35,7 @@ class Position(str, Enum):
 
 
 class PlayerState(str, Enum):
-    ACTED = "ACTED"     # アクション済み
+    ACTIVE = "ACTIVE"
     FOLDED = "FOLDED"
     ALL_IN = "ALL_IN"
     OUT = "OUT"
