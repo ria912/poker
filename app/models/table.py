@@ -20,12 +20,18 @@ class Seat(BaseModel):
 
 class Table(BaseModel):
     """ゲームテーブル全体の状態を管理するモデル"""
-    seats: List[Seat] = Field(default_factory=[Seat(seat_index=i) for i in range(6)])
+    big_blind: int = 100
+    small_blind: int = 50
     seat_count: int = 6
+
+    seats: List[Seat] = Field(default_factory=[Seat(seat_index=i) for i in range(seat_count)])
+    current_round: Round = Round.PREFLOP
     community_cards: List[Card] = Field(default_factory=list)
     pot: int = 0
-    current_round: Round = Round.PREFLOP
-    dealer_position: int = 0 # ディーラーボタンのseat_index
+
+    current_bet: int = 0  # 現在の最大ベット額
+    min_bet: int = big_blind  # 最小ベット額
+    dealer_index: int = 0  # ディーラーボタンのseat_index
 
     def get_active_seats(self) -> List[Seat]:
         """アクティブな座席を取得する"""
@@ -42,5 +48,13 @@ class Table(BaseModel):
         """ポジションからプレイヤーオブジェクトを取得する"""
         for seat in self.seats:
             if seat.is_occupied and seat.player.position == position:
+                return seat.player
+        return None
+
+    def get_player_by_index(self, index: int) -> Optional[Player]:
+        """インデックスからプレイヤーオブジェクトを取得する"""
+        if 0 <= index < self.seat_count:
+            seat = self.seats[index]
+            if seat.is_occupied:
                 return seat.player
         return None

@@ -14,7 +14,7 @@ class Player(BaseModel):
     hand: List[Card] = Field(default_factory=list)
     position: Optional[Position] = None
     state: Optional[PlayerState] = None
-    current_bet: int = 0  # このラウンドでのベット額
+    bet_total: int = 0  # このラウンドでのベット額
     
     class Config:
         # Pydantic V2
