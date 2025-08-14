@@ -20,17 +20,12 @@ class Seat(BaseModel):
 
 class Table(BaseModel):
     """ゲームテーブル全体の状態を管理するモデル"""
-    seats: List[Seat] = Field(default_factory=list)
+    seats: List[Seat] = Field(default_factory=[Seat(seat_index=i) for i in range(6)])
     seat_count: int = 6
     community_cards: List[Card] = Field(default_factory=list)
     pot: int = 0
     current_round: Round = Round.PREFLOP
     dealer_position: int = 0 # ディーラーボタンのseat_index
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.seats:
-            self.seats = [Seat(seat_index=i) for i in range(self.seat_count)]
 
     def get_active_seats(self) -> List[Seat]:
         """アクティブな座席を取得する"""
