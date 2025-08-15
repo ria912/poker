@@ -1,35 +1,24 @@
 # app/services/player_service.py
 from typing import Optional
-from app.models.player import Player
-from app.models.enum import PlayerState, Position, Action
-from app.models.table import Table
-from app.services.table_service import TableService
+from ..models.player import Player, PlayerState
+from ..models.game_state import GameState
 
-class PlayerService:
-    """プレイヤーに関する操作とアクションロジックを提供"""
+def add_player(game_state: GameState, name: str, stack: int) -> Optional[Player]:
+    """空いている席にプレイヤーを追加"""
+    for seat in game_state.table.seats:
+        if not seat.is_occupied:
+            player = Player(name=name, stack=stack, state=PlayerState.ACTIVE)
+            seat.player = player
+            return player
+    return None
 
-    # ------------------------
-    # プレイヤー管理
-    # ------------------------
-    @staticmethod
-    def add_player(table: Table, name: str, stack: int) -> Player:
-        """空いている席にプレイヤー追加"""
-        for seat in table.seats:
-            if not seat.is_occupied:
-                player = Player(name=name, stack=stack, state=PlayerState.ACTIVE)
-                seat.player = player
-                return player
-        raise ValueError("空席がありません。")
-
-    @staticmethod
-    def remove_player(table: Table, player_id: str) -> bool:
-        """プレイヤーを削除"""
-        for seat in table.seats:
-            if seat.is_occupied and seat.player.player_id == player_id:
-                seat.player = None
-                return True
-        return False
-
+def remove_player(game_state: GameState, player_id: str) -> bool:
+    """プレイヤーを削除"""
+    for seat in game_state.table.seats:
+        if seat.is_occupied and seat.player.player_id == player_id:
+            seat.player = None
+            return True
+    return False
     # ------------------------
     # アクション処理
     # ------------------------
