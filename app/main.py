@@ -7,7 +7,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# 各ルーターをアプリケーションに含める
+# 各ルーターをアプリケーションに登録
 app.include_router(table_router.router)
 app.include_router(game_router.router)
 app.include_router(player_router.router)

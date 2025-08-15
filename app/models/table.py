@@ -24,7 +24,7 @@ class Table(BaseModel):
     small_blind: int = 50
     seat_count: int = 6
 
-    seats: List[Seat] = Field(default_factory=[Seat(seat_index=i) for i in range(seat_count)])
+    seats: List[Seat] = Field(default_factory=list)
     current_round: Round = Round.PREFLOP
     community_cards: List[Card] = Field(default_factory=list)
     pot: int = 0
@@ -32,6 +32,11 @@ class Table(BaseModel):
     current_bet: int = 0  # 現在の最大ベット額
     min_bet: int = big_blind  # 最小ベット額
     dealer_index: int = 0  # ディーラーボタンのseat_index
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if not self.seats:
+            self.seats = [Seat(seat_index=i) for i in range(self.seat_count)]
 
     def get_active_seats(self) -> List[Seat]:
         """アクティブな座席を取得する"""
