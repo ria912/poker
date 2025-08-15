@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
 
-from .table import Table
+from .table import Table, Seat
 from .player import Player
 from .deck import Deck
 from .enum import GameStatus
@@ -18,12 +18,15 @@ class GameState(BaseModel):
     game_status: GameStatus = Field(default=GameStatus.WAITING)  # ゲームの状態: 'waiting', 'in_progress', 'finished'
     active_player_id: Optional[str] = None # アクション待ちのプレイヤーID
 
-    # 🌟 players をプロパティとして定義し、常に table.seats から取得するようにします。
+    @property
+    def seats(self) -> List[Seat]:
+        return self.table.seats
+
     @property
     def players(self) -> List[Player]:
         """テーブルに参加している全プレイヤーのリストを動的に取得する"""
-        return [seat.player for seat in self.table.seats if seat.is_occupied]
-    
+        return [seat.player for seat in self.seats if seat.is_occupied]
+
     class Config:
         orm_mode = True
 

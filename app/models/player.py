@@ -21,3 +21,37 @@ class Player(BaseModel):
         # from_attributes = True
         # Pydantic V1
         orm_mode = True
+
+    def fold(self):
+        if self.state != PlayerState.ACTIVE:
+            raise ValueError("Player is not in an active state.")
+        self.state = PlayerState.FOLDED
+
+    def check(self):
+        if self.state != PlayerState.ACTIVE:
+            raise ValueError("Player is not in an active state.")
+
+    def call(self, amount: int):
+        if amount > self.stack:
+            raise ValueError("amountがstackを超えています.")
+        self.stack -= amount
+        self.bet_total += amount
+        self.update_state()
+        
+    def bet(self, amount: int):
+        if amount > self.stack:
+            raise ValueError("amountがstackを超えています.")
+        self.stack -= amount
+        self.bet_total += amount
+        self.update_state()
+
+    def raise_bet(self, amount: int):
+        if amount > self.stack:
+            raise ValueError("amountがstackを超えています.")
+        self.stack -= amount
+        self.bet_total += amount
+        self.update_state()
+
+    def update_state(self):
+        if self.stack == 0:
+            self.state = PlayerState.ALL_IN
