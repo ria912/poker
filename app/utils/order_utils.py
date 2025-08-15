@@ -1,55 +1,47 @@
-from typing import List, TypeVar, Callable, Optional
+# utils/order_utils.py
+from typing import Optional, List
+from ..models.game_state import GameState
+from ..models.player import PlayerState
 
-T = TypeVar('T')
 
-def get_circular_order(
-    items: List[T],
-    start_index: int,  # 開始インデックス
-    condition: Optional[Callable[[T], bool]] = None,  # 条件指定
-    exclude: Optional[T] = None  # 除外対象
-) -> List[T]:
+def get_next_player_index(game_state: GameState, current_index: Optional[int]) -> Optional[int]:
     """
-    リストを start_index から時計回りに回しながら、
-    条件を満たすものだけを順番に返す（exclude は除外対象）
-
-    例：
-    get_circular_order([A, B, C], start_index=1, condition=lambda x: x != B)
-    → [C, A]
+    現在の座席インデックスから次に行動可能なプレイヤーを探して返す。
+    条件:
+        - 座席が occupied
+        - PlayerState.ACTIVE のみ（FOLDED, ALL_IN はスキップ）
     """
-    if condition is None:
-        # デフォルト：すべて対象とする
-        condition = lambda x: True
+    seats = game_state.table.seats
+    num_seats = len(seats)
+    if num_seats == 0:
+        return None
 
-    result = []
-    n = len(items)
+    start_index = (current_index + 1) % num_seats if current_index is not None else game_state.table.action_start_index
 
-    for i in range(n):
-        idx = (start_index + i) % n
-        item = items[idx]
-
-        # 条件を満たし、除外対象でなければ追加
-        if condition(item) and item != exclude:
-            result.append(item)
-
-    return result
-
-
-def get_next_index(
-    items: List[T],
-    start_index: int,
-    condition: Callable[[T], bool]
-) -> int:
-    """
-    リストを start_index から時計回りに走査し、
-    条件を満たす最初の index を返す
-
-    条件に合う要素がない場合は RuntimeError
-    """
-    n = len(items)
-
-    for i in range(n):
-        idx = (start_index + i) % n
-        if condition(items[idx]):
+    for i in range(num_seats):
+        idx = (start_index + i) % num_seats
+        seat = seats[idx]
+        if seat.is_occupied and seat.player.state == PlayerState.ACTIVE:
             return idx
 
-    raise RuntimeError("条件に合致する要素が見つかりませんでした。")
+    return None  # 該当なし
+
+
+def compute_order(game_state: GameState, start_index: Optional[int] = None) -> List[int]:
+    """
+    開始位置（start_index または action_start_index）から
+    順番に行動可能なプレイヤーリストを返す。
+    """
+    order = []
+    current_index = start_index if start_index is not None else game_state.table.action_start_index
+    visited = set()
+
+    while True:
+        next_index = get_next_player_index(game_state, current_index)
+        if next_index is None or next_index in visited:
+            break
+        order.append(next_index)
+        visited.add(next_index)
+        current_index = next_index
+
+    return order
