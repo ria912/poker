@@ -1,55 +1,51 @@
 from pydantic import BaseModel, Field
 from typing import List
-import treys
+import random
+from treys import Card as TreysCard, Deck as TreysDeck
 
-# treysライブラリのCardを内部的に利用
-# treys.Card.new('Ah') -> hand=[1]
-# treys.Card.int_to_str(hand[0]) -> 'Ah'
 
 class Card(BaseModel):
-    """カード情報を保持するモデル"""
-    rank: str  # e.g., 'A', 'K', 'Q', 'J', 'T', '9'...'2'
-    suit: str  # e.g., 's' (spades), 'h' (hearts), 'd' (diamonds), 'c' (clubs)
-    
-    # treysで扱える形式の文字列表現を返すプロパティ
-    @property
-    def treys_str(self) -> str:
-        # treysでは 'T' を使うので '10' を変換
-        rank_str = self.rank if self.rank != '10' else 'T'
-        return f"{rank_str}{self.suit}"
+    """アプリ側のカード表現（rank, suit を保持）"""
 
+    rank: int  # 2-14 (11=J, 12=Q, 13=K, 14=A)
+    suit: int  # 0=クラブ, 1=ダイヤ, 2=ハート, 3=スペード
 
-# 🌟 デッキを生成してシャッフルする関数を定義
-def create_shuffled_deck() -> List[Card]:
-    """シャッフル済みの新しいカードリストを生成する"""
-    treys_deck = treys.Deck()
-    cards = []
-    for card_int in treys_deck.cards:
-        card_str = treys.Card.int_to_str(card_int)
-        rank = card_str[0]
-        suit = card_str[1]
-        cards.append(Card(rank=rank, suit=suit))
-    return cards
+    def __str__(self):
+        rank_str = {11: "J", 12: "Q", 13: "K", 14: "A"}.get(self.rank, str(self.rank))
+        suit_str = ["♣", "♦", "♥", "♠"][self.suit]
+        return f"{rank_str}{suit_str}"
+
+    def to_treys(self) -> int:
+        """treys の int カードに変換"""
+        rank_map = {14: "A", 13: "K", 12: "Q", 11: "J",
+                    10: "T", 9: "9", 8: "8", 7: "7", 6: "6",
+                     5: "5", 4: "4", 3: "3", 2: "2"}
+        suit_map = {0: "c", 1: "d", 2: "h", 3: "s"}
+        treys_str = f"{rank_map[self.rank]}{suit_map[self.suit]}"
+        return TreysCard.new(treys_str)
+
+    @classmethod
+    def from_treys(cls, treys_card: int) -> "Card":
+        """treys の int から自作 Card に変換"""
+        str_repr = TreysCard.int_to_str(treys_card)  # 例: 'As'
+        rank_map = {"A": 14, "K": 13, "Q": 12, "J": 11,
+                    "T": 10, "9": 9, "8": 8, "7": 7, "6": 6,
+                     "5": 5, "4": 4, "3": 3, "2": 2}
+        suit_map = {"c": 0, "d": 1, "h": 2, "s": 3}
+        rank, suit = str_repr[0], str_repr[1]
+        return cls(rank=rank_map[rank], suit=suit_map[suit])
+
 
 class Deck(BaseModel):
-    """デッキ情報を保持するモデル"""
-    cards: List[Card] = Field(default_factory=create_shuffled_deck)
+    """treys を内部的に利用するデッキ"""
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.cards:
-            self.reset_and_shuffle()
+    cards: List[int] = Field(default_factory=lambda: TreysDeck().cards)
 
-    def reset_and_shuffle(self):
-        """デッキを新しいシャッフル済みの52枚のカードにリセットする"""
-        self.cards = create_shuffled_deck()
-    
-    def deal(self, num_cards: int) -> List[Card]:
-        """指定された枚数のカードをデッキから配る"""
-        if len(self.cards) < num_cards:
-            # エラーハンドリングは呼び出し元(service層)で行うのが一般的
-            raise ValueError("Not enough cards in the deck")
-        
-        dealt_cards = self.cards[:num_cards]
-        self.cards = self.cards[num_cards:]
-        return dealt_cards
+    def shuffle(self) -> None:
+        random.shuffle(self.cards)
+
+    def draw(self, n: int = 1) -> List[Card]:
+        if len(self.cards) < n:
+            raise ValueError("山札が不足しています")
+        drawn, self.cards = self.cards[:n], self.cards[n:]
+        return [Card.from_treys(c) for c in drawn]
