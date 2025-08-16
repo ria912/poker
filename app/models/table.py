@@ -9,6 +9,7 @@ class Seat(BaseModel):
     """テーブルの各座席の状態を管理するモデル"""
     seat_index: int
     player: Optional[Player] = None
+    bet_total: int = 0
 
     @property
     def is_occupied(self) -> bool:
