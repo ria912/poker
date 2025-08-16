@@ -1,33 +1,66 @@
+# models/game_state.py
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional, List
+from .table import Table
+from .enum import Round, State
 import uuid
 
-from .table import Table, Seat
-from .player import Player
-from .deck import Deck
-from .enum import GameStatus
-
 class GameState(BaseModel):
-    """
-    アプリケーションのルートとなる、ゲーム全体の状態を管理するシングルトン的なモデル。
-    このモデルが全ての状態を保持する。
-    """
+    """ゲーム全体の進行状態を管理するモデル"""
     game_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    table: Table = Field(default_factory=Table)
-    deck: Deck = Field(default_factory=Deck)
-    game_status: GameStatus = Field(default=GameStatus.WAITING)  # ゲームの状態: 'waiting', 'in_progress', 'finished'
-    active_player_id: Optional[str] = None # アクション待ちのプレイヤーID
+    table: Table
 
-    @property
-    def seats(self) -> List[Seat]:
-        return self.table.seats
+    round: Round = Round.PREFLOP
+    state: State = State.WAITING  # WAITING, RUNNING, SHOWDOWN, FINISHED
+    
+    current_player_index: Optional[int] = None
+    dealer_index: Optional[int] = None
+    small_blind: int = 50
+    big_blind: int = 100
 
-    @property
-    def players(self) -> List[Player]:
-        """テーブルに参加している全プレイヤーのリストを動的に取得する"""
-        return [seat.player for seat in self.seats if seat.is_occupied]
+    # --- ゲーム進行制御メソッド ---
 
-    class Config:
-        orm_mode = True
+    def start_hand(self):
+        """新しいハンドを開始"""
+        self.table.reset_for_new_hand()
+        self.round = Round.PREFLOP
+        self.state = State.RUNNING
+        self.set_dealer_and_blinds()
 
-game_state = GameState()
+    def set_dealer_and_blinds(self):
+        """ディーラーとブラインドを設定"""
+        self.dealer_index = self.table.get_next_occupied_seat(self.dealer_index)
+        sb_index = self.table.get_next_occupied_seat(self.dealer_index)
+        bb_index = self.table.get_next_occupied_seat(sb_index)
+
+        self.table.seats[sb_index].place_bet(self.small_blind)
+        self.table.seats[bb_index].place_bet(self.big_blind)
+
+        self.current_player_index = self.table.get_next_occupied_seat(bb_index)
+
+    def proceed_to_next_round(self):
+        """次のラウンドに進む"""
+        if self.round == Round.PREFLOP:
+            self.round = Round.FLOP
+            self.table.deal_flop()
+        elif self.round == Round.FLOP:
+            self.round = Round.TURN
+            self.table.deal_turn()
+        elif self.round == Round.TURN:
+            self.round = Round.RIVER
+            self.table.deal_river()
+        elif self.round == Round.RIVER:
+            self.round = Round.SHOWDOWN
+            self.state = State.SHOWDOWN
+        else:
+            self.state = State.FINISHED
+
+    def get_current_player(self):
+        """現在アクションすべきプレイヤーを返す"""
+        if self.current_player_index is None:
+            return None
+        return self.table.seats[self.current_player_index].player
+
+    def advance_turn(self):
+        """次のプレイヤーにターンを回す"""
+        self.current_player_index = self.table.get_next_occupied_seat(self.current_player_index)
