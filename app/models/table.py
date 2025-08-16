@@ -1,66 +1,107 @@
-from pydantic import BaseModel, Field
+# app/models/table.py
+from pydantic import BaseModel
 from typing import List, Optional
 
+from .deck import Card, Deck
 from .player import Player
-from .deck import Card
-from .enum import Round, Position, PlayerState
+
 
 class Seat(BaseModel):
-    """テーブルの各座席の状態を管理するモデル"""
-    seat_index: int
+    """座席（プレイヤーを乗せて、ベット額を管理）"""
+
+    number: int
     player: Optional[Player] = None
     bet_total: int = 0
 
-    @property
     def is_occupied(self) -> bool:
         return self.player is not None
 
-    @property
-    def is_active(self) -> bool:
-        return self.player is not None and self.player.state == PlayerState.ACTIVE
+    def sit(self, player: Player) -> None:
+        if self.player:
+            raise ValueError("すでにプレイヤーが座っています")
+        self.player = player
+
+    def leave(self) -> Player:
+        if not self.player:
+            raise ValueError("プレイヤーがいません")
+        p, self.player = self.player, None
+        self.bet_total = 0
+        return p
+
+    def place_bet(self, amount: int) -> int:
+        if not self.player:
+            raise ValueError("プレイヤー不在")
+        paid = self.player.pay(amount)
+        self.bet_total += paid
+        return paid
+
+    def clear_bet(self) -> int:
+        """ラウンド終了時にベットをポットへ移動"""
+        total, self.bet_total = self.bet_total, 0
+        return total
+
 
 class Table(BaseModel):
-    """ゲームテーブル全体の状態を管理するモデル"""
-    big_blind: int = 100
-    small_blind: int = 50
-    seat_count: int = 6
+    """テーブル全体：座席、ポット、ボードを管理"""
 
-    seats: List[Seat] = Field(default_factory=list)
-    current_round: Round = Round.PREFLOP
-    community_cards: List[Card] = Field(default_factory=list)
+    seats: List[Seat]
     pot: int = 0
+    board: List[Card] = []
+    deck: Deck = Deck()
 
-    current_bet: int = 0  # 現在の最大ベット額
-    min_bet: int = big_blind  # 最小ベット額
-    dealer_index: int = 0  # ディーラーボタンのseat_index
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.seats:
-            self.seats = [Seat(seat_index=i) for i in range(self.seat_count)]
-
-    def get_active_seats(self) -> List[Seat]:
-        """アクティブな座席を取得する"""
-        return [seat for seat in self.seats if seat.is_active]
-
-    def get_player_by_id(self, player_id: str) -> Optional[Player]:
-        """プレイヤーIDからプレイヤーオブジェクトを取得する"""
+    def collect_bets(self) -> None:
+        """全席のベットを回収してポットに加算"""
         for seat in self.seats:
-            if seat.is_occupied and seat.player.player_id == player_id:
-                return seat.player
-        return None
+            self.pot += seat.clear_bet()
 
-    def get_player_by_position(self, position: Position) -> Optional[Player]:
-        """ポジションからプレイヤーオブジェクトを取得する"""
+    def deal_to_player(self, seat: Seat, n: int) -> None:
+        """座席のプレイヤーにカードを配る"""
+        if not seat.player:
+            raise ValueError("プレイヤー不在")
+        cards = self.deck.draw(n)
+        for c in cards:
+            seat.player.receive_card(c)
+
+    def deal_to_board(self, n: int) -> None:
+        """コミュニティカードを配る"""
+        cards = self.deck.draw(n)
+        self.board.extend(cards)
+
+    def reset_round(self) -> None:
+        """ラウンド終了時にボードとベットをリセット"""
+        self.collect_bets()
+        self.board.clear()
         for seat in self.seats:
-            if seat.is_occupied and seat.player.position == position:
-                return seat.player
-        return None
+            if seat.player:
+                seat.player.clear_hand()
+    
+    #役判定
+    def evaluate_hands(self, board: Optional[List[Card]] = None) -> Dict[str, Dict]:
+        """
+        任意のボードで役判定
+        """
+        board = board if board is not None else self.board
+        results = {}
+        for seat in self.seats:
+            if seat.player and seat.player.state not in ("FOLDED",):
+                score, name = EvaluateUtils.evaluate_hand(seat.player.hand, board)
+                results[seat.player.player_id] = {
+                    "score": score,
+                    "hand": seat.player.hand,
+                    "hand_name": name,
+                }
+        return results
 
-    def get_player_by_index(self, index: int) -> Optional[Player]:
-        """インデックスからプレイヤーオブジェクトを取得する"""
-        if 0 <= index < self.seat_count:
-            seat = self.seats[index]
-            if seat.is_occupied:
-                return seat.player
-        return None
+    def determine_winner(self, board: Optional[List[Card]] = None) -> Optional[str]:
+        """
+        任意のタイミングで勝者判定
+        """
+        board = board if board is not None else self.board
+        active_hands = {
+            seat.player.player_id: seat.player.hand
+            for seat in self.seats
+            if seat.player and seat.player.state not in ("FOLDED",)
+        }
+        if not active_hands:
+            return None
+        return EvaluateUtils.compare_hands(active_hands, board)
