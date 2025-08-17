@@ -1,6 +1,7 @@
 # app/models/table.py
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
+from app.utils.evaluate_utils import EvaluateUtils
 
 from .deck import Card, Deck
 from .player import Player

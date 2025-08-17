@@ -7,14 +7,14 @@ from .enum import PlayerState, Position
 
 
 class Player(BaseModel):
-    """プレイヤー（財布＝stackを管理）"""
+    """プレイヤー（stackを管理）"""
 
     player_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     stack: int
     hand: List[Card] = Field(default_factory=list)
     position: Position | None = None
-    state: PlayerState = PlayerState.WAITING
+    state: PlayerState = PlayerState.WAIT
 
     def pay(self, amount: int) -> int:
         """スタックから指定額を支払う"""
@@ -30,4 +30,15 @@ class Player(BaseModel):
     def clear_hand(self) -> None:
         """ハンドをリセット"""
         self.hand.clear()
-        self.state = PlayerState.WAITING
+    
+    def reset_state_acted(self) -> None:
+        if self.state == PlayerState.ACTED:
+            self.state = PlayerState.WAIT
+
+    def reset_for_new_hand(self) -> None:
+        self.clear_hand()
+        self.position = None
+        if self.stack <= 0:
+            self.state = PlayerState.OUT
+        else:
+            self.state = PlayerState.WAIT

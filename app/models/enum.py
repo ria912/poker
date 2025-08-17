@@ -44,8 +44,6 @@ class PlayerState(str, Enum):
 
 class GameStatus(str, Enum):
     WAITING       = "WAITING"          # ゲーム開始前の待機状態
-    GAME_CONTINUE = "GAME_CONTINUE"    # ゲーム進行中
-    ROUND_CONTINUE = "ROUND_CONTINUE"   # 現在のラウンドの進行中（次のアクションを求める）
-    ROUND_OVER     = "ROUND_OVER"       # ラウンド終了（次のストリートへ）
+    RUNNING       = "RUNNING"          # ゲーム進行中
     SHOWDOWN       = "SHOWDOWN"         # 全員チェックなどでカード公開フェーズへ
     GAME_OVER      = "GAME_OVER"        # ゲーム終了（勝者決定、チップ配分）
