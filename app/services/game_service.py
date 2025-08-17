@@ -1,46 +1,108 @@
-    # --- ゲーム進行制御メソッド ---
+# services/game_service.py
+from models.game_state import GameState
+from models.enum import Round, GameStatus, PlayerState
+from models.table import Seat
+from typing import Optional
+
+
+class GameService:
+    """
+    ゲーム全体を統括するサービス
+    - ハンド開始（ブラインド、カード配布、最初のアクション設定）
+    - ラウンド進行
+    - ハンド終了（勝者判定、チップ移動）
+    """
+
+    def __init__(self, game_state: GameState):
+        self.state = game_state
 
     def start_hand(self):
-        """新しいハンドを開始"""
-        self.table.reset_for_new_hand()
-        self.round = Round.PREFLOP
-        self.state = State.RUNNING
-        self.set_dealer_and_blinds()
+        """
+        ハンド開始処理
+        - ディーラー移動
+        - ブラインド強制ベット
+        - カード配布
+        - 最初のアクションプレイヤーを設定
+        """
+        table = self.state.table
 
-    def set_dealer_and_blinds(self):
-        """ディーラーとブラインドを設定"""
-        self.dealer_index = self.table.get_next_occupied_seat(self.dealer_index)
-        sb_index = self.table.get_next_occupied_seat(self.dealer_index)
-        bb_index = self.table.get_next_occupied_seat(sb_index)
+        # デッキをシャッフル
+        table.deck.shuffle()
 
-        self.table.seats[sb_index].place_bet(self.small_blind)
-        self.table.seats[bb_index].place_bet(self.big_blind)
-
-        self.current_player_index = self.table.get_next_occupied_seat(bb_index)
-
-    def proceed_to_next_round(self):
-        """次のラウンドに進む"""
-        if self.round == Round.PREFLOP:
-            self.round = Round.FLOP
-            self.table.deal_flop()
-        elif self.round == Round.FLOP:
-            self.round = Round.TURN
-            self.table.deal_turn()
-        elif self.round == Round.TURN:
-            self.round = Round.RIVER
-            self.table.deal_river()
-        elif self.round == Round.RIVER:
-            self.round = Round.SHOWDOWN
-            self.state = State.SHOWDOWN
+        # ディーラー位置を決定
+        if self.state.dealer_index is None:
+            self.state.dealer_index = 0
         else:
-            self.state = State.FINISHED
+            self.state.dealer_index = (self.state.dealer_index + 1) % len(table.seats)
 
-    def get_current_player(self):
-        """現在アクションすべきプレイヤーを返す"""
-        if self.current_player_index is None:
-            return None
-        return self.table.seats[self.current_player_index].player
+        # SB, BB を決定
+        sb_index = (self.state.dealer_index + 1) % len(table.seats)
+        bb_index = (self.state.dealer_index + 2) % len(table.seats)
 
-    def advance_turn(self):
-        """次のプレイヤーにターンを回す"""
-        self.current_player_index = self.table.get_next_occupied_seat(self.current_player_index)
+        sb_seat = table.seats[sb_index]
+        bb_seat = table.seats[bb_index]
+
+        if sb_seat.player:
+            sb_seat.place_bet(self.state.small_blind)
+        if bb_seat.player:
+            bb_seat.place_bet(self.state.big_blind)
+
+        # 各プレイヤーにカードを配る
+        for seat in table.seats:
+            if seat.player:
+                table.deal_to_player(seat)
+
+        # アクションプレイヤー（BBの次からスタート）
+        self.state.current_player_index = (bb_index + 1) % len(table.seats)
+
+        self.state.round = Round.PREFLOP
+        self.state.state = GameStatus.RUNNING
+
+    def proceed_round(self):
+        """
+        ラウンド進行
+        - コミュニティカード配布
+        - ラウンド遷移
+        """
+        table = self.state.table
+
+        if self.state.round == Round.PREFLOP:
+            table.deal_to_board(3)  # FLOP
+            self.state.round = Round.FLOP
+        elif self.state.round == Round.FLOP:
+            table.deal_to_board(1)  # TURN
+            self.state.round = Round.TURN
+        elif self.state.round == Round.TURN:
+            table.deal_to_board(1)  # RIVER
+            self.state.round = Round.RIVER
+        elif self.state.round == Round.RIVER:
+            self.state.round = Round.SHOWDOWN
+            self.state.state = GameStatus.SHOWDOWN
+
+    def end_hand(self) -> Optional[str]:
+        """
+        ハンド終了処理
+        - 勝者判定
+        - ポット配分
+        - 次ハンド準備
+        """
+        table = self.state.table
+
+        winner_id = table.determine_winner()
+        if winner_id:
+            # 勝者にポットを渡す
+            for seat in table.seats:
+                if seat.player and seat.player.player_id == winner_id:
+                    seat.player.stack += table.pot
+                    break
+
+        # 次ハンド準備
+        for seat in table.seats:
+            if seat.player:
+                seat.player.reset_for_new_hand()
+        table.board.clear()
+        table.pot = 0
+        table.deck.reset()
+
+        self.state.state = GameStatus.GAME_OVER
+        return winner_id
