@@ -21,4 +21,8 @@ class GameState(BaseModel):
     @property
     def players(self) -> List[Player]:
         """座っているプレイヤーだけを返す"""
-        return [seat.player for seat in self.table.seats if seat.is_o]
+        return [seat.player for seat in self.table.seats if seat.is_occupied]
+
+    @property
+    def deck(self) -> Deck:
+        return self.table.deck
