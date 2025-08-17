@@ -48,6 +48,11 @@ class Table(BaseModel):
     pot: int = 0
     board: List[Card] = []
     deck: Deck = Deck()
+    
+    @property
+    def players(self):
+        """座っているプレイヤーだけを返す"""
+        return [seat.player for seat in self.seats if seat.is_occupied]
 
     def collect_bets(self) -> None:
         """全席のベットを回収してポットに加算"""
