@@ -17,12 +17,3 @@ class GameState(BaseModel):
     dealer_index: Optional[int] = None
     small_blind: int = 50
     big_blind: int = 100
-
-    @property
-    def players(self) -> List[Player]:
-        """座っているプレイヤーだけを返す"""
-        return [seat.player for seat in self.table.seats if seat.is_occupied]
-
-    @property
-    def deck(self) -> Deck:
-        return self.table.deck
