@@ -59,11 +59,11 @@ class Table(BaseModel):
         for seat in self.seats:
             self.pot += seat.clear_bet()
 
-    def deal_to_player(self, seat: Seat, n: int) -> None:
+    def deal_to_player(self, seat: Seat) -> None:
         """座席のプレイヤーにカードを配る"""
         if not seat.player:
             raise ValueError("プレイヤー不在")
-        cards = self.deck.draw(n)
+        cards = self.deck.draw(2)
         for c in cards:
             seat.player.receive_card(c)
 
@@ -73,12 +73,11 @@ class Table(BaseModel):
         self.board.extend(cards)
 
     def reset_round(self) -> None:
-        """ラウンド終了時にボードとベットをリセット"""
+        """ラウンド終了時にベットとステートをリセット"""
         self.collect_bets()
-        self.board.clear()
         for seat in self.seats:
             if seat.player:
-                seat.player.clear_hand()
+                seat.player.reset_state()
     
     #役判定
     def evaluate_hands(self, board: Optional[List[Card]] = None) -> Dict[str, Dict]:
