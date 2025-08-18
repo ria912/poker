@@ -5,7 +5,7 @@ from ..models.player import PlayerState
 from ..models.enum import Round
 
 
-def get_next_player_index(game_state: GameState, current_index: Optional[int]) -> Optional[int]:
+def get_next_active_index(game_state: GameState, current_index: Optional[int]) -> Optional[int]:
     """
     現在の座席インデックスから次に行動可能なプレイヤーを探して返す。
     条件:

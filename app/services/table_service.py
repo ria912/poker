@@ -1,6 +1,7 @@
 # app/services/table_service.py
 from typing import List
 from models import GameState, Player, Position, PlayerState, Seat
+from utils.order_utils import get_next_active_index
 
 class TableService:
     """テーブル操作に関連するビジネスロジック"""
@@ -36,10 +37,11 @@ class TableService:
         """新しいハンドの準備を行う"""
         
         # プレイヤーが2人未満の場合は開始しない
-        active_players = self.table.active_players
-        if len(active_players) < 2:
+        active_seats = self.table.get_active_seats()
+        if len(active_seats) < 2:
             raise ValueError("プレイヤーが2人未満のため、ゲームを開始できません")
 
+        active_players = [seat.player for seat in active_seats if seat.player.state == PlayerState.ACTIVE]
         # ハンド、ボード、ポット、デッキをリセット
         self.table.reset_hand()
         self.table.deck.shuffle()
@@ -48,30 +50,27 @@ class TableService:
         if self.game_state.dealer_index is None:
             self.game_state.dealer_index = 0
         else:
-            self.game_state.dealer_index = (self.game_state.dealer_index + 1) % len(self.table.seats)
-
+            self.game_state.dealer_index = get_next_active_index(self.game_state, self.game_state.dealer_index)
         # ポジションの割り当て
-        positions = get_positions(len(active_players), self.game_state.dealer_index)
-        for i, player in enumerate(active_players):
-            player.position = positions[i]
-
+        assign_position(self.game_state)
+        
         # SBとBBからブラインドを強制ベットさせる
         self._post_blinds(active_players)
         
         # 全員にカードを配る
         for seat in self.table.seats:
-            if seat.player and seat.player.state != PlayerState.OUT:
+            if seat.player and seat.is_active():
                 self.table.deal_to_player(seat)
     
-    def _post_blinds(self, players: List[Player]):
+    def _post_blinds(self):
         """スモールブラインドとビッグブラインドを支払わせる"""
-        sb_player = next((p for p in players if p.position == Position.SB), None)
-        bb_player = next((p for p in players if p.position == Position.BB), None)
+        sb_player = next((s.player for s in self.table.get_active_seats() if s.player.position == Position.SB), None)
+        bb_player = next((s.player for s in self.table.get_active_seats() if s.player.position == Position.BB), None)
 
         # 2人プレイ（ヘッズアップ）の場合の特別処理
-        if len(players) == 2:
-            dealer_player = players[self.game_state.dealer_index]
-            other_player = players[(self.game_state.dealer_index + 1) % 2]
+        if len(self.table.get_active_seats()) == 2:
+            dealer_player = self.table.seats[self.game_state.dealer_index]
+            other_player = get_next_active_index(self.game_state, self.game_state.dealer_index)
             sb_player = dealer_player # ディーラーがSB
             bb_player = other_player
             # ポジションも修正
@@ -79,9 +78,9 @@ class TableService:
             other_player.position = Position.BB
 
         if sb_player:
-            seat = self._find_seat_by_player(sb_player)
+            seat = self.table.find_seat_by_player(sb_player)
             seat.place_bet(self.game_state.small_blind)
         
         if bb_player:
-            seat = self._find_seat_by_player(bb_player)
+            seat = self.table.find_seat_by_player(bb_player)
             seat.place_bet(self.game_state.big_blind)
