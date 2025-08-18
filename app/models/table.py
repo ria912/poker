@@ -78,4 +78,13 @@ class Table(BaseModel):
         self.collect_bets()
         for seat in self.seats:
             if seat.player:
-                seat.player.reset_state()
+                seat.player.reset_state_acted()
+
+    def reset_hand(self) -> None:
+        """ハンド終了時にプレイヤーの手札をリセット"""
+        self.board.clear()
+        self.pot = 0
+        self.deck = Deck()  # 新しいデッキを生成
+        for seat in self.seats:
+            if seat.player:
+                seat.player.reset_for_new_hand()

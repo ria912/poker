@@ -14,7 +14,7 @@ class Player(BaseModel):
     stack: int
     hand: List[Card] = Field(default_factory=list)
     position: Position | None = None
-    state: PlayerState = PlayerState.WAIT
+    state: PlayerState = PlayerState.ACTIVE
 
     def pay(self, amount: int) -> int:
         """スタックから指定額を支払う"""
@@ -33,7 +33,7 @@ class Player(BaseModel):
     
     def reset_state_acted(self) -> None:
         if self.state == PlayerState.ACTED:
-            self.state = PlayerState.WAIT
+            self.state = PlayerState.ACTIVE
 
     def reset_for_new_hand(self) -> None:
         self.clear_hand()
@@ -41,4 +41,4 @@ class Player(BaseModel):
         if self.stack <= 0:
             self.state = PlayerState.OUT
         else:
-            self.state = PlayerState.WAIT
+            self.state = PlayerState.ACTIVE

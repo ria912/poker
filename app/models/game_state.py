@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from .table import Table
-from .enum import Round, State
+from .enum import Round, GameStatus
 import uuid
 
 class GameState(BaseModel):
@@ -11,8 +11,8 @@ class GameState(BaseModel):
     table: Table
 
     round: Round = Round.PREFLOP
-    state: State = State.WAITING  # WAITING, RUNNING, SHOWDOWN, FINISHED
-    
+    status: GameStatus = GameStatus.WAITING  # WAITING, RUNNING, SHOWDOWN, FINISHED
+
     current_player_index: Optional[int] = None
     dealer_index: Optional[int] = None
     small_blind: int = 50
