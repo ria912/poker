@@ -79,34 +79,3 @@ class Table(BaseModel):
         for seat in self.seats:
             if seat.player:
                 seat.player.reset_state()
-    
-    #役判定
-    def evaluate_hands(self, board: Optional[List[Card]] = None) -> Dict[str, Dict]:
-        """
-        任意のボードで役判定
-        """
-        board = board if board is not None else self.board
-        results = {}
-        for seat in self.seats:
-            if seat.player and seat.player.state not in ("FOLDED",):
-                score, name = EvaluateUtils.evaluate_hand(seat.player.hand, board)
-                results[seat.player.player_id] = {
-                    "score": score,
-                    "hand": seat.player.hand,
-                    "hand_name": name,
-                }
-        return results
-
-    def determine_winner(self, board: Optional[List[Card]] = None) -> Optional[str]:
-        """
-        任意のタイミングで勝者判定
-        """
-        board = board if board is not None else self.board
-        active_hands = {
-            seat.player.player_id: seat.player.hand
-            for seat in self.seats
-            if seat.player and seat.player.state not in ("FOLDED",)
-        }
-        if not active_hands:
-            return None
-        return EvaluateUtils.compare_hands(active_hands, board)
