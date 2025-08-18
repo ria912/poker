@@ -13,7 +13,8 @@ class GameState(BaseModel):
     round: Round = Round.PREFLOP
     status: GameStatus = GameStatus.WAITING  # WAITING, RUNNING, SHOWDOWN, FINISHED
 
-    current_player_index: Optional[int] = None
+    current_index: Optional[int] = None
     dealer_index: Optional[int] = None
     small_blind: int = 50
     big_blind: int = 100
+    

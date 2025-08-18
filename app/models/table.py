@@ -1,8 +1,7 @@
 # app/models/table.py
-from pydantic import BaseModel
-from typing import List, Optional, Dict
-from app.utils.evaluate_utils import EvaluateUtils
-
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from app.models.enum import PlayerState, Position
 from .deck import Card, Deck
 from .player import Player
 
@@ -10,13 +9,18 @@ from .player import Player
 class Seat(BaseModel):
     """座席（プレイヤーを乗せて、ベット額を管理）"""
 
-    number: int
+    index: int
     player: Optional[Player] = None
     bet_total: int = 0
 
+    # --- 状態判定 ---
     def is_occupied(self) -> bool:
         return self.player is not None
 
+    def is_active(self) -> bool:
+        return self.player is not None and self.player.state == PlayerState.ACTIVE
+
+    # --- プレイヤー操作 ---
     def sit(self, player: Player) -> None:
         if self.player:
             raise ValueError("すでにプレイヤーが座っています")
@@ -29,10 +33,11 @@ class Seat(BaseModel):
         self.bet_total = 0
         return p
 
+    # --- ベット操作 ---
     def place_bet(self, amount: int) -> int:
         if not self.player:
             raise ValueError("プレイヤー不在")
-        paid = self.player.pay(amount)
+        paid = self.player.pay(amount)  # Player がスタックを減らす
         self.bet_total += paid
         return paid
 
@@ -43,48 +48,58 @@ class Seat(BaseModel):
 
 
 class Table(BaseModel):
-    """テーブル全体：座席、ポット、ボードを管理"""
+    """テーブル全体を表すクラス"""
 
-    seats: List[Seat]
+    seats: List[Seat] = Field(default_factory=lambda: [Seat(index=i) for i in range(6)])  # 最大6席
     pot: int = 0
     board: List[Card] = []
     deck: Deck = Deck()
-    
-    @property
-    def players(self):
-        """座っているプレイヤーだけを返す"""
-        return [seat.player for seat in self.seats if seat.is_occupied]
 
-    def collect_bets(self) -> None:
-        """全席のベットを回収してポットに加算"""
-        for seat in self.seats:
+    # --- 座席操作 ---
+    def get_active_seats(self) -> List[Seat]:
+        return [s for s in self.seats if s.is_active()]
+
+    def get_occupied_seats(self) -> List[Seat]:
+        return [s for s in self.seats if s.is_occupied()]
+
+    def find_seat_by_player(self, player: Player) -> Optional[Seat]:
+        return next((s for s in self.seats if s.player == player), None)
+
+    def find_player_by_position(self, position: Position) -> Optional[Player]:
+        return next((s.player for s in self.seats if s.player and s.player.position == position), None)
+
+    # --- ポット管理 ---
+    def collect_bets_to_pot(self) -> None:
+        """全員のbet_totalをポットに集約"""
+        for seat in self.get_occupied_seats():
             self.pot += seat.clear_bet()
 
-    def deal_to_player(self, seat: Seat) -> None:
-        """座席のプレイヤーにカードを配る"""
-        if not seat.player:
-            raise ValueError("プレイヤー不在")
-        cards = self.deck.draw(2)
-        for c in cards:
-            seat.player.receive_card(c)
-
-    def deal_to_board(self, n: int) -> None:
-        """コミュニティカードを配る"""
-        cards = self.deck.draw(n)
-        self.board.extend(cards)
-
-    def reset_round(self) -> None:
-        """ラウンド終了時にベットとステートをリセット"""
-        self.collect_bets()
-        for seat in self.seats:
-            if seat.player:
-                seat.player.reset_state_acted()
-
-    def reset_hand(self) -> None:
-        """ハンド終了時にプレイヤーの手札をリセット"""
-        self.board.clear()
+    def reset_pot(self) -> None:
         self.pot = 0
-        self.deck = Deck()  # 新しいデッキを生成
-        for seat in self.seats:
-            if seat.player:
-                seat.player.reset_for_new_hand()
+
+    # --- ボード操作 ---
+    def deal_to_board(self, num: int) -> List[Card]:
+        """ボードにカードを配る"""
+        cards = [self.deck.draw() for _ in range(num)]
+        self.board.extend(cards)
+        return cards
+
+    def reset_board(self) -> None:
+        self.board = []
+
+    # --- デッキ操作 ---
+    def reset_deck(self) -> None:
+        self.deck = Deck()
+        self.deck.shuffle()
+
+    def deal_to_player(self, seat: Seat, num: int = 2) -> List[Card]:
+        """プレイヤーにカードを配る"""
+        if not seat.is_occupied():
+            raise ValueError("空席にカードは配れません")
+        cards = [self.deck.draw() for _ in range(num)]
+        seat.player.hole_cards = cards
+        return cards
+
+    def is_round_complete(self) -> bool:
+        """現在のラウンドが終了しているかどうかを判定"""
+        return all(seat.player.state != PlayerState.ACTIVE for seat in self.seats if seat.is_occupied())

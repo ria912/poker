@@ -2,6 +2,7 @@
 from typing import Optional, List
 from ..models.game_state import GameState
 from ..models.player import PlayerState
+from ..models.enum import Round
 
 
 def get_next_player_index(game_state: GameState, current_index: Optional[int]) -> Optional[int]:
@@ -25,23 +26,3 @@ def get_next_player_index(game_state: GameState, current_index: Optional[int]) -
             return idx
 
     return None  # 該当なし
-
-
-def compute_order(game_state: GameState, start_index: Optional[int] = None) -> List[int]:
-    """
-    開始位置（start_index または action_start_index）から
-    順番に行動可能なプレイヤーリストを返す。
-    """
-    order = []
-    current_index = start_index if start_index is not None else game_state.table.action_start_index
-    visited = set()
-
-    while True:
-        next_index = get_next_player_index(game_state, current_index)
-        if next_index is None or next_index in visited:
-            break
-        order.append(next_index)
-        visited.add(next_index)
-        current_index = next_index
-
-    return order
