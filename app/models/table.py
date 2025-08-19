@@ -1,7 +1,7 @@
 # app/models/table.py
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from app.models.enum import PlayerState, Position
+from .enum import PlayerState, Position
 from .deck import Card, Deck
 from .player import Player
 
@@ -97,7 +97,7 @@ class Table(BaseModel):
         if not seat.is_occupied():
             raise ValueError("空席にカードは配れません")
         cards = [self.deck.draw() for _ in range(num)]
-        seat.player.hole_cards = cards
+        seat.player.hand = cards
         return cards
 
     def is_round_complete(self) -> bool:
