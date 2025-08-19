@@ -84,6 +84,6 @@ class TableService:
     def get_index_by_position(self, table: Table, position: Position) -> Optional[int]:
         """ポジションから座席インデックスを取得"""
         for seat in table.seats:
-            if seat.position == position:
+            if seat.player.position == position:
                 return seat.index
         return None
