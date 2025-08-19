@@ -1,86 +1,81 @@
 # app/services/table_service.py
-from typing import List
-from models import GameState, Player, Position, PlayerState, Seat
-from utils.order_utils import get_next_active_index
+from typing import List, Optional
+from app.models.table import Table, Seat
+from app.models.player import Player
+from app.models.enum import Round, PlayerState
+from app.models.deck import Card, Deck
+
 
 class TableService:
-    """テーブル操作に関連するビジネスロジック"""
+    """
+    テーブル全体の管理を行うサービス
+    """
 
-    def __init__(self, game_state: GameState):
-        self.game_state = game_state
-        self.table = game_state.table
+    # -------------------------
+    # 基本操作
+    # -------------------------
 
-    def add_player(self, name: str, stack: int) -> Player:
-        """新しいプレイヤーを作成し、空いている席に座らせる"""
-        if len(self.table.active_players) >= 6: # max_players
-            raise ValueError("テーブルは満席です")
+    def assign_player(self, table: Table, player: Player, seat_number: int) -> None:
+        """指定された座席にプレイヤーを座らせる"""
+        seat = self._get_seat(table, seat_number)
+        if seat.player is not None:
+            raise ValueError(f"Seat {seat_number} はすでに埋まっています")
+        seat.player = player
 
-        new_player = Player(name=name, stack=stack)
-        
-        # 空いている席を探す
-        for seat in self.table.seats:
-            if not seat.is_occupied():
-                seat.sit(new_player)
-                return new_player
-        
-        raise ValueError("空いている席がありません")
+    def collect_blinds(self, table: Table, small_blind: int, big_blind: int, dealer_index: int) -> None:
+        """ブラインドを徴収する"""
+        small_blind_index = (dealer_index + 1) % len(table.seats)
+        big_blind_index = (dealer_index + 2) % len(table.seats)
 
-    def remove_player(self, player_id: str) -> None:
-        """指定されたプレイヤーをテーブルから退席させる"""
-        for seat in self.table.seats:
-            if seat.player and seat.player.player_id == player_id:
-                seat.leave()
-                return
-        raise ValueError("指定されたプレイヤーは見つかりません")
+        sb_seat = table.seats[small_blind_index]
+        bb_seat = table.seats[big_blind_index]
 
-    def shuffle_and_deal(self) -> None:
-        """新しいハンドの準備を行う"""
-        
-        # プレイヤーが2人未満の場合は開始しない
-        active_seats = self.table.get_active_seats()
-        if len(active_seats) < 2:
-            raise ValueError("プレイヤーが2人未満のため、ゲームを開始できません")
+        if sb_seat.player:
+            sb_seat.bet_total += sb_seat.player.pay(small_blind)
+        if bb_seat.player:
+            bb_seat.bet_total += bb_seat.player.pay(big_blind)
 
-        active_players = [seat.player for seat in active_seats if seat.player.state == PlayerState.ACTIVE]
-        # ハンド、ボード、ポット、デッキをリセット
-        self.table.reset_hand()
-        self.table.deck.shuffle()
+    def deal_hole_cards(self, table: Table, num_cards: int = 2) -> None:
+        """各プレイヤーにホールカードを配る"""
+        table.deck.shuffle()
+        for _ in range(num_cards):
+            for seat in table.seats:
+                if seat.player:
+                    card = table.deck.draw()
+                    seat.player.receive_card(card)
 
-        # ディーラーボタンを決定または移動
-        if self.game_state.dealer_index is None:
-            self.game_state.dealer_index = 0
-        else:
-            self.game_state.dealer_index = get_next_active_index(self.game_state, self.game_state.dealer_index)
-        # ポジションの割り当て
-        assign_position(self.game_state)
-        
-        # SBとBBからブラインドを強制ベットさせる
-        self._post_blinds(active_players)
-        
-        # 全員にカードを配る
-        for seat in self.table.seats:
-            if seat.player and seat.is_active():
-                self.table.deal_to_player(seat)
-    
-    def _post_blinds(self):
-        """スモールブラインドとビッグブラインドを支払わせる"""
-        sb_player = next((s.player for s in self.table.get_active_seats() if s.player.position == Position.SB), None)
-        bb_player = next((s.player for s in self.table.get_active_seats() if s.player.position == Position.BB), None)
+    def deal_community_cards(self, table: Table, num_cards: int) -> None:
+        """フロップ・ターン・リバーの配布"""
+        for _ in range(num_cards):
+            card = table.deck.draw()
+            table.board.append(card)
 
-        # 2人プレイ（ヘッズアップ）の場合の特別処理
-        if len(self.table.get_active_seats()) == 2:
-            dealer_player = self.table.seats[self.game_state.dealer_index]
-            other_player = get_next_active_index(self.game_state, self.game_state.dealer_index)
-            sb_player = dealer_player # ディーラーがSB
-            bb_player = other_player
-            # ポジションも修正
-            dealer_player.position = Position.SB
-            other_player.position = Position.BB
+    # -------------------------
+    # ベット / ポット管理
+    # -------------------------
 
-        if sb_player:
-            seat = self.table.find_seat_by_player(sb_player)
-            seat.place_bet(self.game_state.small_blind)
-        
-        if bb_player:
-            seat = self.table.find_seat_by_player(bb_player)
-            seat.place_bet(self.game_state.big_blind)
+    def add_to_pot(self, table: Table, amount: int) -> None:
+        """ポットにチップを追加"""
+        table.pot += amount
+
+    def reset_bets(self, table: Table) -> None:
+        """全座席のベット額をクリア"""
+        for seat in table.seats:
+            seat.bet_total = 0
+
+    def settle_bets_to_pot(self, table: Table) -> None:
+        """全座席のベット額をポットに集約"""
+        for seat in table.seats:
+            table.pot += seat.bet_total
+            seat.bet_total = 0
+
+    # -------------------------
+    # ユーティリティ
+    # -------------------------
+
+    def _get_seat(self, table: Table, seat_number: int) -> Seat:
+        """座席を取得"""
+        for seat in table.seats:
+            if seat.number == seat_number:
+                return seat
+        raise ValueError(f"Seat {seat_number} は存在しません")
