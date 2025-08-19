@@ -4,6 +4,7 @@ from app.models.table import Table, Seat
 from app.models.player import Player
 from app.models.enum import Round, PlayerState
 from app.models.deck import Card, Deck
+from app.models.enum import Position
 
 
 class TableService:
@@ -76,6 +77,13 @@ class TableService:
     def _get_seat(self, table: Table, seat_number: int) -> Seat:
         """座席を取得"""
         for seat in table.seats:
-            if seat.number == seat_number:
+            if seat.index == seat_number:
                 return seat
         raise ValueError(f"Seat {seat_number} は存在しません")
+
+    def get_index_by_position(self, table: Table, position: Position) -> Optional[int]:
+        """ポジションから座席インデックスを取得"""
+        for seat in table.seats:
+            if seat.position == position:
+                return seat.index
+        return None

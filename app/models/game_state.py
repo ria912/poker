@@ -1,6 +1,7 @@
 # models/game_state.py
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from .player import Player
 from .table import Table
 from .enum import Round, GameStatus
 import uuid
@@ -8,16 +9,16 @@ import uuid
 class GameState(BaseModel):
     """ゲーム全体の進行状態を管理するモデル"""
     game_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    small_blind: int = 50
+    big_blind: int = 100
     table: Table
 
     round: Round = Round.PREFLOP
-    status: GameStatus = GameStatus.WAITING  # WAITING, RUNNING, SHOWDOWN, FINISHED
+    status: GameStatus = GameStatus.WAITING  # WAITING, IN_PROGRESS, SHOWDOWN, GAME_OVER
 
-    current_index: Optional[int] = None
+    current_player_index: Optional[int] = None
     dealer_index: Optional[int] = None
-    small_blind: int = 50
-    big_blind: int = 100
-
+    
     @property
     def players(self) -> List[Player]:
         return [s.player for s in self.table.seats if s.player is not None]
@@ -30,4 +31,4 @@ class GameState(BaseModel):
         """新しいハンドに向けて初期化"""
         self.table.reset_for_new_hand()
         self.round = Round.PREFLOP
-        self.state = State.WAITING
+        self.state = GameStatus.WAITING

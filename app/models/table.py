@@ -1,3 +1,9 @@
+# app/models/table.py
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from .deck import Card, Deck
+from .player import Player
+
 class Seat(BaseModel):
     index: int
     player: Optional[Player] = None

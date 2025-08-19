@@ -29,9 +29,9 @@ class Position(str, Enum):
     BTN = "BTN"
     SB = "SB"
     BB = "BB"
-    LJ = "LJ"
-    HJ = "HJ"
     CO = "CO"
+    HJ = "HJ"
+    LJ = "LJ"
 
 
 class PlayerState(str, Enum):
@@ -42,8 +42,9 @@ class PlayerState(str, Enum):
     OUT = "OUT"
     SITTING_OUT = "SITTING_OUT"
 
+
 class GameStatus(str, Enum):
     WAITING       = "WAITING"          # ゲーム開始前の待機状態
-    RUNNING       = "RUNNING"          # ゲーム進行中
-    SHOWDOWN       = "SHOWDOWN"         # 全員チェックなどでカード公開フェーズへ
-    GAME_OVER      = "GAME_OVER"        # ゲーム終了（勝者決定、チップ配分）
+    IN_PROGRESS   = "IN_PROGRESS"      # ゲーム進行中
+    FINISHED      = "FINISHED"         # 全員チェックなどでカード公開フェーズへ
+    GAME_OVER     = "GAME_OVER"        # ゲーム終了
