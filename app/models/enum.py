@@ -40,7 +40,6 @@ class PlayerState(str, Enum):
     FOLDED = "FOLDED"
     ALL_IN = "ALL_IN"
     OUT = "OUT"
-    SITTING_OUT = "SITTING_OUT"
 
 
 class GameStatus(str, Enum):

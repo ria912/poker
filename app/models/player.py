@@ -16,13 +16,6 @@ class Player(BaseModel):
     position: Position | None = None
     state: PlayerState = PlayerState.ACTIVE
 
-    def pay(self, amount: int) -> int:
-        """スタックから指定額を支払う"""
-        if amount > self.stack:
-            raise ValueError("スタック不足")
-        self.stack -= amount
-        return amount
-
     def receive_card(self, card: Card) -> None:
         """カードを受け取る"""
         self.hand.append(card)
@@ -30,6 +23,10 @@ class Player(BaseModel):
     def clear_hand(self) -> None:
         """ハンドをリセット"""
         self.hand.clear()
+
+    def is_active(self) -> bool:
+        """プレイヤーがアクティブかどうかを判定"""
+        return self.state == PlayerState.ACTIVE
     
     def reset_state_acted(self) -> None:
         if self.state == PlayerState.ACTED:

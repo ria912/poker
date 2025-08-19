@@ -1,62 +1,30 @@
-# app/services/player_service.py
-from typing import Optional
 from app.models.player import Player
-from app.models.enum import Action, PlayerState
+from app.models.enum import PlayerState
 
 
 class PlayerService:
-    """
-    プレイヤーのアクションを処理するサービス
-    """
+    """プレイヤーのアクションやスタック操作を担当"""
 
-    def handle_action(self, player: Player, action: Action, amount: Optional[int] = None) -> None:
+    @staticmethod
+    def pay(player: Player, amount: int) -> int:
         """
-        プレイヤーのアクションを処理
+        プレイヤーがスタックから支払い、指定額を返す
+        （呼び出し元でポット加算などを行う）
         """
-        if action == Action.FOLD:
-            self.fold(player)
-        elif action == Action.CHECK:
-            self.check(player)
-        elif action == Action.CALL:
-            self.call(player)
-        elif action == Action.BET:
-            if amount is None:
-                raise ValueError("BET には金額が必要です")
-            self.bet(player, amount)
-        elif action == Action.RAISE:
-            if amount is None:
-                raise ValueError("RAISE には金額が必要です")
-            self.raise_bet(player, amount)
-        else:
-            raise ValueError(f"未対応のアクション: {action}")
+        if amount > player.stack:
+            raise ValueError(f"{player.name} のスタック不足")
+        player.stack -= amount
+        return amount
 
-    # -------------------------
-    # 個別アクション処理
-    # -------------------------
-
-    def fold(self, player: Player) -> None:
-        """フォールド"""
+    @staticmethod
+    def fold(player: Player) -> None:
+        """プレイヤーをフォールド状態にする"""
         player.state = PlayerState.FOLDED
 
-    def check(self, player: Player) -> None:
-        """チェック"""
-        # チェックは「現在の最大ベット額と同額をすでに出していること」が前提
-        # ルール判定は TableService 側で行うのが適切
-        player.state = PlayerState.ACTED
-
-    def call(self, player: Player) -> None:
-        """コール"""
-        # 実際の支払い処理は TableService 側で行うのが自然
-        player.state = PlayerState.ACTED
-
-    def bet(self, player: Player, amount: int) -> None:
-        """ベット"""
-        # プレイヤーからチップを支払わせる
-        player.pay(amount)
-        player.state = PlayerState.ACTED
-
-    def raise_bet(self, player: Player, amount: int) -> None:
-        """レイズ"""
-        # ベットと同じだが「現在のベット額より多い」ことを TableService が保証
-        player.pay(amount)
-        player.state = PlayerState.ACTED
+    @staticmethod
+    def all_in(player: Player) -> int:
+        """プレイヤーをオールインさせる"""
+        amount = player.stack
+        player.stack = 0
+        player.state = PlayerState.ALL_IN
+        return amount

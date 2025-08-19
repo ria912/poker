@@ -5,6 +5,7 @@ from app.models.player import Player
 from app.models.enum import Round, PlayerState
 from app.models.deck import Card, Deck
 from app.models.enum import Position
+from app.utils.order_utils import get_next_active_index
 
 
 class TableService:
@@ -16,17 +17,28 @@ class TableService:
     # 基本操作
     # -------------------------
 
-    def assign_player(self, table: Table, player: Player, seat_number: int) -> None:
+    def assign_player(self, table: Table, player: Player, seat_index: int) -> None:
         """指定された座席にプレイヤーを座らせる"""
-        seat = self._get_seat(table, seat_number)
+        seat = self._get_seat(table, seat_index)
         if seat.player is not None:
-            raise ValueError(f"Seat {seat_number} はすでに埋まっています")
+            raise ValueError(f"Seat {seat_index} はすでに埋まっています")
         seat.player = player
 
-    def collect_blinds(self, table: Table, small_blind: int, big_blind: int, dealer_index: int) -> None:
+    def assign_position(self, table: Table, dealer_index: int) -> None:
+        """プレイヤーにポジションを割り当てる"""
+        dealer_seat = self._get_seat(table, dealer_index)
+        dealer_seat.player.position = Position.BTN
+        sb_index = get_next_active_index(table.seats, dealer_index)
+        sb_seat = self._get_seat(table, sb_index)
+        sb_seat.player.position = Position.SB
+        bb_index = get_next_active_index(table.seats, sb_index)
+        bb_seat = self._get_seat(table, bb_index)
+        bb_seat.player.position = Position.BB
+
+    def collect_blinds(self, table: Table, small_blind: int, big_blind: int) -> None:
         """ブラインドを徴収する"""
-        small_blind_index = (dealer_index + 1) % len(table.seats)
-        big_blind_index = (dealer_index + 2) % len(table.seats)
+        small_blind_index = self.get_index_by_position(table, Position.SB)
+        big_blind_index = self.get_index_by_position(table, Position.BB)
 
         sb_seat = table.seats[small_blind_index]
         bb_seat = table.seats[big_blind_index]

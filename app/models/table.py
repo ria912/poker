@@ -9,9 +9,13 @@ class Seat(BaseModel):
     player: Optional[Player] = None
     bet_total: int = 0
 
-    def is_occupied(self) -> bool:
+    def is_empty(self) -> bool:
         """席にプレイヤーが座っているか"""
-        return self.player is not None
+        return self.player is None
+
+    def is_active(self) -> bool:
+        """席がアクティブかどうかを判定"""
+        return self.player is not None and self.player.is_active()
 
     def clear(self) -> None:
         """プレイヤーを外す（ゲーム終了時など）"""
