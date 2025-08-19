@@ -1,7 +1,7 @@
 # app/services/game_service.py
-from typing import Optional
+from typing import Optional, List
 from app.models.game_state import GameState
-from app.models.enum import Action, State, Round
+from app.models.enum import Round, State, PlayerState
 from app.services.player_service import PlayerService
 from app.services.table_service import TableService
 
@@ -10,101 +10,87 @@ class GameService:
     """
     ゲーム全体の進行を管理するサービス
     - ハンド開始
-    - プレイヤーアクション処理
-    - ラウンド進行
+    - ラウンド遷移
     - 勝者判定
     """
 
     def __init__(self):
-        # 他サービスを利用
         self.player_service = PlayerService()
         self.table_service = TableService()
 
     # -------------------------
-    # ハンド開始
+    # ゲーム進行
     # -------------------------
-    def start_hand(self, game: GameState) -> None:
-        """
-        新しいハンドを開始
-        - デッキリセット & 配札
-        - ブラインド徴収
-        - 最初のアクションプレイヤーを決定
-        """
-        # ゲーム状態リセット
-        game.reset_for_new_hand()
+
+    def start_new_hand(self, game_state: GameState, small_blind: int = 50, big_blind: int = 100) -> None:
+        """新しいハンドを開始"""
+        table = game_state.table
+        table.reset_for_new_hand()
+
+        # ディーラーを進める
+        game_state.dealer_index = (game_state.dealer_index + 1) % len(table.seats)
 
         # ブラインド徴収
-        self.table_service.post_blinds(game.table, game.dealer_index)
+        self.table_service.collect_blinds(table, small_blind, big_blind, game_state.dealer_index)
 
         # 配札
-        self.table_service.deal_hole_cards(game.table)
+        self.table_service.deal_hole_cards(table)
 
-        # 最初のプレイヤーを設定
-        game.current_player_index = self.table_service.get_first_to_act(game.table, game.dealer_index)
+        # 状態更新
+        game_state.round = Round.PREFLOP
+        game_state.state = State.IN_PROGRESS
+        game_state.current_player_index = (game_state.dealer_index + 3) % len(table.seats)
 
-        game.state = State.RUNNING
-        game.round = Round.PREFLOP
+    def proceed_to_next_round(self, game_state: GameState) -> None:
+        """次のラウンドに進行"""
+        table = game_state.table
 
-    # -------------------------
-    # アクション処理
-    # -------------------------
-    def proceed_action(self, game: GameState, action: Action, amount: Optional[int] = None) -> None:
-        """
-        現在のプレイヤーのアクションを処理
-        - PlayerService に委譲
-        - 次のプレイヤーを決定
-        """
-        current_player = game.players[game.current_player_index]
+        # ベットをポットに移す
+        self.table_service.settle_bets_to_pot(table)
 
-        # アクションを処理
-        self.player_service.handle_action(current_player, action, amount)
-
-        # 次のプレイヤーへ
-        game.current_player_index = self.table_service.get_next_player_index(game)
-
-        # ラウンド終了判定
-        if self.table_service.is_round_finished(game):
-            self.proceed_round(game)
-
-    # -------------------------
-    # ラウンド進行
-    # -------------------------
-    def proceed_round(self, game: GameState) -> None:
-        """
-        ラウンドを進める
-        - ボードカード公開
-        - 次のラウンドへ
-        - 次のプレイヤーを決定
-        """
-        game.round = game.round.next()
-
-        if game.round == Round.FLOP:
-            self.table_service.deal_flop(game.table)
-        elif game.round == Round.TURN:
-            self.table_service.deal_turn(game.table)
-        elif game.round == Round.RIVER:
-            self.table_service.deal_river(game.table)
-        elif game.round == Round.SHOWDOWN:
-            self.determine_winner(game)
+        # ラウンド進行
+        if game_state.round == Round.PREFLOP:
+            self.table_service.deal_community_cards(table, 3)  # フロップ
+        elif game_state.round == Round.FLOP:
+            self.table_service.deal_community_cards(table, 1)  # ターン
+        elif game_state.round == Round.TURN:
+            self.table_service.deal_community_cards(table, 1)  # リバー
+        elif game_state.round == Round.RIVER:
+            self.determine_winner(game_state)  # ショーダウン
             return
 
-        # アクション開始プレイヤーを設定
-        game.current_player_index = self.table_service.get_first_to_act(game.table, game.dealer_index)
+        # 次のラウンドへ
+        game_state.round = game_state.round.next()
+        game_state.current_player_index = (game_state.dealer_index + 1) % len(table.seats)
 
     # -------------------------
     # 勝者判定
     # -------------------------
-    def determine_winner(self, game: GameState) -> None:
-        """
-        ショーダウン → 勝者決定 → ポット配分
-        """
-        winners = game.table.determine_winner()
-        self.table_service.distribute_pot(game.table, winners)
-        game.state = State.FINISHED
+
+    def determine_winner(self, game_state: GameState) -> None:
+        """勝者を決定する"""
+        table = game_state.table
+        winners = table.determine_winner()
+
+        # 勝者にポットを分配
+        if winners:
+            reward = table.pot // len(winners)
+            for seat in winners:
+                if seat.player:
+                    seat.player.stack += reward
+
+        # 状態更新
+        game_state.state = State.FINISHED
+        table.pot = 0
 
     # -------------------------
-    # ディーラー交代
+    # ターン管理
     # -------------------------
-    def next_dealer(self, game: GameState) -> None:
-        """次のディーラーを決定"""
-        game.dealer_index = self.table_service.get_next_dealer_index(game.table, game.dealer_index)
+
+    def next_player(self, game_state: GameState) -> Optional[int]:
+        """次のプレイヤーにターンを回す"""
+        from app.utils.order_utils import get_next_player_index
+
+        next_index = get_next_player_index(game_state, game_state.current_player_index)
+        game_state.current_player_index = next_index
+        return next_index
