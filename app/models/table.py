@@ -27,7 +27,7 @@ class Table(BaseModel):
     board: List[Card] = Field(default_factory=list)
     deck: Deck = Field(default_factory=Deck)
     
-    def active_seat_indices(self)
+    def active_seat_indices(self) -> List[int]:
         return [seat.index for seat in self.seats if seat.is_active()]
 
     def reset_acted_states(self) -> None:
