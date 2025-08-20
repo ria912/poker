@@ -36,14 +36,12 @@ class Position(str, Enum):
 
 class PlayerState(str, Enum):
     ACTIVE = "ACTIVE"
-    ACTED = "ACTED"
     FOLDED = "FOLDED"
     ALL_IN = "ALL_IN"
     OUT = "OUT"
 
 
 class GameStatus(str, Enum):
-    WAITING       = "WAITING"          # ゲーム開始前の待機状態
-    IN_PROGRESS   = "IN_PROGRESS"      # ゲーム進行中
-    FINISHED      = "FINISHED"         # 全員チェックなどでカード公開フェーズへ
-    GAME_OVER     = "GAME_OVER"        # ゲーム終了
+    WAITING       = "WAITING"
+    IN_PROGRESS   = "IN_PROGRESS"
+    FINISHED      = "FINISHED"

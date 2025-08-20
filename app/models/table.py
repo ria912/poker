@@ -37,6 +37,7 @@ class Table(BaseModel):
         """次のハンド用に状態をリセット"""
         self.pot = 0
         self.board.clear()
+        self.deck = Deck()  # 新しいデッキを生成
         for seat in self.seats:
             seat.bet_total = 0
             seat.acted = False
