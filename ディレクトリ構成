@@ -1,32 +1,41 @@
-app/
-├── main.py                     # FastAPIエントリーポイント
-│
-├── api/                        # APIルーター関連
+backend/
+├── api/
 │   ├── __init__.py
-│   ├── game_router.py          # ゲーム進行用エンドポイント
-│   ├── player_router.py        # プレイヤー操作用エンドポイント
-│   └── table_router.py         # テーブル状態取得など
-│
-├── models/                     # 状態(データ構造)定義
+│   └── v1/
+│       ├── __init__.py
+│       ├── endpoints/
+│       │   ├── __init__.py
+│       │   ├── game.py         # ゲームの開始、状態取得などのAPI
+│       │   └── player_actions.py # プレイヤーのアクション（ベット、フォールド等）のAPI
+│       └── router.py           # v1のルーターをまとめる
+├── core/
 │   ├── __init__.py
-│   ├── enum.py                 # Position, Action, Round, State など
-│   ├── player.py               # Player, PlayerState
-│   ├── table.py                # Table, Seat
-│   ├── deck.py                 # Deck, Card関連（treys利用）
-│   └── game_state.py           # ゲーム全体の状態管理用モデル
-│
-├── services/                   # ビジネスロジック層
+│   └── config.py             # 環境変数、各種設定値
+├── models/
 │   ├── __init__.py
-│   ├── game_service.py         # ハンド進行やラウンド遷移の統括
-│   └── table_service.py        # 座席・ポット・ラウンドリセットなどテーブル操作
-│
-├── dependencies.py             # DI設定（サービスインスタンス生成など）
-│
-├── schemas/                    # API入出力用Pydanticスキーマ
-│   ├── player.py               # プレイヤー関連のスキーマ
-│   └── response.py             # ゲーム関連のスキーマ
-│
-└── utils/                      # 共通ユーティリティ
-    ├── __init__.py
-    ├── evaluate_utils.py       # 役判定
-    └── order_utils.py          # 座席やアクション順序の計算用ユーティリティ
+│   ├── deck.py               # (提供ファイル)
+│   ├── enum.py               # (提供ファイル)
+│   ├── game_state.py         # (提供ファイル)
+│   ├── player.py             # (提供ファイル)
+│   └── table.py              # (提供ファイル)
+├── schemas/
+│   ├── __init__.py
+│   ├── request/
+│   │   ├── __init__.py
+│   │   └── game.py           # APIリクエストのデータ形式を定義
+│   └── response/
+│       ├── __init__.py
+│       └── game.py           # APIレスポンスのデータ形式を定義
+├── services/
+│   ├── __init__.py
+│   ├── action_service.py     # プレイヤーのアクションを処理するロジック
+│   ├── game_service.py       # ゲーム全体の進行を管理するロジック
+│   └── hand_evaluator.py     # 役の判定などを行うロジック
+├── tests/
+│   ├── __init__.py
+│   ├── services/
+│   │   └── test_game_service.py
+│   └── api/
+│       └── test_game_api.py
+├── main.py                   # FastAPIアプリケーションのエントリーポイント
+└── requirements.txt          # 依存ライブラリ
