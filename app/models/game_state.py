@@ -4,11 +4,9 @@ from typing import Optional, List
 from .player import Player
 from .table import Table
 from .enum import Round, GameStatus
-import uuid
 
 class GameState(BaseModel):
     """ゲーム全体の進行状態を管理するモデル"""
-    game_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     small_blind: int = 50
     big_blind: int = 100
     table: Table
