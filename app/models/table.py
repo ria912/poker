@@ -2,18 +2,19 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from .deck import Card, Deck
+from .player import Player
 from .enum import Position, PlayerState, Round
 
 class Seat(BaseModel):
 
     index: int
-    player_id: Optional[str] = None
+    player: Optional[Player] = None
     stack: int = 0
     position: Optional[Position] = None
     hole_cards: List[Card] = Field(default_factory=list)
     bet_total: int = 0
     state: PlayerState = PlayerState.OUT  # OUT, ACTIVE, FOLDED
-    acted: bool = False
+    acted: bool = True
 
     def is_empty(self) -> bool:
         """席が空いているかどうかを判定"""
