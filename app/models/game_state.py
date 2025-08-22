@@ -21,10 +21,6 @@ class GameState(BaseModel):
     def players(self) -> List[Player]:
         return [s.player for s in self.table.seats if s.player is not None]
 
-    def next_round(self) -> None:
-        """次のラウンドに進める"""
-        self.round = self.round.next()
-
     def reset_for_new_hand(self) -> None:
         """新しいハンドに向けて初期化"""
         self.table.reset_for_new_hand()
