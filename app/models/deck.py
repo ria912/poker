@@ -1,20 +1,48 @@
+# app/models/deck.py
+import random
+from typing import List, Optional
 from pydantic import BaseModel
-from typing import List
-import uuid
 
 
 class Card(BaseModel):
-    """アプリ側で扱うカード表現（rank, suit を保持）"""
-    rank: int  # 2-14 (11=J, 12=Q, 13=K, 14=A)
-    suit: int  # 0=クラブ, 1=ダイヤ, 2=ハート, 3=スペード
+    """1枚のトランプカード"""
+    rank: str   # '2'〜'A'
+    suit: str   # '♠', '♥', '♦', '♣'
 
     def __str__(self) -> str:
-        rank_str = {11: "J", 12: "Q", 13: "K", 14: "A"}.get(self.rank, str(self.rank))
-        suit_str = ["♣", "♦", "♥", "♠"][self.suit]
-        return f"{rank_str}{suit_str}"
+        return f"{self.rank}{self.suit}"
 
 
-class Deck(BaseModel):
-    """デッキの状態を保持するモデル"""
-    deck_id: str = uuid.uuid4().hex
-    cards: List[Card] = []
+class Deck:
+    """52枚のカードデッキ"""
+
+    RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
+    SUITS = ["s", "h", "d", "c"]  # treys準拠
+
+    def __init__(self, shuffle: bool = True):
+        self.cards: List[Card] = [
+            Card(rank=rank, suit=suit)
+            for suit in self.SUITS
+            for rank in self.RANKS
+        ]
+        if shuffle:
+            self.shuffle()
+
+    def shuffle(self) -> None:
+        """デッキをシャッフル"""
+        random.shuffle(self.cards)
+
+    def draw(self, n: int = 1) -> List[Card]:
+        """カードをn枚引く"""
+        if n > len(self.cards):
+            raise ValueError("Not enough cards in deck")
+        drawn = self.cards[:n]
+        self.cards = self.cards[n:]
+        return drawn
+
+    def reset(self, shuffle: bool = True) -> None:
+        """デッキをリセット"""
+        self.__init__(shuffle=shuffle)
+
+    def __len__(self) -> int:
+        return len(self.cards)
