@@ -20,20 +20,20 @@ class TableService:
     def assign_player(self, table: Table, player: Player, seat_index: int) -> None:
         """指定された座席にプレイヤーを座らせる"""
         seat = self._get_seat(table, seat_index)
-        if seat.player is not None:
+        if seat.player_id is not None:
             raise ValueError(f"Seat {seat_index} はすでに埋まっています")
-        seat.player = player
+        seat.player_id = player.id
 
     def assign_position(self, table: Table, dealer_index: int) -> None:
         """プレイヤーにポジションを割り当てる"""
         dealer_seat = self._get_seat(table, dealer_index)
-        dealer_seat.player.position = Position.BTN
+        dealer_seat.position = Position.BTN
         sb_index = get_next_active_index(table.seats, dealer_index)
         sb_seat = self._get_seat(table, sb_index)
-        sb_seat.player.position = Position.SB
+        sb_seat.position = Position.SB
         bb_index = get_next_active_index(table.seats, sb_index)
         bb_seat = self._get_seat(table, bb_index)
-        bb_seat.player.position = Position.BB
+        bb_seat.position = Position.BB
 
     def collect_blinds(self, table: Table, small_blind: int, big_blind: int) -> None:
         """ブラインドを徴収する"""
@@ -43,10 +43,10 @@ class TableService:
         sb_seat = table.seats[small_blind_index]
         bb_seat = table.seats[big_blind_index]
 
-        if sb_seat.player:
-            sb_seat.bet_total += sb_seat.player.pay(small_blind)
-        if bb_seat.player:
-            bb_seat.bet_total += bb_seat.player.pay(big_blind)
+        if sb_seat.player_id:
+            sb_seat.bet_total += sb_seat.pay(small_blind)
+        if bb_seat.player_id:
+            bb_seat.bet_total += bb_seat.pay(big_blind)
 
     def deal_hole_cards(self, table: Table, num_cards: int = 2) -> None:
         """各プレイヤーにホールカードを配る"""
