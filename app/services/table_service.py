@@ -1,101 +1,62 @@
-# app/services/table_service.py
-from typing import List, Optional
+# services/table_service.py
+from typing import Callable, List, Optional
 from app.models.table import Table, Seat
-from app.models.player import Player
-from app.models.enum import Round, PlayerState
-from app.models.deck import Card, Deck
-from app.models.enum import Position
-from app.utils.order_utils import get_next_active_index
-
+from app.models.enum import PlayerState
 
 class TableService:
-    """
-    テーブル全体の管理を行うサービス
-    """
+    # -------- 基本クエリ --------
+    def active_seat_indices(self, table: Table) -> List[int]:
+        return [s.index for s in table.seats
+                if s.player_id is not None and s.state != PlayerState.OUT and s.state != PlayerState.FOLDED]
 
-    # -------------------------
-    # 基本操作
-    # -------------------------
-
-    def assign_player(self, table: Table, player: Player, seat_index: int) -> None:
-        """指定された座席にプレイヤーを座らせる"""
-        seat = self._get_seat(table, seat_index)
-        if seat.player_id is not None:
-            raise ValueError(f"Seat {seat_index} はすでに埋まっています")
-        seat.player_id = player.id
-
-    def assign_position(self, table: Table, dealer_index: int) -> None:
-        """プレイヤーにポジションを割り当てる"""
-        dealer_seat = self._get_seat(table, dealer_index)
-        dealer_seat.position = Position.BTN
-        sb_index = get_next_active_index(table.seats, dealer_index)
-        sb_seat = self._get_seat(table, sb_index)
-        sb_seat.position = Position.SB
-        bb_index = get_next_active_index(table.seats, sb_index)
-        bb_seat = self._get_seat(table, bb_index)
-        bb_seat.position = Position.BB
-
-    def collect_blinds(self, table: Table, small_blind: int, big_blind: int) -> None:
-        """ブラインドを徴収する"""
-        small_blind_index = self.get_index_by_position(table, Position.SB)
-        big_blind_index = self.get_index_by_position(table, Position.BB)
-
-        sb_seat = table.seats[small_blind_index]
-        bb_seat = table.seats[big_blind_index]
-
-        if sb_seat.player_id:
-            sb_seat.bet_total += sb_seat.pay(small_blind)
-        if bb_seat.player_id:
-            bb_seat.bet_total += bb_seat.pay(big_blind)
-
-    def deal_hole_cards(self, table: Table, num_cards: int = 2) -> None:
-        """各プレイヤーにホールカードを配る"""
-        table.deck.shuffle()
-        for _ in range(num_cards):
-            for seat in table.seats:
-                if seat.player:
-                    card = table.deck.draw()
-                    seat.player.receive_card(card)
-
-    def deal_community_cards(self, table: Table, num_cards: int) -> None:
-        """フロップ・ターン・リバーの配布"""
-        for _ in range(num_cards):
-            card = table.deck.draw()
-            table.board.append(card)
-
-    # -------------------------
-    # ベット / ポット管理
-    # -------------------------
-
-    def add_to_pot(self, table: Table, amount: int) -> None:
-        """ポットにチップを追加"""
-        table.pot += amount
-
-    def reset_bets(self, table: Table) -> None:
-        """全座席のベット額をクリア"""
-        for seat in table.seats:
-            seat.bet_total = 0
-
-    def settle_bets_to_pot(self, table: Table) -> None:
-        """全座席のベット額をポットに集約"""
-        for seat in table.seats:
-            table.pot += seat.bet_total
-            seat.bet_total = 0
-
-    # -------------------------
-    # ユーティリティ
-    # -------------------------
-
-    def _get_seat(self, table: Table, seat_number: int) -> Seat:
-        """座席を取得"""
-        for seat in table.seats:
-            if seat.index == seat_number:
-                return seat
-        raise ValueError(f"Seat {seat_number} は存在しません")
-
-    def get_index_by_position(self, table: Table, position: Position) -> Optional[int]:
-        """ポジションから座席インデックスを取得"""
-        for seat in table.seats:
-            if seat.player.position == position:
-                return seat.index
+    def next_seat_index(self, table: Table, from_index: int,
+                        pred: Optional[Callable[[Seat], bool]] = None) -> Optional[int]:
+        """円環で次の seat.index を返す。predがあれば条件でフィルタ。"""
+        if not table.seats:
+            return None
+        n = len(table.seats)
+        for step in range(1, n + 1):
+            idx = (from_index + step) % n
+            seat = table.get_seat(idx)
+            if seat is None:
+                continue
+            if pred is None or pred(seat):
+                return idx
         return None
+
+    def recompute_pot(self, table: Table) -> int:
+        table.pot = sum(s.bet_total for s in table.seats if s.player_id and s.state != PlayerState.OUT)
+        return table.pot
+
+    # -------- ブラインド --------
+    def assign_blinds_preflop(self, table: Table, dealer_index: int) -> tuple[Optional[int], Optional[int]]:
+        """SB/BBの seat.index を返す（アクティブ席の中から）"""
+        def is_active(seat: Seat) -> bool:
+            return seat.player_id is not None and seat.state == PlayerState.ACTIVE
+
+        sb_index = self.next_seat_index(table, dealer_index, pred=is_active)
+        bb_index = self.next_seat_index(table, sb_index if sb_index is not None else dealer_index, pred=is_active) \
+                   if sb_index is not None else None
+        return sb_index, bb_index
+
+    def post_blinds(self, table: Table, game_state, dealer_index: int) -> tuple[Optional[int], Optional[int]]:
+        """SB/BB を自動ポスト。スタックが足りなければオールイン扱い。"""
+        sb_index, bb_index = self.assign_blinds_preflop(table, dealer_index)
+        for name, idx, blind in (("SB", sb_index, game_state.small_blind),
+                                 ("BB", bb_index, game_state.big_blind)):
+            if idx is None:
+                continue
+            seat = table.get_seat(idx)
+            if seat is None or seat.state != PlayerState.ACTIVE:
+                continue
+            pay = min(seat.stack, blind)
+            seat.stack -= pay
+            seat.bet_total += pay
+            # ラウンド別の投入額に反映
+            game_state.round_bets[idx] = game_state.round_bets.get(idx, 0) + pay
+
+        # プリフロップの現在ベットと最小レイズを設定
+        game_state.current_bet = max(game_state.round_bets.values()) if game_state.round_bets else 0
+        game_state.min_raise = game_state.big_blind
+        self.recompute_pot(table)
+        return sb_index, bb_index
