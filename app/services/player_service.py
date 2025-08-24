@@ -1,26 +1,28 @@
 # services/player_service.py
-from models.game_state import GameState
-from models.enum import Action, PlayerState
-# from exceptions import InvalidActionException # 必要に応じてカスタム例外を定義
+from typing import Optional
+from app.models.table import Table
+from app.models.enum import PlayerState
 
 class PlayerService:
-    """プレイヤーのアクションを処理するサービス"""
+    def sit_down(self, table: Table, seat_index: int, player_id: str, buy_in: int) -> bool:
+        seat = table.get_seat(seat_index)
+        if seat is None or not seat.is_empty():
+            return False
+        seat.player_id = player_id
+        seat.stack = buy_in
+        seat.state = PlayerState.ACTIVE if buy_in > 0 else PlayerState.OUT
+        seat.acted = True
+        return True
 
-    def take_action(self, game_state: GameState, action: Action, amount: int = 0) -> None:
-        """
-        現在のアクティブプレイヤーのアクションを実行し、ゲーム状態を更新します。
-        """
-        # NOTE: アクションの妥当性検証ロジックが必須です。
-        # self._validate_action(game_state, action, amount)
-        
-        player_seat = game_state.table.seats[game_state.current_player_index]
-
-        if action == Action.FOLD:
-            player_seat.state = PlayerState.FOLDED
-        elif action == Action.CHECK:
-            # ベット額の変更なし
-            pass
-        # TODO: CALL, BET, RAISE, ALL_IN のロジックを実装
-        # スタックの増減、ベット額の更新など
-        
-        player_seat.acted = True
+    def stand_up(self, table: Table, seat_index: int) -> bool:
+        seat = table.get_seat(seat_index)
+        if seat is None or seat.is_empty():
+            return False
+        # 残スタックはここでは「現金化」など別レイヤの責務。席からは外す。
+        seat.player_id = None
+        seat.stack = 0
+        seat.bet_total = 0
+        seat.hole_cards.clear()
+        seat.state = PlayerState.OUT
+        seat.acted = True
+        return True
