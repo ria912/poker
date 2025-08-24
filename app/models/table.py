@@ -2,12 +2,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from .deck import Card, Deck
-from .player import Player
 from .enum import Position, PlayerState, Round
 
 class Seat(BaseModel):
     index: int
-    player: Optional[Player] = None
+    player_id: Optional[str] = None
     stack: int = 0
     position: Optional[Position] = None
     hole_cards: List[Card] = Field(default_factory=list)
