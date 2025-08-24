@@ -1,9 +1,21 @@
 # app/dependencies.py
-from .models.game_state import game_state, GameState
+from services.player_service import PlayerService
+from services.table_service import TableService
+from services.round_service import RoundService
+from services.action_service import ActionService
+from services.winner_service import WinnerService
 
-def get_game_state() -> GameState:
-    """
-    アプリケーション全体で共有されるGameStateのシングルトンインスタンスを返す。
-    FastAPIのDependsにこの関数を渡すことで、各エンドポイントで状態を共有できる。
-    """
-    return game_state
+def get_player_service() -> PlayerService:
+    return PlayerService()
+
+def get_table_service() -> TableService:
+    return TableService()
+
+def get_round_service() -> RoundService:
+    return RoundService()
+
+def get_action_service() -> ActionService:
+    return ActionService()
+
+def get_winner_service() -> WinnerService:
+    return WinnerService()
