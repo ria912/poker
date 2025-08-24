@@ -44,4 +44,5 @@ class PlayerState(str, Enum):
 class State(str, Enum):
     WAITING       = "WAITING"
     IN_PROGRESS   = "IN_PROGRESS"
+    SHOWDOWN      = "SHOWDOWN"
     FINISHED      = "FINISHED"

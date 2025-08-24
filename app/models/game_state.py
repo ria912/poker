@@ -28,3 +28,10 @@ class GameState(BaseModel):
         self.current_bet = 0
         self.last_aggressor = None
         self.round_bets.clear()
+    
+    def reset_round_bets(self, active_seat_indices: List[int]) -> None:
+        """現在のラウンドのベット額をリセット"""
+        self.round_bets = {i: 0 for i in active_seat_indices}
+        self.current_bet = 0
+        self.min_raise = self.big_blind
+        self.last_aggressor = None
