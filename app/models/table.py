@@ -1,7 +1,7 @@
 # app/models/table.py
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from .deck import Card, Deck
+from .deck import Card
 from .enum import Position, PlayerState, Round
 
 class Seat(BaseModel):
@@ -35,7 +35,7 @@ class Seat(BaseModel):
             self.state = PlayerState.ACTIVE
 
 class Table(BaseModel):
-    deck: Deck = Field(default_factory=Deck)
+
     seats: List[Seat] = Field(default_factory=list)
     current_round: Round = Round.PREFLOP
     pot: int = 0

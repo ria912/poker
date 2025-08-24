@@ -2,6 +2,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from .player import Player
+from .table import Table
 from .enum import Round, State
 
 class GameState(BaseModel):
@@ -35,3 +36,5 @@ class GameState(BaseModel):
         self.current_bet = 0
         self.min_raise = self.big_blind
         self.last_aggressor = None
+
+game_state = GameState(table=Table(), players=[])

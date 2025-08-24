@@ -127,15 +127,15 @@ def test_apply_raise(setup_game):
     actor_seat = table.get_seat(actor_index)
     initial_stack = actor_seat.stack
     
-    raise_amount = 200 # BB(100)に対して、さらに200上乗せして合計300のレイズ
-    action_service.apply(table, gs, actor_index, Action.RAISE, amount=raise_amount)
-    
+    total_bet_amount = 300 # BB(100)に対して、さらに200上乗せして合計300のレイズ
+    action_service.apply(table, gs, actor_index, Action.RAISE, amount=total_bet_amount)
+
     # 支払う額はコール分(100) + レイズ分(200) = 300
-    expected_stack = initial_stack - (BB + raise_amount)
+    expected_stack = initial_stack - total_bet_amount
     assert actor_seat.stack == expected_stack
-    assert gs.round_bets[actor_index] == BB + raise_amount
-    assert gs.current_bet == BB + raise_amount
-    assert gs.min_raise == raise_amount # min_raiseは差額で更新される
+    assert gs.round_bets[actor_index] == total_bet_amount
+    assert gs.current_bet == total_bet_amount
+    assert gs.min_raise == (total_bet_amount - BB) # min_raiseは差額で更新される
     assert gs.last_aggressor == actor_index
     
     # レイズしたので、他のプレイヤー(SB, BB)は未アクションに戻る

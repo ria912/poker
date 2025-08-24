@@ -70,7 +70,7 @@ class ActionService:
             else:
                 if amount is None or amount <= 0:
                     raise ValueError("BET/RAISE には正の amount が必要")
-                bet_add = min(seat.stack, amount)
+                bet_add = min(seat.stack, amount - committed)
 
             new_commit = committed + bet_add
             new_current = max(gs.current_bet, new_commit)

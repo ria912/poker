@@ -1,5 +1,6 @@
 # services/round_service.py
 from typing import Optional
+from app.models.deck import Deck
 from app.models.table import Table, Seat
 from app.models.enum import Round, State, PlayerState
 from app.models.game_state import GameState
@@ -10,9 +11,9 @@ class RoundService:
         self._table = TableService()
 
     # -------- ハンド開始 --------
-    def start_new_hand(self, table: Table, gs: GameState, next_dealer_index: Optional[int] = None) -> None:
+    def start_new_hand(self, table: Table, gs: GameState, deck: Deck, next_dealer_index: Optional[int] = None) -> None:
         table.reset_for_new_hand()
-        gs.state = State.RUNNING
+        gs.state = State.IN_PROGRESS
         gs.round = Round.PREFLOP
 
         # ディーラー決定
@@ -30,10 +31,10 @@ class RoundService:
             gs.dealer_index = next_dealer_index
 
         # デッキを用意＆ホールカード配布（2枚ずつ）
-        table.deck.shuffle()
+        deck.shuffle()
         for s in table.seats:
             if s.player_id and s.state == PlayerState.ACTIVE:
-                s.hole_cards = [table.deck.draw(), table.deck.draw()]
+                s.hole_cards = [deck.draw(), deck.draw()]
 
         # ラウンド用フラグ初期化
         for s in table.seats:
@@ -58,19 +59,15 @@ class RoundService:
         gs.current_turn = first
 
     # -------- ボード配布（次ストリートへ） --------
-    def deal_next_street(self, table: Table, gs: GameState) -> None:
+    def deal_next_street(self, table: Table, gs: GameState, deck: Deck) -> None:
         if gs.round == Round.PREFLOP:
-            # 焼き札1 + 3枚
-            table.deck.burn()
-            table.board.extend([table.deck.draw(), table.deck.draw(), table.deck.draw()])
+            table.board.extend([deck.draw(), deck.draw(), deck.draw()])
             gs.round = Round.FLOP
         elif gs.round == Round.FLOP:
-            table.deck.burn()
-            table.board.append(table.deck.draw())
+            table.board.append(deck.draw())
             gs.round = Round.TURN
         elif gs.round == Round.TURN:
-            table.deck.burn()
-            table.board.append(table.deck.draw())
+            table.board.append(deck.draw())
             gs.round = Round.RIVER
         else:
             # RIVER 後はショーダウンへ

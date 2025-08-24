@@ -7,4 +7,4 @@ from .enum import *
 from .player import Player
 from .deck import Card, Deck
 from .table import Table, Seat
-from .game_state import GameState, game_state # グローバルインスタンスもエクスポート
+from .game_state import GameState

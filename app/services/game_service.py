@@ -3,6 +3,7 @@ from typing import Optional
 from app.models.table import Table
 from app.models.enum import Action, State, PlayerState
 from app.models.game_state import GameState
+from app.models.deck import Deck
 from .table_service import TableService
 from .round_service import RoundService
 from .action_service import ActionService
@@ -12,9 +13,11 @@ class GameService:
         self._table = TableService()
         self._round = RoundService()
         self._action = ActionService()
+        self._deck: Optional[Deck] = None
 
     def start_hand(self, table: Table, gs: GameState, dealer_index: Optional[int] = None) -> None:
-        self._round.start_new_hand(table, gs, dealer_index)
+        self._deck = Deck(shuffle=True)
+        self._round.start_new_hand(table, gs, self._deck, dealer_index)
 
     def legal_actions(self, table: Table, gs: GameState) -> list[Action]:
         if gs.current_turn is None:
@@ -23,7 +26,7 @@ class GameService:
 
     def act(self, table: Table, gs: GameState, action: Action, amount: Optional[int] = None) -> None:
         """現在のプレイヤーのアクションを適用し、必要ならラウンド遷移します。"""
-        if gs.current_turn is None or gs.state != State.RUNNING:
+        if gs.current_turn is None or gs.state != State.IN_PROGRESS:
             return
         actor = gs.current_turn
 
