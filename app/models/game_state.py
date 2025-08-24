@@ -1,28 +1,30 @@
 # models/game_state.py
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict
 from .player import Player
-from .table import Table
-from .enum import Round, GameStatus
+from .enum import Round, State
 
 class GameState(BaseModel):
     """ゲーム全体の進行状態を管理するモデル"""
-    small_blind: int = 50
-    big_blind: int = 100
-    table: Table
 
     round: Round = Round.PREFLOP
-    status: GameStatus = GameStatus.WAITING  # WAITING, IN_PROGRESS, SHOWDOWN, GAME_OVER
-
-    current_player_index: Optional[int] = None
+    state: State = State.WAITING  # WAITING, IN_PROGRESS, SHOWDOWN, GAME_OVER
+    current_turn: Optional[int] = None
     dealer_index: Optional[int] = None
-    
-    @property
-    def players(self) -> List[Player]:
-        return [s.player for s in self.table.seats if s.player is not None]
+
+    small_blind: int = 50
+    big_blind: int = 100
+    min_raise: int = 100
+    current_bet: int = 0
+    last_aggressor: Optional[int] = None
+
+    round_bets: Dict[int, int] = Field(default_factory=dict)  # プレイヤーID -> 今ラウンドのベット額
 
     def reset_for_new_hand(self) -> None:
         """新しいハンドに向けて初期化"""
-        self.table.reset_for_new_hand()
         self.round = Round.PREFLOP
-        self.state = GameStatus.WAITING
+        self.state = State.WAITING
+        self.min_raise = self.big_blind
+        self.current_bet = 0
+        self.last_aggressor = None
+        self.round_bets.clear()

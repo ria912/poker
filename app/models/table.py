@@ -5,7 +5,6 @@ from .deck import Card, Deck
 from .enum import Position, PlayerState, Round
 
 class Seat(BaseModel):
-
     index: int
     player_id: Optional[str] = None
     stack: int = 0
@@ -21,7 +20,9 @@ class Seat(BaseModel):
 
     def is_active(self) -> bool:
         """席がアクティブかどうかを判定"""
-        return self.player_id is not None and self.state == PlayerState.ACTIVE and self.acted is False
+        return (self.player_id is not None
+                and self.state == PlayerState.ACTIVE
+                and self.acted is False)
 
     def reset_for_new_hand(self) -> None:
         """ハンド開始時にSeat状態をリセット"""
@@ -41,10 +42,7 @@ class Table(BaseModel):
     board: List[Card] = Field(default_factory=list)
     
     def get_seat(self, seat_index: int) -> Optional[Seat]:
-        for seat in self.seats:
-            if seat.index == seat_index:
-                return seat
-        return None
+        return next((s for s in self.seats if s.index == seat_index), None)
 
     def reset_for_new_hand(self) -> None:
         """ハンド開始時にテーブルとSeatを初期化"""
