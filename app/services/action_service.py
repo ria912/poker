@@ -42,7 +42,7 @@ class ActionService:
         def mark_others_need_to_act():
             # ベット/レイズ後は他のアクティブ勢を未行動に戻す（フォールド・オールインは除く）
             for s in table.seats:
-                if s.player_id and s.state == PlayerState.ACTIVE and s.index != seat_index and s.stack > 0:
+                if s.is_active() and s.index != seat_index and s.stack > 0:
                     s.acted = False
 
         if action == Action.FOLD:
@@ -102,7 +102,7 @@ class ActionService:
     # -------- ラウンド終了判定 --------
     def is_betting_round_complete(self, table: Table, gs: GameState) -> bool:
         # ① 複数以外生存 → 即終了（他はフォールド）
-        alive = [s for s in table.seats if s.player_id and s.state == PlayerState.ACTIVE]
+        alive = [s for s in table.seats if s.is_active()]
         if len(alive) <= 1:
             return True
 
