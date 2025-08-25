@@ -17,19 +17,17 @@ class ActionService:
         committed = gs.round_bets.get(seat_index, 0)
         to_call = max(gs.current_bet - committed, 0)
 
-        actions: List[Action] = [Action.FOLD]
-        if seat.stack <= 0:
-            # スタックなし（＝オールイン済み）
-            return [Action.FOLD]  # 実質アクション不可（呼び出し側でスキップされる想定）
-
+        actions: List[Action] = []
+        
         if to_call == 0:
             actions.append(Action.CHECK)
+        if gs.current_bet == 0:
             actions.append(Action.BET)  # 現在ベットが無いならBET可
         else:
+            actions.append(Action.FOLD)
             actions.append(Action.CALL)
             actions.append(Action.RAISE)
 
-        actions.append(Action.ALL_IN)  # 常に選択可（額によりベット/レイズ扱い）
         return actions
 
     # -------- アクション適用 --------
