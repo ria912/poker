@@ -25,7 +25,7 @@ class RoundService:
             else:
                 gs.dealer_index = self._table.next_seat_index(
                     table, gs.dealer_index,
-                    pred=lambda s: s.player_id is not None and s.state == PlayerState.ACTIVE
+                    pred=lambda s: s.is_active()
                 )
         else:
             gs.dealer_index = next_dealer_index
@@ -33,15 +33,12 @@ class RoundService:
         # デッキを用意＆ホールカード配布（2枚ずつ）
         deck.shuffle()
         for s in table.seats:
-            if s.player_id and s.state == PlayerState.ACTIVE:
+            if s.is_active():
                 s.hole_cards = [deck.draw(), deck.draw()]
 
         # ラウンド用フラグ初期化
         for s in table.seats:
-            if s.player_id and s.state == PlayerState.ACTIVE:
-                s.acted = False
-            else:
-                s.acted = True
+            s.acted = not s.is_active()
 
         # ラウンド別投入額を初期化してブラインド
         actives = self._table.active_seat_indices(table)
