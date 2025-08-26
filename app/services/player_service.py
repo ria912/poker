@@ -11,7 +11,7 @@ class PlayerService:
         seat.player_id = player_id
         seat.stack = buy_in
         seat.state = PlayerState.ACTIVE if buy_in > 0 else PlayerState.OUT
-        seat.acted = False
+        seat.acted = True
         return True
 
     def stand_up(self, table: Table, seat_index: int) -> bool:

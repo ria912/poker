@@ -17,17 +17,19 @@ class ActionService:
         committed = gs.round_bets.get(seat_index, 0)
         to_call = max(gs.current_bet - committed, 0)
 
-        actions: List[Action] = []
-        
+        actions: List[Action] = [Action.FOLD]
+        if seat.stack <= 0:
+            # スタックなし（＝オールイン済み）
+            return [Action.FOLD]  # 実質アクション不可（呼び出し側でスキップされる想定）
+
         if to_call == 0:
             actions.append(Action.CHECK)
-        if gs.current_bet == 0:
             actions.append(Action.BET)  # 現在ベットが無いならBET可
         else:
-            actions.append(Action.FOLD)
             actions.append(Action.CALL)
             actions.append(Action.RAISE)
 
+        actions.append(Action.ALL_IN)  # 常に選択可（額によりベット/レイズ扱い）
         return actions
 
     # -------- アクション適用 --------
@@ -42,7 +44,7 @@ class ActionService:
         def mark_others_need_to_act():
             # ベット/レイズ後は他のアクティブ勢を未行動に戻す（フォールド・オールインは除く）
             for s in table.seats:
-                if s.is_active() and s.index != seat_index and s.stack > 0:
+                if s.player_id and s.state == PlayerState.ACTIVE and s.index != seat_index and s.stack > 0:
                     s.acted = False
 
         if action == Action.FOLD:
@@ -102,7 +104,7 @@ class ActionService:
     # -------- ラウンド終了判定 --------
     def is_betting_round_complete(self, table: Table, gs: GameState) -> bool:
         # ① 複数以外生存 → 即終了（他はフォールド）
-        alive = [s for s in table.seats if s.is_active()]
+        alive = [s for s in table.seats if s.player_id and s.state == PlayerState.ACTIVE]
         if len(alive) <= 1:
             return True
 
