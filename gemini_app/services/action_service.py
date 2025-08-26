@@ -1,8 +1,8 @@
 # services/action_service.py
 from typing import List, Optional
-from app.models.table import Table, Seat
-from app.models.enum import Action, PlayerState
-from app.models.game_state import GameState
+from gemini_app.models.table import Table, Seat
+from gemini_app.models.enum import Action, PlayerState
+from gemini_app.models.game_state import GameState
 from .table_service import TableService
 
 class ActionService:

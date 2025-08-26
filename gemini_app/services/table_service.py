@@ -1,7 +1,7 @@
 # services/table_service.py
 from typing import Callable, List, Optional
-from app.models.table import Table, Seat
-from app.models.enum import PlayerState
+from gemini_app.models.table import Table, Seat
+from gemini_app.models.enum import PlayerState
 
 class TableService:
     # -------- 基本クエリ --------

@@ -1,39 +1,7 @@
+# backend/models/enum.py
 from enum import Enum
 
-class Suit(Enum):
-    """カードのスート（マーク）"""
-    SPADES = "s"
-    HEARTS = "h"
-    DIAMONDS = "d"
-    CLUBS = "c"
-
-class Rank(Enum):
-    """カードのランク（数字）"""
-    2 = 2
-    3 = 3
-    4 = 4
-    5 = 5
-    6 = 6
-    7 = 7
-    8 = 8
-    9 = 9
-    10 = 10
-    J = 11
-    Q = 12
-    K = 13
-    A = 14
-
-class Position(Enum):
-    """プレイヤーのテーブルでのポジション"""
-    SB = "SB"  # Small Blind
-    BB = "BB"  # Big Blind
-    LJ = "LJ"  # Low Jack
-    HJ = "HJ"  # High Jack
-    CO = "CO"  # Cut Off
-    BTN = "BTN" # Button
-
-class Action(Enum):
-    """プレイヤーが取れるアクション"""
+class Action(str, Enum):
     FOLD = "FOLD"
     CHECK = "CHECK"
     CALL = "CALL"
@@ -41,16 +9,40 @@ class Action(Enum):
     RAISE = "RAISE"
     ALL_IN = "ALL_IN"
 
-class Round(Enum):
-    """ゲームのラウンド"""
+
+class Round(str, Enum):
     PREFLOP = "PREFLOP"
     FLOP = "FLOP"
     TURN = "TURN"
     RIVER = "RIVER"
     SHOWDOWN = "SHOWDOWN"
 
-class GameStatus(Enum):
-    """ゲーム全体のステータス"""
-    WAITING = "WAITING"
-    IN_PROGRESS = "IN_PROGRESS"
-    FINISHED = "FINISHED"
+    def next(self) -> "Round":
+        members = list(Round)
+        idx = members.index(self)
+        if idx + 1 < len(members):
+            return members[idx + 1]
+        return Round.SHOWDOWN  # 最終ラウンド
+
+
+class Position(str, Enum): 
+    BTN = "BTN"
+    SB = "SB"
+    BB = "BB"
+    CO = "CO"
+    HJ = "HJ"
+    LJ = "LJ"
+
+
+class PlayerState(str, Enum):
+    ACTIVE = "ACTIVE"
+    FOLDED = "FOLDED"
+    ALL_IN = "ALL_IN"
+    OUT = "OUT"
+
+
+class State(str, Enum):
+    WAITING       = "WAITING"
+    IN_PROGRESS   = "IN_PROGRESS"
+    SHOWDOWN      = "SHOWDOWN"
+    FINISHED      = "FINISHED"

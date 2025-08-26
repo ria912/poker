@@ -1,7 +1,7 @@
 # services/player_service.py
 from typing import Optional
-from app.models.table import Table
-from app.models.enum import PlayerState
+from gemini_app.models.table import Table
+from gemini_app.models.enum import PlayerState
 
 class PlayerService:
     def sit_down(self, table: Table, seat_index: int, player_id: str, buy_in: int) -> bool:

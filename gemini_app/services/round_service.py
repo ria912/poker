@@ -1,9 +1,9 @@
 # services/round_service.py
 from typing import Optional
-from app.models.deck import Deck
-from app.models.table import Table, Seat
-from app.models.enum import Round, State, PlayerState
-from app.models.game_state import GameState
+from gemini_app.models.deck import Deck
+from gemini_app.models.table import Table, Seat
+from gemini_app.models.enum import Round, State, PlayerState
+from gemini_app.models.game_state import GameState
 from .table_service import TableService
 
 class RoundService:

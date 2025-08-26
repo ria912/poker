@@ -1,48 +1,47 @@
-# backend/models/enum.py
+from __future__ import annotations
 from enum import Enum
 
-class Action(str, Enum):
-    FOLD = "FOLD"
-    CHECK = "CHECK"
-    CALL = "CALL"
-    BET = "BET"
-    RAISE = "RAISE"
-    ALL_IN = "ALL_IN"
+
+class Position(str, Enum):
+    """ポジション（最大6-max想定）。
+    人数に応じた割当は services/position_manager 等で行う。
+    """
+    BTN = "BTN"
+    SB = "SB"
+    BB = "BB"
+    UTG = "UTG"
+    HJ = "HJ"  # 5-6人時の中間
+    CO = "CO"
 
 
-class Round(str, Enum):
+class Street(str, Enum):
     PREFLOP = "PREFLOP"
     FLOP = "FLOP"
     TURN = "TURN"
     RIVER = "RIVER"
     SHOWDOWN = "SHOWDOWN"
 
-    def next(self) -> "Round":
-        members = list(Round)
-        idx = members.index(self)
-        if idx + 1 < len(members):
-            return members[idx + 1]
-        return Round.SHOWDOWN  # 最終ラウンド
+
+class SeatState(str, Enum):
+    ACTIVE = "ACTIVE"      # アクション可能
+    FOLDED = "FOLDED"      # フォールド
+    ALL_IN = "ALL_IN"      # オールイン（以後アクション不可）
+    OUT = "OUT"            # テーブル不在（スタック0等）
 
 
-class Position(str, Enum): 
-    BTN = "BTN"
-    SB = "SB"
-    BB = "BB"
-    CO = "CO"
-    HJ = "HJ"
-    LJ = "LJ"
+class TableState(str, Enum):
+    WAITING = "WAITING"        # 着席待ち/ハンド未開始
+    IN_HAND = "IN_HAND"        # 進行中
+    HAND_COMPLETE = "HAND_COMPLETE"  # ハンド終了（配当後）
 
 
-class PlayerState(str, Enum):
-    ACTIVE = "ACTIVE"
-    FOLDED = "FOLDED"
+class ActionType(str, Enum):
+    FOLD = "FOLD"
+    CHECK = "CHECK"
+    CALL = "CALL"
+    BET = "BET"
+    RAISE = "RAISE"
     ALL_IN = "ALL_IN"
-    OUT = "OUT"
-
-
-class State(str, Enum):
-    WAITING       = "WAITING"
-    IN_PROGRESS   = "IN_PROGRESS"
-    SHOWDOWN      = "SHOWDOWN"
-    FINISHED      = "FINISHED"
+    POST_SB = "POST_SB"
+    POST_BB = "POST_BB"
+    DEAL = "DEAL"  # デバッグ/履歴用（カード配布）

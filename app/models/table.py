@@ -1,54 +1,45 @@
-# app/models/table.py
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from .deck import Card
-from .enum import Position, PlayerState, Round
+from dataclasses import dataclass
+from typing import Optional
+from .player import Player
+from .enum import SeatState
 
-class Seat(BaseModel):
-    index: int
-    player_id: Optional[str] = None
-    stack: int = 0
-    position: Optional[Position] = None
-    hole_cards: List[Card] = Field(default_factory=list)
-    bet_total: int = 0
-    state: PlayerState = PlayerState.OUT  # OUT, ACTIVE, FOLDED
-    acted: bool = True
 
-    def is_empty(self) -> bool:
-        """席が空いているかどうかを判定"""
-        return self.player_id is None
+@dataclass
+class Seat:
+    """テーブルの座席（プレイヤーを乗せて、ベットを管理）"""
 
-    def is_active(self) -> bool:
-        """席がアクティブかどうかを判定"""
-        return (self.player_id is not None
-                and self.state == PlayerState.ACTIVE
-                and self.acted is False)
+    index: int                      # 座席番号（0,1,2,...）
+    player: Optional[Player] = None # 座っているプレイヤー（空席なら None）
+    current_bet: int = 0            # 現在のベット額
+    state: SeatState = SeatState.OUT
+    acted: bool = True              # このラウンドでアクションを行ったかどうか
 
-    def reset_for_new_hand(self) -> None:
-        """ハンド開始時にSeat状態をリセット"""
-        self.acted = False
-        self.bet_total = 0
-        self.hole_cards.clear()
-        if self.stack <= 0:
-            self.state = PlayerState.OUT
-        else:
-            self.state = PlayerState.ACTIVE
-
-class Table(BaseModel):
-
-    seats: List[Seat] = Field(default_factory=list)
-    current_round: Round = Round.PREFLOP
-    pot: int = 0
-    board: List[Card] = Field(default_factory=list)
+    @property
+    def is_occupied(self) -> bool:
+        """プレイヤーが座っているかどうか"""
+        return self.player is not None
     
-    def get_seat(self, seat_index: int) -> Optional[Seat]:
-        return next((s for s in self.seats if s.index == seat_index), None)
+    @property
+    def is_active(self) -> bool:
+        """この座席がアクティブかどうか"""
+        return self.is_occupied and self.state == SeatState.ACTIVE
+    
+    def sit_down(self, player: Player) -> None:
+        """プレイヤーを座席に座らせる"""
+        if self.is_occupied:
+            raise ValueError(f"Seat {self.index} is already occupied")
+        self.player = player
 
-    def reset_for_new_hand(self) -> None:
-        """ハンド開始時にテーブルとSeatを初期化"""
-        self.pot = 0
-        self.board.clear()
-        self.current_round = Round.PREFLOP
-        for seat in self.seats:
-            if seat.player_id:
-                seat.reset_for_new_hand()
+    def stand_up(self) -> None:
+        """プレイヤーを座席から外す"""
+        self.player = None
+        self.current_bet = 0
+
+    def place_bet(self, amount: int) -> None:
+        """座席にいるプレイヤーがベットする"""
+        if not self.is_occupied:
+            raise ValueError(f"Seat {self.index} is empty")
+        if self.player.stack < amount:
+            raise ValueError("Not enough chips to bet")
+        self.player.stack -= amount
+        self.current_bet += amount

@@ -1,9 +1,9 @@
 # services/game_service.py
 from typing import Optional
-from app.models.table import Table
-from app.models.enum import Action, State, PlayerState
-from app.models.game_state import GameState
-from app.models.deck import Deck
+from gemini_app.models.table import Table
+from gemini_app.models.enum import Action, State, PlayerState
+from gemini_app.models.game_state import GameState
+from gemini_app.models.deck import Deck
 from .table_service import TableService
 from .round_service import RoundService
 from .action_service import ActionService
