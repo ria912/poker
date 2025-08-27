@@ -3,14 +3,11 @@ from enum import Enum
 
 
 class Position(str, Enum):
-    """ポジション（最大6-max想定）。
-    人数に応じた割当は services/position_manager 等で行う。
-    """
     BTN = "BTN"
     SB = "SB"
     BB = "BB"
-    UTG = "UTG"
-    HJ = "HJ"  # 5-6人時の中間
+    LJ = "LJ"
+    HJ = "HJ"
     CO = "CO"
 
 

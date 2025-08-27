@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from .table import Table
+from .seat import Table
 from .enum import Round, GameStatus
 
 class GameState(BaseModel):

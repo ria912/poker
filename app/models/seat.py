@@ -41,5 +41,5 @@ class Seat:
             raise ValueError(f"Seat {self.index} is empty")
         if self.player.stack < amount:
             raise ValueError("Not enough chips to bet")
-        self.player.stack -= amount
+        self.player.pay(amount)
         self.current_bet += amount

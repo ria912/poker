@@ -6,7 +6,7 @@ import os
 # プロジェクトのルートをシステムパスに追加して、appモジュールをインポートできるようにする
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.models.table import Table, Seat
+from app.models.seat import Table, Seat
 from app.models.player import Player
 from app.models.game_state import GameState
 from app.models.enum import Action, PlayerState, Round, State
