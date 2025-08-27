@@ -1,6 +1,4 @@
-from __future__ import annotations
 from enum import Enum
-
 
 class Position(str, Enum):
     BTN = "BTN"
@@ -26,9 +24,9 @@ class SeatState(str, Enum):
     OUT = "OUT"            # テーブル不在（スタック0等）
 
 
-class TableState(str, Enum):
+class GameState(str, Enum):
     WAITING = "WAITING"        # 着席待ち/ハンド未開始
-    IN_HAND = "IN_HAND"        # 進行中
+    IN_PROGRESS = "IN_PROGRESS"        # 進行中
     HAND_COMPLETE = "HAND_COMPLETE"  # ハンド終了（配当後）
 
 
