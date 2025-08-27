@@ -9,13 +9,12 @@ class Player:
         self,
         name: str = "Anonymous",
         stack: int = 0,
-        hole_cards: Optional[List[Card]] = None,
         seat_index: Optional[int] = None,
     ):
         self.player_id: str = str(uuid.uuid4())
         self.name: str = name
         self.stack: int = stack
-        self.hole_cards: List[Card] = hole_cards if hole_cards is not None else []
+        self.hole_cards: List[Card] = []
         self.seat_index: Optional[int] = seat_index
         self.bet_total: int = 0  # ハンド中の総ベット額
 

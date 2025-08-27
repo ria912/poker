@@ -41,4 +41,4 @@ class ActionType(str, Enum):
     ALL_IN = "ALL_IN"
     POST_SB = "POST_SB"
     POST_BB = "POST_BB"
-    DEAL = "DEAL"  # デバッグ/履歴用（カード配布）
+    DEAL = "DEAL"  # デバッグ/履歴用（カード配布）　

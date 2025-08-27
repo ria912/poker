@@ -1,18 +1,14 @@
-from dataclasses import dataclass
 from typing import Optional
 from .player import Player
 from .enum import SeatState
 
-
-@dataclass
 class Seat:
-    """テーブルの座席（プレイヤーを乗せて、ベットを管理）"""
-
-    index: int                      # 座席番号（0,1,2,...）
-    player: Optional[Player] = None # 座っているプレイヤー（空席なら None）
-    current_bet: int = 0            # 現在のベット額
-    state: SeatState = SeatState.OUT
-    acted: bool = True              # このラウンドでアクションを行ったかどうか
+    def __init__(self, index: int, player: Optional[Player] = None):
+        self.index: int = index                      # 座席番号（0,1,2,...）
+        self.player: Optional[Player] = player      # 座っているプレイヤー（空席なら None）
+        self.current_bet: int = 0                     # 現在のベット額
+        self.state: SeatState = SeatState.OUT
+        self.acted: bool = True                       # このラウンドでアクションを行ったかどうか
 
     @property
     def is_occupied(self) -> bool:
