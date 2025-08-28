@@ -18,8 +18,8 @@ class Player:
         self.seat_index: Optional[int] = seat_index
 
     def pay(self, amount: int) -> int:
-        if amount >= self.stack:
-            return self.stack
+        if amount <= 0:
+            return 0
         pay_amount = min(self.stack, amount)
         self.stack -= pay_amount
         self.bet_total += pay_amount
