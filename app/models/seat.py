@@ -7,6 +7,7 @@ class Seat:
         self.index: int = index                      # 座席番号（0,1,2,...）
         self.player: Optional[Player] = player      # 座っているプレイヤー（空席なら None）
         self.current_bet: int = 0                     # 現在のベット額
+        self.bet_total: int = 0
         self.state: SeatState = SeatState.OUT
         self.acted: bool = True                       # このラウンドでアクションを行ったかどうか
 
@@ -39,3 +40,4 @@ class Seat:
             raise ValueError("Not enough chips to bet")
         self.player.pay(amount)
         self.current_bet += amount
+        self.bet_total += amount
