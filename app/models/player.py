@@ -16,15 +16,10 @@ class Player:
         self.stack: int = stack
         self.hole_cards: List[Card] = []
         self.seat_index: Optional[int] = seat_index
-        self.bet_total: int = 0  # ハンド中の総ベット額
-
-    def reset_for_new_hand(self) -> None:
-        self.hole_cards = []
-        self.bet_total = 0
 
     def pay(self, amount: int) -> int:
-        if amount <= 0:
-            return 0
+        if amount >= self.stack:
+            return self.stack
         pay_amount = min(self.stack, amount)
         self.stack -= pay_amount
         self.bet_total += pay_amount
