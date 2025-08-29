@@ -9,13 +9,11 @@ class Player:
         self,
         name: str = "Anonymous",
         stack: int = 0,
-        seat_index: Optional[int] = None,
     ):
         self.player_id: str = str(uuid.uuid4())
         self.name: str = name
         self.stack: int = stack
         self.hole_cards: List[Card] = []
-        self.seat_index: Optional[int] = seat_index
 
     def pay(self, amount: int) -> int:
         if amount <= 0:
