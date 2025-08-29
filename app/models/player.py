@@ -21,3 +21,8 @@ class Player:
         pay_amount = min(self.stack, amount)
         self.stack -= pay_amount
         return pay_amount
+    
+    def set_hole_cards(self, cards: List[Card]):
+        if len(cards) != 2:
+            raise ValueError("Hole cards must be exactly 2")
+        self.hole_cards = cards
