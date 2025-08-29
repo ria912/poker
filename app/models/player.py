@@ -20,5 +20,4 @@ class Player:
             return 0
         pay_amount = min(self.stack, amount)
         self.stack -= pay_amount
-        self.bet_total += pay_amount
         return pay_amount
