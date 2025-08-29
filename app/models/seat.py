@@ -13,7 +13,7 @@ class Seat:
         self.current_bet: int = 0
         self.bet_total: int = 0
         self.state: SeatState = SeatState.OUT
-        self.acted: bool = True
+        self.acted: bool = False
         
     @property
     def is_occupied(self) -> bool:
@@ -29,15 +29,20 @@ class Seat:
         """座席の状態をリセットする"""
         self.current_bet = 0
         self.bet_total = 0
-        if self.stack > 0:
+        self.hole_cards = []
+        self.acted = False
+        if self.is_occupied and self.stack > 0:
             self.state = SeatState.ACTIVE
-            self.acted = False
+        else:
+            self.state = SeatState.OUT
 
-    def sit_down(self, player: Player) -> None:
+    def sit_down(self, player: Player, stack: int) -> None:
         """プレイヤーを座席に座らせる"""
         if self.is_occupied:
             raise ValueError(f"Seat {self.index} is already occupied")
         self.player = player
+        self.stack = stack
+        self.state = SeatState.ACTIVE
 
     def stand_up(self) -> None:
         """プレイヤーを座席から外す"""

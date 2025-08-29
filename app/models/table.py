@@ -4,7 +4,7 @@ from .seat import Seat
 from .player import Player
 
 class Table:
-    def __init__(self, seat_count: int = 9):
+    def __init__(self, seat_count: int = 6):
         self.deck = Deck()
         self.seats: List[Seat] = [Seat(index=i) for i in range(seat_count)]
         self.community_cards: List[Card] = []
