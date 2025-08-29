@@ -9,7 +9,7 @@ class Position(str, Enum):
     CO = "CO"
 
 
-class Street(str, Enum):
+class Round(str, Enum):
     PREFLOP = "PREFLOP"
     FLOP = "FLOP"
     TURN = "TURN"
