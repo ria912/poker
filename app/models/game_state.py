@@ -1,13 +1,12 @@
 from typing import Optional
-import uuid
 from .table import Table
-from .enum import Round, GameStatus
+from .enum import Round, GameState
 
 class GameState:
     """ゲーム全体の進行状態を管理するクラス"""
     def __init__(self):
         self.table: Table = Table()
-        self.status: GameStatus = GameStatus.WAITING
+        self.status: GameState = GameState.WAITING
         self.current_round: Round = Round.PREFLOP
 
         # アクション管理
@@ -19,7 +18,7 @@ class GameState:
     def clear_for_new_hand(self):
         """次のハンドのためにゲーム状態をリセットする"""
         self.table.collect_bets()
-        self.status = GameStatus.WAITING
+        self.status = GameState.WAITING
         self.current_round = Round.PREFLOP
         self.active_seat_index = None
         self.amount_to_call = 0
