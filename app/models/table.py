@@ -1,5 +1,5 @@
 from typing import List, Optional
-from .deck import Deck
+from .deck import Deck, Card
 from .seat import Seat
 from .player import Player
 
@@ -7,6 +7,7 @@ class Table:
     def __init__(self, seat_count: int = 9):
         self.deck = Deck()
         self.seats: List[Seat] = [Seat(index=i) for i in range(seat_count)]
+        self.community_cards: List[Card] = []
         self.pot: int = 0
 
     def sit_player(self, player: Player, seat_index: int) -> None:
