@@ -1,5 +1,5 @@
 # tests/services/test_ai_agent_service.py
-from app.services import ai_agent_service
+from app.services.ai import ai_agent_service
 from app.models.enum import ActionType
 
 def test_decide_action_can_check(game_state):

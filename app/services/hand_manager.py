@@ -50,28 +50,31 @@ def _deal_hole_cards(game_state: GameState):
         seat.receive_cards(cards)
 
 def proceed_to_next_round(game_state: GameState):
-    """次のラウンド（フロップ、ターン、リバー）へ移行する"""
+    """次のラウンドのカードを配る"""
     if _is_hand_over(game_state):
         _conclude_hand(game_state)
         return
 
-    if game_state.current_round == Round.PREFLOP:
-        game_state.current_round = Round.FLOP
+    # --- ここから修正 ---
+    # game_orchestrator がラウンドを更新するので、ここではカードを配る責務に集中する
+    if game_state.current_round == Round.FLOP:
         game_state.table.community_cards.extend(game_state.table.deck.draw(3))
-    elif game_state.current_round == Round.FLOP:
-        game_state.current_round = Round.TURN
-        game_state.table.community_cards.extend(game_state.table.deck.draw(1))
     elif game_state.current_round == Round.TURN:
-        game_state.current_round = Round.RIVER
         game_state.table.community_cards.extend(game_state.table.deck.draw(1))
     elif game_state.current_round == Round.RIVER:
-        game_state.current_round = Round.SHOWDOWN
-        _conclude_hand(game_state)
+        game_state.table.community_cards.extend(game_state.table.deck.draw(1))
+    # --- 修正ここまで ---
 
 def _is_hand_over(game_state: GameState) -> bool:
     """ハンドが終了したかどうかを判定する"""
-    active_players = [s for s in game_state.table.seats if s.status not in [SeatStatus.FOLDED, SeatStatus.OUT]]
-    return len(active_players) <= 1
+    active_players = [s for s in game_state.table.seats if s.status not in [SeatStatus.FOLDED, SeatStatus.OUT, SeatStatus.ALL_IN]]
+    all_in_players = [s for s in game_state.table.seats if s.status == SeatStatus.ALL_IN]
+    
+    # アクション可能なプレイヤーが1人以下で、オールインのプレイヤーが複数いない場合
+    if len(active_players) <= 1:
+        return True
+        
+    return False
 
 def _conclude_hand(game_state: GameState):
     """ハンドを終了し、勝者にポットを分配する"""
@@ -79,4 +82,3 @@ def _conclude_hand(game_state: GameState):
     for seat, amount in winners_with_amounts:
         seat.stack += amount
     game_state.status = GameStatus.HAND_COMPLETE
-
