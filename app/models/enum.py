@@ -17,14 +17,14 @@ class Round(str, Enum):
     SHOWDOWN = "SHOWDOWN"
 
 
-class SeatState(str, Enum):
+class SeatStatus(str, Enum):
     ACTIVE = "ACTIVE"      # アクション可能
     FOLDED = "FOLDED"      # フォールド
     ALL_IN = "ALL_IN"      # オールイン（以後アクション不可）
     OUT = "OUT"            # テーブル不在（スタック0等）
 
 
-class GameState(str, Enum):
+class GameStatus(str, Enum):
     WAITING = "WAITING"        # 着席待ち/ハンド未開始
     IN_PROGRESS = "IN_PROGRESS"        # 進行中
     HAND_COMPLETE = "HAND_COMPLETE"  # ハンド終了（配当後）

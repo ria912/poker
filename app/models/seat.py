@@ -1,7 +1,7 @@
 from typing import Optional
 from .deck import Card
 from .player import Player
-from .enum import SeatState, Position
+from .enum import SeatStatus, Position
 
 class Seat:
     def __init__(self, index: int, player: Optional[Player] = None):
@@ -12,7 +12,7 @@ class Seat:
         self.position: Optional[Position] = None
         self.current_bet: int = 0
         self.bet_total: int = 0
-        self.state: SeatState = SeatState.OUT
+        self.status: SeatStatus = SeatStatus.OUT
         self.acted: bool = False
         
     @property
@@ -23,7 +23,7 @@ class Seat:
     @property
     def is_active(self) -> bool:
         """この座席がアクティブかどうか"""
-        return self.is_occupied and self.state == SeatState.ACTIVE
+        return self.is_occupied and self.status == SeatStatus.ACTIVE
 
     def reset(self) -> None:
         """座席の状態をリセットする"""
@@ -32,9 +32,9 @@ class Seat:
         self.hole_cards = []
         self.acted = False
         if self.is_occupied and self.stack > 0:
-            self.state = SeatState.ACTIVE
+            self.status = SeatStatus.ACTIVE
         else:
-            self.state = SeatState.OUT
+            self.status = SeatStatus.OUT
 
     def sit_down(self, player: Player, stack: int) -> None:
         """プレイヤーを座席に座らせる"""
@@ -42,14 +42,14 @@ class Seat:
             raise ValueError(f"Seat {self.index} is already occupied")
         self.player = player
         self.stack = stack
-        self.state = SeatState.ACTIVE
+        self.status = SeatStatus.ACTIVE
 
     def stand_up(self) -> None:
         """プレイヤーを座席から外す"""
         self.player = None
         self.current_bet = 0
         self.stack = 0
-        self.state = SeatState.OUT
+        self.status = SeatStatus.OUT
 
     def bet(self, amount: int) -> None:
         """座席にいるプレイヤーがベットする"""

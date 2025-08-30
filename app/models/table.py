@@ -10,6 +10,14 @@ class Table:
         self.community_cards: List[Card] = []
         self.pot: int = 0
 
+    def reset(self):
+        """テーブルの状態をリセットする"""
+        self.deck = Deck()
+        self.community_cards = []
+        self.pot = 0
+        for seat in self.seats:
+            seat.reset()
+
     def sit_player(self, player: Player, seat_index: int) -> None:
         """指定した座席にプレイヤーを座らせる"""
         if seat_index < 0 or seat_index >= len(self.seats):
