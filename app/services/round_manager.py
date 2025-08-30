@@ -1,56 +1,67 @@
 # holdem_app/app/services/round_manager.py
 from app.models.game_state import GameState
-from app.models.enum import Round, SeatStatus
-from . import position_service
+from app.models.enum import SeatStatus, Round
+from app.services import position_service, action_service
+from typing import Callable, Any
 
-def start_betting_round(game_state: GameState):
-    """
-    新しいベッティングラウンドを開始する。
-    - アクション済みフラグのリセット
-    - アクション開始プレイヤーの設定
-    """
-    print(f"\n--- Starting Round: {game_state.current_round.name} ---")
-    
-    # テーブルのベット額をポットに集める
-    game_state.table.collect_bets()
+def run_betting_round(game_state: GameState, get_player_action: Callable[[GameState], Any]):
+    # (...前略, run_betting_round の中身は変更なし...)
+    active_players = [s for s in game_state.table.seats if s.status == SeatStatus.ACTIVE]
+    if len(active_players) <= 1 and game_state.current_round != Round.PREFLOP:
+        return
 
-    # ラウンドに応じてコミュニティカードをめくる
-    if game_state.current_round == Round.FLOP:
-        game_state.table.community_cards.extend(game_state.table.deck.draw(3))
-    elif game_state.current_round in [Round.TURN, Round.RIVER]:
-        game_state.table.community_cards.extend(game_state.table.deck.draw(1))
-
-    # 各プレイヤーのアクション済みフラグ等をリセット
-    for seat in game_state.table.seats:
-        if seat.status not in [SeatStatus.FOLDED, SeatStatus.ALL_IN, SeatStatus.OUT]:
+    for seat in position_service.get_occupied_seats(game_state):
+        if seat.status != SeatStatus.OUT:
             seat.acted = False
     
-    # アクションを開始するプレイヤーを決定する
-    start_seat_index = position_service.get_first_to_act(game_state)
-    game_state.current_seat_index = start_seat_index
-    game_state.last_raiser_seat_index = start_seat_index
-    
-    # コール額とミニマムレイズ額をリセット
-    game_state.amount_to_call = 0
-    game_state.min_raise_amount = game_state.big_blind
-
-
-def advance_to_next_round(game_state: GameState):
-    """次のラウンドへ進める"""
-    round_order = [Round.PREFLOP, Round.FLOP, Round.TURN, Round.RIVER, Round.SHOWDOWN]
-    current_idx = round_order.index(game_state.current_round)
-    
-    if current_idx + 1 < len(round_order):
-        next_round = round_order[current_idx + 1]
-        game_state.current_round = next_round
-        if next_round != Round.SHOWDOWN:
-            start_betting_round(game_state)
+    if game_state.current_round == Round.PREFLOP:
+        bb_seat = position_service.get_seat_by_position(game_state, "BB")
+        if bb_seat:
+            game_state.last_raiser_seat_index = bb_seat.index
+        game_state.amount_to_call = game_state.big_blind
     else:
-        # ゲーム終了
-        pass
+        game_state.last_raiser_seat_index = None
+        game_state.amount_to_call = 0
 
-def is_round_over(game_state: GameState) -> bool:
-    """現在のベッティングラウンドが終了したかを判定する"""
-    # 全員がアクション済みで、かつベット額が等しい状態かなどをチェック
-    # ... 実装 ...
-    return False # 仮
+    first_to_act_index = position_service.get_first_to_act_index(game_state)
+    if first_to_act_index is None: return
+    game_state.current_seat_index = first_to_act_index
+    
+    while True:
+        current_player_seat = game_state.table.seats[game_state.current_seat_index]
+
+        if current_player_seat.status == SeatStatus.ACTIVE:
+            action = get_player_action(game_state)
+            action_service.process_action(game_state, action)
+
+        if is_betting_round_over(game_state):
+            break
+
+        game_state.current_seat_index = position_service.get_next_active_player_index(
+            game_state, game_state.current_seat_index
+        )
+    
+    game_state.table.collect_bets()
+
+def is_betting_round_over(game_state: GameState) -> bool:
+    """ベッティングラウンドが終了したかどうかを判定する"""
+    active_seats = [s for s in game_state.table.seats if s.status == SeatStatus.ACTIVE]
+    
+    # --- ここから修正 ---
+    # 最優先事項: アクション可能なプレイヤーが1人以下なら、即座にラウンド終了
+    if len(active_seats) <= 1:
+        return True
+    # --- 修正ここまで ---
+
+    # 全員がアクション済みかチェック
+    all_acted = all(s.acted for s in active_seats)
+    if not all_acted:
+        return False
+
+    # アクティブな（オールインでない）プレイヤーのベット額が全て同じか
+    bets_to_check = [s.current_bet for s in active_seats]
+    if len(set(bets_to_check)) == 1:
+        return True
+        
+    return False
+

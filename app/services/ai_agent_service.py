@@ -1,32 +1,37 @@
 # holdem_app/app/services/ai_agent_service.py
-import random
 from app.models.game_state import GameState
-from app.models.player import Player
 from app.models.action import Action
-from . import action_service
+from app.models.enum import ActionType
+from app.services import action_service
 
-def decide_action(game_state: GameState, player: Player) -> Action:
+def decide_action(game_state: GameState) -> Action:
     """
-    AIプレイヤーの思考ルーチン。
-    現在のゲーム状態を分析し、最適なアクションを決定する。
+    現在のゲーム状態に基づいてAIプレイヤーのアクションを決定する。
+    - チェックできるならチェック
+    - そうでなければフォールド
     """
-    seat = next((s for s in game_state.table.seats if s.player and s.player.player_id == player.player_id), None)
-    if not seat:
-        raise ValueError("AI Player not found in seats.")
-        
-    # 現在可能なアクションを取得
-    valid_actions = action_service.get_valid_actions(game_state, seat.index)
+    current_seat_index = game_state.current_seat_index
+    seat = game_state.table.seats[current_seat_index]
+    player_id = seat.player.player_id
     
-    # --- ここからAIのロジック ---
-    # 現段階ではランダムなアクションを選択する
-    chosen_action_type = random.choice(valid_actions)
+    # --- ここから修正 ---
+    valid_actions = action_service.get_valid_actions(game_state, current_seat_index)
     
-    amount = None
-    if chosen_action_type in ["BET", "RAISE", "ALL_IN"]:
-        # 仮のベット/レイズ額
-        amount = game_state.big_blind 
-    
-    # --- AIロジックここまで ---
+    # 有効なアクションの中から戦略に基づいて選択
+    action_types = [a['type'] for a in valid_actions]
 
-    print(f"AI ({player.name}) decides to {chosen_action_type.name}")
-    return Action(player_id=player.player_id, action_type=chosen_action_type, amount=amount)
+    if ActionType.CHECK in action_types:
+        return Action(player_id=player_id, action_type=ActionType.CHECK)
+    
+    if ActionType.FOLD in action_types:
+        return Action(player_id=player_id, action_type=ActionType.FOLD)
+
+    # フォールドもチェックもできない場合 (例:オールインコールしかできない)
+    if ActionType.CALL in action_types:
+        call_action = next(a for a in valid_actions if a['type'] == ActionType.CALL)
+        return Action(player_id=player_id, action_type=ActionType.CALL, amount=call_action['amount'])
+
+    # 万が一上記に当てはまらない場合（基本的には起こらない）
+    # 最も安全なアクション（通常はフォールド）を選択
+    return Action(player_id=player_id, action_type=ActionType.FOLD)
+    # --- 修正ここまで ---

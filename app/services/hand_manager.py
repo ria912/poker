@@ -1,78 +1,82 @@
 # holdem_app/app/services/hand_manager.py
 from app.models.game_state import GameState
-from app.models.enum import GameStatus, Round, SeatStatus
-from . import position_service, round_manager, evaluation_service
+from app.models.enum import Round, SeatStatus, ActionType, GameStatus
+from app.services import position_service, action_service, evaluation_service, round_manager
+from typing import Callable, Any
 
-def start_hand(game_state: GameState):
-    """
-    ハンドを開始するための準備を行う。
-    - ディーラーボタンの決定
-    - ブラインドの徴収
-    - カードの配布
-    """
+def start_new_hand(game_state: GameState):
+    """新しいハンドを開始する準備を行う"""
     game_state.clear_for_new_hand()
-    print("\n--- Starting New Hand ---")
-
-    # 参加プレイヤーが2人未満ならハンドを開始しない
-    active_players = [s for s in game_state.table.seats if s.is_occupied and s.stack > 0]
+    
+    active_players = position_service.get_occupied_seats(game_state)
     if len(active_players) < 2:
         game_state.status = GameStatus.WAITING
-        print("Not enough players to start a hand.")
         return
 
-    # 1. ディーラーボタン決定
+    game_state.status = GameStatus.IN_PROGRESS
+    
+    # 1. ディーラーボタンを回す
     position_service.rotate_dealer_button(game_state)
     
-    # 2. ポジション割り当て
+    # 2. ポジションを割り当てる
     position_service.assign_positions(game_state)
 
-    # 3. ブラインドの徴収
-    # ... position_service を使ってSB, BB のプレイヤーからベットさせる
-    
-    # 4. カード配布
-    deck = game_state.table.deck
-    for seat in game_state.table.seats:
-        if seat.is_occupied:
-            seat.receive_cards(deck.draw(2))
-    
-    game_state.status = GameStatus.IN_PROGRESS
-    game_state.current_round = Round.PREFLOP
-    
-    # プリフロップのラウンドを開始
-    round_manager.start_betting_round(game_state)
+    # 3. ブラインドを支払う
+    _post_blinds(game_state)
 
+    # 4. カードを配る
+    _deal_hole_cards(game_state)
 
-def end_hand(game_state: GameState):
-    """
-    ハンドの終了処理を行う。
-    - 勝者の決定
-    - ポットの分配
-    """
-    print("--- Ending Hand ---")
-    
-    # 1. ベットをポットに集める
-    game_state.table.collect_bets()
-    
-    # 2. 勝者判定
-    winners_with_pot = evaluation_service.find_winners(game_state)
-    
-    # 3. ポット分配
-    for seat, amount in winners_with_pot:
+def _post_blinds(game_state: GameState):
+    """SBとBBを強制的に支払わせる"""
+    sb_seat = position_service.get_seat_by_position(game_state, "SB")
+    bb_seat = position_service.get_seat_by_position(game_state, "BB")
+
+    if sb_seat:
+        sb_amount = min(game_state.small_blind, sb_seat.stack)
+        action = action_service.Action(sb_seat.player.player_id, ActionType.POST_SB, sb_amount)
+        action_service.process_action(game_state, action)
+
+    if bb_seat:
+        bb_amount = min(game_state.big_blind, bb_seat.stack)
+        action = action_service.Action(bb_seat.player.player_id, ActionType.POST_BB, bb_amount)
+        action_service.process_action(game_state, action)
+
+def _deal_hole_cards(game_state: GameState):
+    """各プレイヤーにホールカードを2枚ずつ配る"""
+    seats_to_deal = position_service.get_occupied_seats(game_state)
+    for seat in seats_to_deal:
+        cards = game_state.table.deck.draw(2)
+        seat.receive_cards(cards)
+
+def proceed_to_next_round(game_state: GameState):
+    """次のラウンド（フロップ、ターン、リバー）へ移行する"""
+    if _is_hand_over(game_state):
+        _conclude_hand(game_state)
+        return
+
+    if game_state.current_round == Round.PREFLOP:
+        game_state.current_round = Round.FLOP
+        game_state.table.community_cards.extend(game_state.table.deck.draw(3))
+    elif game_state.current_round == Round.FLOP:
+        game_state.current_round = Round.TURN
+        game_state.table.community_cards.extend(game_state.table.deck.draw(1))
+    elif game_state.current_round == Round.TURN:
+        game_state.current_round = Round.RIVER
+        game_state.table.community_cards.extend(game_state.table.deck.draw(1))
+    elif game_state.current_round == Round.RIVER:
+        game_state.current_round = Round.SHOWDOWN
+        _conclude_hand(game_state)
+
+def _is_hand_over(game_state: GameState) -> bool:
+    """ハンドが終了したかどうかを判定する"""
+    active_players = [s for s in game_state.table.seats if s.status not in [SeatStatus.FOLDED, SeatStatus.OUT]]
+    return len(active_players) <= 1
+
+def _conclude_hand(game_state: GameState):
+    """ハンドを終了し、勝者にポットを分配する"""
+    winners_with_amounts = evaluation_service.find_winners(game_state)
+    for seat, amount in winners_with_amounts:
         seat.stack += amount
-        print(f"{seat.player.name} wins {amount}.")
-
     game_state.status = GameStatus.HAND_COMPLETE
 
-
-def is_hand_over(game_state: GameState) -> bool:
-    """ハンドが終了したかどうかを判定する"""
-    # アクティブなプレイヤーが1人になった場合
-    active_seats = [s for s in game_state.table.seats if s.status == SeatStatus.ACTIVE]
-    if len(active_seats) <= 1 and game_state.status == GameStatus.IN_PROGRESS:
-        return True
-    
-    # リバーのベッティングラウンドが終了した場合
-    if game_state.current_round == Round.RIVER and round_manager.is_round_over(game_state):
-        return True
-        
-    return False

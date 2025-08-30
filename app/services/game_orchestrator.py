@@ -1,48 +1,78 @@
 # holdem_app/app/services/game_orchestrator.py
 from app.models.game_state import GameState
-from app.models.game_config import GameConfig
 from app.models.player import Player
-from . import hand_manager
-from . import ai_agent_service
+from app.models.enum import Round, GameStatus
+from app.services import hand_manager, round_manager, ai_agent_service, position_service
 
 class GameOrchestrator:
-    """
-    ゲーム全体の流れを統括するクラス。
-    ゲームの開始、ハンドの進行、プレイヤーの管理などを行う。
-    """
-    def __init__(self, config: GameConfig):
-        self.game_state = GameState(config)
+    def __init__(self, game_state: GameState):
+        self.game_state = game_state
 
-    def add_player(self, player: Player, seat_index: int):
-        """プレイヤーをテーブルに着席させる"""
-        initial_stack = self.game_state.config.initial_stack
-        self.game_state.table.sit_player(player, seat_index, initial_stack)
-        print(f"{player.name} sits at seat {seat_index}.")
-
-    def start_game(self):
-        """ゲームを開始する"""
-        # ここにゲームループを実装する
-        # 例: プレイヤーが2人以上いるかチェックし、ハンドを開始する
-        print("Game started.")
-        while len(self.game_state.table.active_players()) > 1:
+    def run_game(self, num_hands: int = 5):
+        """
+        指定されたハンド数だけゲームを自動で実行する
+        """
+        print("--- Game Start ---")
+        hand_count = 0
+        while hand_count < num_hands:
+            active_players = position_service.get_occupied_seats(self.game_state)
+            if len(active_players) < 2:
+                print("Not enough players to continue. Game over.")
+                break
+            
+            print(f"\n--- Starting Hand #{hand_count + 1} ---")
             self.play_hand()
+            hand_count += 1
         
-        print("Game finished.")
+        print("\n--- Game Over ---")
 
     def play_hand(self):
-        """1ハンドをプレイする"""
-        hand_manager.start_hand(self.game_state)
+        """1ハンドを実行する"""
+        hand_manager.start_new_hand(self.game_state)
         
-        # ハンドが終了するまでラウンドを進行
-        while not hand_manager.is_hand_over(self.game_state):
-            # プレイヤーのアクションを取得・処理するロジック
-            # current_player = ...
-            # if current_player.is_ai:
-            #     action = ai_agent_service.decide_action(self.game_state, current_player)
-            # else:
-            #     # 人間プレイヤーからの入力を待つ
-            #     action = ...
-            # action_service.process_action(self.game_state, action)
-            pass
+        if self.game_state.status != GameStatus.IN_PROGRESS:
+            print("Could not start hand.")
+            return
 
-        hand_manager.end_hand(self.game_state)
+        # 各ベッティングラウンドをループ
+        for round_enum in [Round.PREFLOP, Round.FLOP, Round.TURN, Round.RIVER]:
+            self.game_state.current_round = round_enum
+            
+            # プリフロップ以降はコミュニティカードをめくる
+            if round_enum != Round.PREFLOP:
+                hand_manager.proceed_to_next_round(self.game_state)
+                print(f"Community Cards: {[str(c) for c in self.game_state.table.community_cards]}")
+
+
+            # 誰か一人が残った時点でハンド終了
+            if hand_manager._is_hand_over(self.game_state):
+                break
+            
+            # ベッティングラウンドを実行
+            round_manager.run_betting_round(self.game_state, self._get_action_for_player)
+            
+            if hand_manager._is_hand_over(self.game_state):
+                break
+        
+        # ハンドの決着
+        print("--- Concluding Hand ---")
+        hand_manager._conclude_hand(self.game_state)
+        
+        # プレイヤーのスタック情報を表示
+        for seat in self.game_state.table.seats:
+            if seat.is_occupied:
+                print(f"Seat {seat.index} ({seat.player.name}): Stack {seat.stack}")
+
+
+    def _get_action_for_player(self, game_state: GameState):
+        """
+        現在のプレイヤーのアクションを取得する。
+        AIか人間かで処理を分岐させる（今回は全員AIを想定）
+        """
+        current_seat = game_state.table.seats[game_state.current_seat_index]
+        if current_seat.player.is_ai:
+            return ai_agent_service.decide_action(game_state)
+        else:
+            # TODO: 人間プレイヤーからの入力を受け付ける処理
+            # 現状はAIと同じロジックを仮で呼び出す
+            return ai_agent_service.decide_action(game_state)
