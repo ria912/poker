@@ -20,6 +20,9 @@ class Card:
 
     def __str__(self) -> str:
         return f"{self.rank}{self.suit_map[self.suit]}"
+    
+    def __repr__(self) -> str:
+        return f"Card('{self.rank}', '{self.suit}')"
 
     def to_treys_int(self) -> int:
         return TreysCard.new(self.rank + self.suit)
