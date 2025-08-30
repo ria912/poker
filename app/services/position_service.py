@@ -1,79 +1,48 @@
 # holdem_app/app/services/position_service.py
-import random
-from typing import List
+from app.models.game_state import GameState
+from app.models.enum import Position
 
-from ..models.game_state import GameState
-from ..models.enum import Position
-
-def _get_active_player_indices(gs: GameState) -> List[int]:
-    """ハンドに参加可能なプレイヤーのシートインデックスリストを返す"""
-    return [
-        s.index for s in gs.table.seats if s.is_occupied and s.stack > 0
-    ]
-
-def determine_dealer_seat(gs: GameState, active_indices: List[int]) -> int:
-    """ディーラーボタンのシートインデックスを決定する"""
-    if not active_indices:
-        raise ValueError("No active players to determine dealer seat.")
-
-    if gs.dealer_seat_index is None:
-        # 最初のハンドはアクティブプレイヤーからランダムに選ぶ
-        return random.choice(active_indices)
+def rotate_dealer_button(game_state: GameState):
+    """ディーラーボタンを次のアクティブなプレイヤーに移動させる"""
+    seats = game_state.table.seats
+    num_seats = len(seats)
+    
+    if game_state.dealer_seat_index is None:
+        # 最初はアクティブなプレイヤーからランダムに選ぶ
+        active_indices = [s.index for s in seats if s.is_occupied]
+        start_index = active_indices[0] if active_indices else 0
     else:
-        # 時計回りで次のアクティブプレイヤーを探す
-        current_index = (gs.dealer_seat_index + 1) % len(gs.table.seats)
-        while True:
-            if current_index in active_indices:
-                return current_index
-            current_index = (current_index + 1) % len(gs.table.seats)
+        start_index = (game_state.dealer_seat_index + 1) % num_seats
 
+    for i in range(num_seats):
+        next_index = (start_index + i) % num_seats
+        if seats[next_index].is_occupied:
+            game_state.dealer_seat_index = next_index
+            print(f"Dealer button is at seat {next_index}")
+            return
+            
+    # アクティブプレイヤーがいない場合
+    game_state.dealer_seat_index = None
 
-def assign_positions(gs: GameState) -> GameState:
-    """
-    ディーラーを決定し、各アクティブプレイヤーにポジションを割り当てる。
-    """
-    active_indices = _get_active_player_indices(gs)
-    num_players = len(active_indices)
+def get_next_active_player_index(game_state: GameState, start_index: int) -> int:
+    """指定したインデックスの次に行動可能なプレイヤーのインデックスを返す"""
+    seats = game_state.table.seats
+    num_seats = len(seats)
+    for i in range(1, num_seats + 1):
+        next_index = (start_index + i) % num_seats
+        if seats[next_index].is_active: # is_active でチェック
+            return next_index
+    return start_index # 1人しかいない場合
 
-    if num_players < 2:
-        return gs # プレイ人数が足りない
+def assign_positions(game_state: GameState):
+    """各プレイヤーにポジション（SB, BBなど）を割り当てる"""
+    # dealer_seat_index を基準にSB, BB, ... を決定するロジック
+    print("Assigning positions...")
+    pass
 
-    # 1. ディーラーボタンを決定
-    dealer_index = determine_dealer_seat(gs, active_indices)
-    gs.dealer_seat_index = dealer_index
-    
-    # 2. ポジションを割り当て
-    # 参加人数に応じたポジションリストを作成
-    # 6-maxの場合: BTN, SB, BB, LJ, HJ, CO
-    position_order_map = {
-        6: [Position.BTN, Position.SB, Position.BB, Position.LJ, Position.HJ, Position.CO],
-        5: [Position.BTN, Position.SB, Position.BB, Position.HJ, Position.CO],
-        4: [Position.BTN, Position.SB, Position.BB, Position.CO],
-        3: [Position.BTN, Position.SB, Position.BB],
-        2: [Position.SB, Position.BB], # Heads-up: SB is also the dealer
-    }
-    positions_to_assign = position_order_map.get(num_players, position_order_map[6])
-    
-    # ディーラーから時計回りに割り当て
-    start_pos_index = active_indices.index(dealer_index)
-    
-    # Heads-up の特別処理 (DealerがSB)
-    if num_players == 2:
-        start_pos_index = active_indices.index(dealer_index)
-        positions_map = {
-            active_indices[start_pos_index]: Position.SB, # Dealer is SB
-            active_indices[(start_pos_index + 1) % num_players]: Position.BB,
-        }
-    else:
-        positions_map = {}
-        for i, pos_name in enumerate(positions_to_assign):
-            player_seat_index = active_indices[(start_pos_index + i) % num_players]
-            positions_map[player_seat_index] = pos_name
-
-    for seat in gs.table.seats:
-        if seat.index in positions_map:
-            seat.position = positions_map[seat.index]
-        else:
-            seat.position = None # ハンド不参加のプレイヤーはポジションなし
-
-    return gs
+def get_first_to_act(game_state: GameState) -> int:
+    """そのラウンドで最初にアクションするプレイヤーのインデックスを返す"""
+    # プリフロップならBBの次、フロップ以降ならSBの次（アクティブなプレイヤー）
+    # ... 実装 ...
+    # 仮でディーラーの次を返す
+    return get_next_active_player_index(game_state, game_state.dealer_seat_index)

@@ -1,66 +1,53 @@
 # holdem_app/app/services/action_service.py
-from ..models.game_state import GameState
-from ..models.enum import SeatStatus, ActionType
+from typing import List
+from app.models.game_state import GameState
+from app.models.action import Action
+from app.models.enum import ActionType, SeatStatus
 
-class ActionError(Exception):
-    """アクションが不正な場合に送出される例外"""
-    pass
+def process_action(game_state: GameState, action: Action):
+    """
+    プレイヤーのアクションを処理し、ゲーム状態を更新する。
+    例: ベット額をスタックから引く、ポットに加算する、プレイヤーの状態を変更するなど。
+    """
+    # player_idからseat_indexを見つけるロジックが必要
+    seat = next((s for s in game_state.table.seats if s.player and s.player.player_id == action.player_id), None)
+    if not seat:
+        raise ValueError("Player not found for the action.")
 
-def get_legal_actions(gs: GameState, seat_index: int) -> dict:
-    """指定されたプレイヤーが実行可能なアクションを返す"""
-    seat = gs.table.seats[seat_index]
-    if not seat.is_active or gs.current_seat_index != seat_index:
-        return {}
+    # アクションの妥当性チェック
+    valid_actions = get_valid_actions(game_state, seat.index)
+    # ここでactionがvalid_actionsに含まれるかなどをチェックする
 
-    legal_actions = {
-        ActionType.FOLD: True
-    }
+    # アクションに応じた状態更新
+    if action.action_type == ActionType.FOLD:
+        seat.status = SeatStatus.FOLDED
+    elif action.action_type == ActionType.CALL:
+        # コール額を計算し、ベット処理
+        amount = game_state.amount_to_call - seat.current_bet
+        seat.bet(amount)
+    # ... 他のアクションタイプの処理 ...
+
+    game_state.add_action(action.player_id, action.action_type, action.amount)
+    print(f"Action processed: {action}")
+
+
+def get_valid_actions(game_state: GameState, seat_index: int) -> List[ActionType]:
+    """
+    指定されたプレイヤーが現在取りうる有効なアクションのリストを返す。
+    """
+    # 状況（コール額、前のプレイヤーのアクションなど）に応じて
+    # FOLD, CHECK, CALL, BET, RAISEなどをリストにして返す
+    valid_actions = [ActionType.FOLD]
+
+    seat = game_state.table.seats[seat_index]
+    can_check = game_state.amount_to_call == seat.current_bet
     
-    can_check = gs.amount_to_call == seat.current_bet
     if can_check:
-        legal_actions[ActionType.CHECK] = True
+        valid_actions.append(ActionType.CHECK)
     else:
-        # コール可能な額
-        call_amount = min(gs.amount_to_call - seat.current_bet, seat.stack)
-        legal_actions[ActionType.CALL] = call_amount
-
-    # レイズ/ベット可能な額
-    # 詳細は後で実装
-    min_raise = gs.min_raise_amount
-    max_raise = seat.stack + seat.current_bet
-    if max_raise > min_raise:
-         legal_actions[ActionType.RAISE] = {'min': min_raise, 'max': max_raise}
-
-    return legal_actions
-
-
-def validate_and_apply_fold(gs: GameState, seat_index: int):
-    """フォールドを処理する"""
-    if gs.current_seat_index != seat_index:
-        raise ActionError("It's not your turn.")
+        valid_actions.append(ActionType.CALL)
     
-    seat = gs.table.seats[seat_index]
-    seat.status = SeatStatus.FOLDED
-    seat.acted = True
-    return gs
-
-def validate_and_apply_call(gs: GameState, seat_index: int):
-    """コール/チェックを処理する"""
-    if gs.current_seat_index != seat_index:
-        raise ActionError("It's not your turn.")
-        
-    seat = gs.table.seats[seat_index]
-    amount_to_call = gs.amount_to_call - seat.current_bet
-
-    if amount_to_call > 0: # Call
-        if seat.stack < amount_to_call: # All-in call
-            seat.bet(seat.stack)
-            seat.status = SeatStatus.ALL_IN
-        else:
-            seat.bet(amount_to_call)
-
-    # チェックの場合はベット額は変わらない
-    seat.acted = True
-    return gs
-
-# validate_and_apply_raise などの他のアクション関数も同様に定義
+    # BETやRAISEが可能かどうかの判定もここで行う
+    valid_actions.append(ActionType.RAISE) # 仮
+    
+    return valid_actions

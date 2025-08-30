@@ -1,53 +1,63 @@
 # holdem_app/app/services/evaluation_service.py
-from typing import List
+from typing import List, Tuple
 from treys import Evaluator, Card as TreysCard
+from app.models.game_state import GameState
+from app.models.seat import Seat
+from app.models.enum import SeatStatus
 
-from ..models.deck import Card
-
-evaluator = Evaluator()
-
-def evaluate_hand(hole_cards: List[Card], community_cards: List[Card]) -> int:
+def evaluate_hand(hole_cards: list, community_cards: list) -> int:
     """
-    ホールカード2枚とコミュニティカード3〜5枚から、最も強い役のスコアを返す。
-    スコアが小さいほど強い役 (例: 1=ロイヤルフラッシュ)。
+    ホールカードとコミュニティカードから役の強さを評価する。
+    treysライブラリを使用してスコアを返す（小さいほど強い）。
     """
-    if not (3 <= len(community_cards) <= 5):
-        raise ValueError("Community cards must be 3, 4, or 5.")
-
-    hand = [card.to_treys_int() for card in hole_cards]
-    board = [card.to_treys_int() for card in community_cards]
+    evaluator = Evaluator()
     
-    return evaluator.evaluate(hand, board)
+    # モデルのCardオブジェクトをtreysのint形式に変換
+    treys_hole = [c.to_treys_int() for c in hole_cards]
+    treys_community = [c.to_treys_int() for c in community_cards]
+    
+    return evaluator.evaluate(treys_hole, treys_community)
 
-def get_hand_rank_name(score: int) -> str:
-    """treysのスコアから役名を返す"""
-    return evaluator.class_to_string(evaluator.get_rank_class(score))
-
-def determine_winners(game_state) -> List[int]:
+def find_winners(game_state: GameState) -> List[Tuple[Seat, int]]:
     """
-    ショーダウンに進んだプレイヤーの中から勝者のseat_indexリストを返す。
-    (サイドポットは未考慮のシンプルな実装)
+    ショウダウン時に勝者を決定する。
+    ポット分配を考慮し、複数の勝者（チョップ）も判定する。
+    返り値: (勝者のSeatオブジェクト, 獲得ポット額) のリスト
     """
+    print("Finding winners...")
+    
+    # ショウダウンに進んだプレイヤーのみを対象
     showdown_players = [
-        s for s in game_state.table.seats 
-        if s.is_occupied and s.status not in ["FOLDED", "OUT"]
+        seat for seat in game_state.table.seats 
+        if seat.status not in [SeatStatus.FOLDED, SeatStatus.OUT]
     ]
 
     if not showdown_players:
         return []
 
     if len(showdown_players) == 1:
-        return [showdown_players[0].index]
+        # 他の全員がフォールドした場合
+        winner_seat = showdown_players[0]
+        return [(winner_seat, game_state.table.pot)]
 
-    best_score = float('inf')
-    winners = []
-
+    # 役の評価
+    scores = {}
     for seat in showdown_players:
         score = evaluate_hand(seat.hole_cards, game_state.table.community_cards)
-        if score < best_score:
-            best_score = score
-            winners = [seat.index]
-        elif score == best_score:
-            winners.append(seat.index)
-            
-    return winners
+        scores[seat.index] = score
+
+    # 最も良いスコア（最小値）を見つける
+    best_score = min(scores.values())
+    
+    # 勝者を決定
+    winners = [
+        game_state.table.seats[idx] for idx, score in scores.items() 
+        if score == best_score
+    ]
+    
+    # ポットを分配
+    pot_per_winner = game_state.table.pot // len(winners)
+    
+    # サイドポットのロジックはここに追加する必要がある
+    
+    return [(winner, pot_per_winner) for winner in winners]
