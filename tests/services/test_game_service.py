@@ -2,7 +2,7 @@
 import pytest
 from app.models.player import Player
 from app.models.enum import GameStatus, Round, ActionType
-from app.services.game_service import GameService
+from app.services.round_manager import GameService
 
 @pytest.fixture
 def game_service():

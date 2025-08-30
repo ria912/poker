@@ -3,11 +3,11 @@ import pytest
 from app.models.game_state import GameState
 from app.models.player import Player
 from app.models.enum import Round
-from app.services.round_service import RoundService
+from app.services.round_manager import RoundManager
 
 @pytest.fixture
 def round_service():
-    return RoundService()
+    return RoundManager()
 
 @pytest.fixture
 def game_state_for_round():

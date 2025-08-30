@@ -18,11 +18,13 @@ class Table:
         for seat in self.seats:
             seat.reset()
 
-    def sit_player(self, player: Player, seat_index: int) -> None:
+    def sit_player(self, player: Player, seat_index: int, stack: int) -> None:
         """指定した座席にプレイヤーを座らせる"""
-        if seat_index < 0 or seat_index >= len(self.seats):
+        if not (0 <= seat_index < len(self.seats)):
             raise IndexError("Invalid seat index")
-        self.seats[seat_index].sit_down(player)
+        
+        # seat.sit_down を呼び出すように変更
+        self.seats[seat_index].sit_down(player, stack)
 
     def stand_player(self, seat_index: int) -> None:
         """指定した座席からプレイヤーを立たせる"""

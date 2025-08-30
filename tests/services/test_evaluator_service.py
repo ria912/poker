@@ -3,7 +3,7 @@ import pytest
 from app.models.deck import Card
 from app.models.seat import Seat
 from app.models.player import Player
-from app.services.hand_evaluator import HandEvaluator
+from app.services.evaluation_service import HandEvaluator
 
 @pytest.fixture
 def evaluator():
