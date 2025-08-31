@@ -3,16 +3,19 @@ from .deck import Deck
 from .table import Table
 from .action import Action
 from .enum import Round, GameStatus, ActionType
-from .game_config import GameConfig
 
 class GameState:
     """ゲーム全体の進行状態を管理するクラス"""
-    def __init__(self, config: GameConfig):
-        self.config: GameConfig = config
-        self.table: Table = Table(seat_count=config.seat_count)
+    def __init__(self, big_blind: int=100, small_blind: int=50, seat_count: int=6):
+        # self.config: GameConfig = config  <- 削除
+        self.table: Table = Table(seat_count=seat_count)
         self.status: GameStatus = GameStatus.WAITING
         self.current_round: Round = Round.PREFLOP
         self.history: list[Action] = []
+        
+        # ゲーム設定を直接保持
+        self.big_blind: int = big_blind
+        self.small_blind: int = small_blind
 
         # アクション管理
         self.current_seat_index: Optional[int] = None
@@ -20,14 +23,6 @@ class GameState:
         self.amount_to_call: int = 0
         self.min_raise_amount: int = 0
         self.last_raiser_seat_index: Optional[int] = None
-    
-    @property
-    def big_blind(self) -> int:
-        return self.config.big_blind
-
-    @property
-    def small_blind(self) -> int:
-        return self.config.small_blind
 
     def add_action(self, player_id: str, action_type: ActionType, amount: Optional[int] = None):
         """アクションを履歴に追加する"""

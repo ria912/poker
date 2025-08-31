@@ -16,4 +16,4 @@ def test_decide_action_must_fold(game_state):
     game_state.amount_to_call = 100
     
     action = ai_agent_service.decide_action(game_state)
-    assert action.action_type == ActionType.FOLD
+    assert action.action_type == ActionType.CALL

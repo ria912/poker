@@ -1,6 +1,7 @@
 # holdem_app/app/services/hand_manager.py
 from app.models.game_state import GameState
 from app.models.enum import Round, SeatStatus, ActionType, GameStatus
+from app.models.action import Action
 from app.services import position_service, action_service, evaluation_service, round_manager
 from typing import Callable, Any
 
@@ -26,20 +27,23 @@ def start_new_hand(game_state: GameState):
 
     # 4. カードを配る
     _deal_hole_cards(game_state)
+    
+    # <<< 修正点: プリフロップで最初にアクションするプレイヤーを設定 >>>
+    game_state.current_seat_index = position_service.get_first_to_act_index(game_state)
 
 def _post_blinds(game_state: GameState):
     """SBとBBを強制的に支払わせる"""
     sb_seat = position_service.get_seat_by_position(game_state, "SB")
     bb_seat = position_service.get_seat_by_position(game_state, "BB")
 
-    if sb_seat:
+    if sb_seat and sb_seat.player:
         sb_amount = min(game_state.small_blind, sb_seat.stack)
-        action = action_service.Action(sb_seat.player.player_id, ActionType.POST_SB, sb_amount)
+        action = Action(sb_seat.player.player_id, ActionType.POST_SB, sb_amount)
         action_service.process_action(game_state, action)
 
-    if bb_seat:
+    if bb_seat and bb_seat.player:
         bb_amount = min(game_state.big_blind, bb_seat.stack)
-        action = action_service.Action(bb_seat.player.player_id, ActionType.POST_BB, bb_amount)
+        action = Action(bb_seat.player.player_id, ActionType.POST_BB, bb_amount)
         action_service.process_action(game_state, action)
 
 def _deal_hole_cards(game_state: GameState):
@@ -55,22 +59,17 @@ def proceed_to_next_round(game_state: GameState):
         _conclude_hand(game_state)
         return
 
-    # --- ここから修正 ---
-    # game_orchestrator がラウンドを更新するので、ここではカードを配る責務に集中する
     if game_state.current_round == Round.FLOP:
         game_state.table.community_cards.extend(game_state.table.deck.draw(3))
     elif game_state.current_round == Round.TURN:
         game_state.table.community_cards.extend(game_state.table.deck.draw(1))
     elif game_state.current_round == Round.RIVER:
         game_state.table.community_cards.extend(game_state.table.deck.draw(1))
-    # --- 修正ここまで ---
 
 def _is_hand_over(game_state: GameState) -> bool:
     """ハンドが終了したかどうかを判定する"""
     active_players = [s for s in game_state.table.seats if s.status not in [SeatStatus.FOLDED, SeatStatus.OUT, SeatStatus.ALL_IN]]
-    all_in_players = [s for s in game_state.table.seats if s.status == SeatStatus.ALL_IN]
     
-    # アクション可能なプレイヤーが1人以下で、オールインのプレイヤーが複数いない場合
     if len(active_players) <= 1:
         return True
         
