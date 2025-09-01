@@ -33,6 +33,7 @@ backend/
 │   └── hand_evaluator.py     # 役の判定などを行うロジック
 ├── tests/
 │   ├── __init__.py
+│   ├── conftest.py
 │   ├── services/
 │   │   └── test_game_service.py
 │   └── api/
