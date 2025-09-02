@@ -1,63 +1,13 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>HOLDEM_APP</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="js/app.js"></script>
-</head>
-<body class="bg-green-900 text-white p-4" x-data="pokerApp()">
-
-  <!-- ✅ ゲーム開始 -->
-  <div class="mb-4">
-    <button @click="startGame" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
-      ゲーム開始
-    </button>
-  </div>
-
-  <!-- ✅ テーブル情報 -->
-  <div class="mb-4 border border-white p-4 rounded">
-    <div>ラウンド: <span x-text="state.round"></span></div>
-    <div>ポット: <span x-text="state.pot"></span></div>
-    <div>ボード: <span x-text="formatBoard(state.board)"></span></div>
-  </div>
-
-  <!-- ✅ プレイヤー一覧 -->
-  <div class="grid grid-cols-3 gap-2 mb-6">
-    <template x-for="seat in state.seats" :key="seat?.name">
-      <div x-show="seat" class="bg-gray-800 p-2 rounded border border-gray-500">
-        <div class="font-bold" x-text="seat.name"></div>
-        <div x-text="'Stack: ' + seat.stack"></div>
-        <div x-text="'Bet: ' + seat.current_bet"></div>
-        <div x-text="'Position: ' + seat.position"></div>
-        <template x-if="seat.is_human">
-          <div class="mt-2 text-yellow-400">← あなた</div>
-        </template>
-      </div>
-    </template>
-  </div>
-
-  <!-- ✅ アクション選択 -->
-  <div x-show="isMyTurn" class="p-4 bg-gray-900 border border-white rounded">
-    <div class="mb-2 font-bold">アクションを選んでください:</div>
-    <div class="flex gap-2 flex-wrap mb-2">
-      <template x-for="a in actionList" :key="a.action">
-        <button
-          class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700"
-          @click="selectAction(a.action)"
-          x-text="a.action.toUpperCase()"
-        ></button>
-      </template>
-    </div>
-
-    <div x-show="selectedActionRequiresAmount" class="mb-2">
-      <input type="number" x-model="amount" class="text-black px-2 py-1 rounded" placeholder="金額" />
-    </div>
-
-    <button @click="submitAction" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
-      送信
-    </button>
-  </div>
-
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
