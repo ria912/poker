@@ -17,6 +17,8 @@ def prepare_for_new_round(game_state: GameState):
     
     game_state.amount_to_call = 0
     game_state.last_raiser_seat_index = None
+
+    game_state.min_raise_amount = game_state.big_blind
     
     first_to_act_index = position_service.get_first_to_act_index(game_state)
     if first_to_act_index is not None:

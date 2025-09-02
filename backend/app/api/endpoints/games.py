@@ -1,4 +1,4 @@
-# app\api\routers\games.py
+# app/api/endpoints/games.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any

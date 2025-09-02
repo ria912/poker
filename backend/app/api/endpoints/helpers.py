@@ -1,4 +1,4 @@
-# app\api\routers\helpers.py
+# app/api/endpoints/helpers.py
 
 from fastapi import HTTPException
 from pydantic import BaseModel
