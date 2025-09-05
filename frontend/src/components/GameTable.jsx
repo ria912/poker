@@ -1,58 +1,55 @@
-// src/components/GameTable.jsx
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Stack } from '@mui/material';
 import Seat from './Seat';
 import PokerCard from './PokerCard';
 
-const GameTable = ({ seats, communityCards, pot, currentSeatIndex }) => {
+const GameTable = ({ seats, communityCards, pot, currentSeatIndex, dealerSeatIndex }) => {
+
+    const occupiedSeats = seats.filter(s => s.is_occupied).sort((a, b) => a.index - b.index);
+    const numPlayers = occupiedSeats.length;
+    if (numPlayers === 0) return null; // プレイヤーがいない場合は何も表示しない
+
+    const humanPlayerSeat = seats.find(s => s.player && !s.player.is_ai);
+    // 人間プレイヤーを基準（下方向）にするための角度オフセットを計算
+    const angleOffset = humanPlayerSeat ? -humanPlayerSeat.index * (360 / numPlayers) : 0;
     
-    // --- ここからが新しいロジック ---
-    const numSeats = 6; // 表示する座席の総数
-    const seatPositions = [];
-
-    const hCenter = 50; // テーブルの水平中心 (%)
-    const vCenter = 50; // テーブルの垂直中心 (%)
-    const hRadius = 40; // 水平方向の半径 (%) - テーブルを楕円にする
-    const vRadius = 32; // 垂直方向の半径 (%)
-
-    for (let i = 0; i < numSeats; i++) {
-        // 時計回りに席を配置するための角度を計算します。
-        // 角度90度（真下）をスタート地点とします。
-        const angle = 90 + (360 / numSeats) * i;
-        const angleRad = (angle * Math.PI) / 180; // ラジアンに変換
-
-        const left = hCenter + hRadius * Math.cos(angleRad);
-        const top = vCenter + vRadius * Math.sin(angleRad);
-
-        seatPositions.push({
-            // 計算した座標が要素の中心になるように調整
-            transform: 'translate(-50%, -50%)', 
-            position: 'absolute',
-            left: `${left}%`,
-            top: `${top}%`,
-        });
-    }
-    // --- ここまで ---
-
     return (
         <Box sx={{
             position: 'relative',
             width: '100%',
-            height: '500px',
-            border: '10px solid #8B4513',
-            borderRadius: '150px',
-            boxSizing: 'border-box'
+            height: '100%',
         }}>
-            {/* Seats */}
-            {seats.map(seat => (
-                <Seat
-                    key={seat.index}
-                    seat={seat}
-                    isCurrentPlayer={seat.index === currentSeatIndex}
-                    // 動的に計算したスタイルを適用
-                    style={seatPositions[seat.index]}
-                />
-            ))}
+            
+            {/* Player Seats */}
+            {occupiedSeats.map((seat, i) => {
+                 // 各プレイヤーを円形に配置するための角度を計算
+                const angleDeg = (270 + angleOffset + i * (360 / numPlayers)) % 360;
+                const angleRad = angleDeg * (Math.PI / 180);
+
+                // 円周上の位置を計算 (中心50%, 半径は親要素に対する%)
+                const hRadius = 40;
+                const vRadius = 40;
+                const top = 50 - vRadius * Math.sin(angleRad);
+                const left = 50 + hRadius * Math.cos(angleRad);
+
+                const style = {
+                    position: 'absolute',
+                    top: `${top}%`,
+                    left: `${left}%`,
+                    transform: 'translate(-50%, -50%)',
+                };
+                
+                return (
+                     <Seat
+                        key={`seat-${seat.index}`}
+                        seat={seat}
+                        isCurrentPlayer={seat.index === currentSeatIndex}
+                        isDealer={seat.index === dealerSeatIndex}
+                        style={style}
+                        angle={angleDeg} // Seatコンポーネントに角度を渡す
+                    />
+                )
+            })}
 
             {/* Community Cards & Pot */}
             <Box sx={{
@@ -60,19 +57,25 @@ const GameTable = ({ seats, communityCards, pot, currentSeatIndex }) => {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                textAlign: 'center'
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1.5,
+                zIndex: 1,
             }}>
-                <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
-                    Pot: ${pot}
+                <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold', bgcolor: 'rgba(0,0,0,0.5)', px: 2, py: 0.5, borderRadius: 2 }}>
+                    Pot: {pot}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Stack direction="row" spacing={1} justifyContent="center">
                     {communityCards.map((card, index) => (
-                        <PokerCard key={index} card={card} />
+                        <PokerCard key={`community-card-${index}`} card={card} height={60} />
                     ))}
-                </Box>
+                </Stack>
             </Box>
         </Box>
     );
 };
 
 export default GameTable;
+

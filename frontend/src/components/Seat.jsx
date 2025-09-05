@@ -1,66 +1,111 @@
-// src/components/Seat.jsx
 import React from 'react';
-import { Box, Typography, Paper, Chip } from '@mui/material';
-import PokerCard from './PokerCard';
+import { Box, Typography, Chip, Stack } from '@mui/material';
+import PokerCard from './PokerCard.jsx';
 
-const Seat = ({ seat, isCurrentPlayer, style }) => {
+const Seat = ({ seat, isCurrentPlayer, isDealer, style, angle }) => {
     if (!seat.is_occupied || !seat.player) {
-        return null; // 空席は表示しない
+        return null;
     }
 
-    const player = seat.player;
+    const angleRad = angle * (Math.PI / 180);
+    const betRadius = 45; 
+    const cardsRadius = 75;
+
+    const betStyle = {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: `translate(-50%, -50%) translate(${-betRadius * Math.cos(angleRad)}px, ${betRadius * Math.sin(angleRad)}px)`,
+        zIndex: 2,
+    };
+    
+    const cardsStyle = {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: `translate(-50%, -50%) translate(${cardsRadius * Math.cos(angleRad)}px, ${-cardsRadius * Math.sin(angleRad)}px) rotate(${angle - 90}deg)`,
+        zIndex: 0,
+    };
+
+    const showHiddenCards = seat.player.is_ai && (seat.status === 'ACTIVE' || seat.status === 'ALL_IN');
+    
+    // カードの中身を逆回転させるための角度を計算
+    const cardContentRotation = 90 - angle;
 
     return (
-        <Paper
-            elevation={isCurrentPlayer ? 12 : 3}
-            sx={{
+        <Box sx={{ ...style, width: 100, height: 100 }}>
+            
+            {seat.current_bet > 0 && (
+                <Box sx={betStyle}>
+                    <Chip 
+                        label={`${seat.current_bet}`} 
+                        color="primary" 
+                        size="small" 
+                        sx={{ bgcolor: 'rgba(0,0,0,0.7)', border: '1px solid', borderColor: 'primary.main' }} 
+                    />
+                </Box>
+            )}
+
+            <Box sx={{
                 position: 'absolute',
-                ...style,
-                p: 1.5,
-                bgcolor: isCurrentPlayer ? 'rgba(255, 255, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
-                color: 'white',
-                borderRadius: '8px',
-                border: isCurrentPlayer ? '2px solid yellow' : '2px solid gray',
-                minWidth: '140px', // 少し幅を広げる
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                p: '4px 12px',
+                bgcolor: 'rgba(40, 40, 40, 0.8)',
+                borderRadius: 2,
                 textAlign: 'center',
-                transition: 'all 0.3s ease',
-            }}
-        >
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                    {player.name}
+                border: isCurrentPlayer ? '2px solid' : '1px solid',
+                borderColor: isCurrentPlayer ? 'primary.main' : 'grey.700',
+                boxShadow: isCurrentPlayer ? `0 0 12px #f0a500` : 'none',
+                minWidth: '90px',
+                zIndex: 1,
+            }}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'grey.400', whiteSpace: 'nowrap' }}>
+                    {seat.position}
                 </Typography>
-                {/* --- ポジション表示を追加 --- */}
-                {seat.position && (
-                    <Chip label={seat.position} color="secondary" size="small" sx={{ height: '18px' }} />
+                <Typography variant="h6" sx={{ color: 'white' }}>
+                    {seat.stack}
+                </Typography>
+                
+                 {isDealer && (
+                    <Chip label="D" size="small" sx={{ 
+                        bgcolor: 'white', color: 'black', fontWeight: 'bold', 
+                        position: 'absolute', top: -10, right: -10,
+                    }}/>
                 )}
-            </Box>
-            
-            <Typography variant="h6" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
-                ${seat.stack}
-            </Typography>
-            
-            {/* Hole Cards */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5, my: 1 }}>
-                {seat.hole_cards.length > 0 ? (
-                    seat.hole_cards.map((card, index) => <PokerCard key={index} card={card} height={60} />)
-                ) : (
-                    // AIの裏向きカード
-                    <>
-                        <PokerCard isHidden={true} height={60} />
-                        <PokerCard isHidden={true} height={60} />
-                    </>
+
+                {seat.status !== 'ACTIVE' && seat.status !== 'ALL_IN' && (
+                     <Typography variant="caption" sx={{ color: 'error.main', position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
+                        {seat.status}
+                    </Typography>
                 )}
             </Box>
 
-            {seat.current_bet > 0 && (
-                <Chip label={`Bet: $${seat.current_bet}`} color="primary" size="small" />
-            )}
-             {seat.status !== 'ACTIVE' && (
-                <Chip label={seat.status} color="error" size="small" sx={{mt: 0.5}} />
-            )}
-        </Paper>
+            <Box sx={cardsStyle}>
+                {/* ★★★ 変更点1: カードの並び方を横に戻す ★★★ */}
+                <Stack direction="row" spacing={1}>
+                    {seat.hole_cards.length > 0 ? (
+                        seat.hole_cards.map((card, index) => (
+                            <PokerCard 
+                                key={`player-card-${seat.index}-${index}`} 
+                                card={card} 
+                                height={60} 
+                                // ★★★ 変更点2: 逆回転用の角度を渡す ★★★
+                                rotationAngle={cardContentRotation} 
+                            />
+                        ))
+                    ) : showHiddenCards ? (
+                        <>
+                            <PokerCard isHidden={true} height={60} rotationAngle={cardContentRotation} />
+                            <PokerCard isHidden={true} height={60} rotationAngle={cardContentRotation} />
+                        </>
+                    ) : null}
+                </Stack>
+            </Box>
+        </Box>
     );
 };
 
 export default Seat;
+
