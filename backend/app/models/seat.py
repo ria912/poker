@@ -8,12 +8,14 @@ class Seat:
         self.index: int = index
         self.player: Optional[Player] = player
         self.stack: int = 0
+        self.starting_stack: int = 0
         self.hole_cards: list[Card] = []
         self.position: Optional[Position] = None
         self.current_bet: int = 0
         self.bet_total: int = 0
         self.status: SeatStatus = SeatStatus.OUT
         self.acted: bool = False
+        self.hand_score: int = 9999
         
     @property
     def is_occupied(self) -> bool:

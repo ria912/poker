@@ -8,6 +8,10 @@ from typing import Callable, Any
 def start_new_hand(game_state: GameState):
     """新しいハンドを開始する準備を行う"""
     game_state.clear_for_new_hand()
+
+    for seat in game_state.table.seats:
+        if seat.is_occupied:
+            seat.starting_stack = seat.stack
     
     active_players = position_service.get_occupied_seats(game_state)
     if len(active_players) < 2:
@@ -53,10 +57,10 @@ def _deal_hole_cards(game_state: GameState):
         cards = game_state.table.deck.draw(2)
         seat.receive_cards(cards)
 
-def proceed_to_next_round(game_state: GameState):
+def proceed_to_next_round(game_state: GameState, verbose: bool = True):
     """次のラウンドのカードを配る"""
     if _is_hand_over(game_state):
-        _conclude_hand(game_state)
+        _conclude_hand(game_state, verbose)
         return
 
     if game_state.current_round == Round.FLOP:
@@ -68,16 +72,19 @@ def proceed_to_next_round(game_state: GameState):
 
 def _is_hand_over(game_state: GameState) -> bool:
     """ハンドが終了したかどうかを判定する"""
-    active_players = [s for s in game_state.table.seats if s.status not in [SeatStatus.FOLDED, SeatStatus.OUT, SeatStatus.ALL_IN]]
+    # FOLDもOUTもしていないプレイヤー（ALL_IN状態のプレイヤーを含む）をリストアップ
+    eligible_players = [s for s in game_state.table.seats if s.status not in [SeatStatus.FOLDED, SeatStatus.OUT]]
     
-    if len(active_players) <= 1:
+    # そのようなプレイヤーが1人以下であれば、他のプレイヤーは全員フォールドしているため、
+    # ハンドはショウダウンを待たずに終了する。
+    if len(eligible_players) <= 1:
         return True
         
     return False
 
-def _conclude_hand(game_state: GameState):
+def _conclude_hand(game_state: GameState, verbose: bool = True):
     """ハンドを終了し、勝者にポットを分配する"""
-    winners_with_amounts = evaluation_service.find_winners(game_state)
+    winners_with_amounts = evaluation_service.find_winners(game_state, verbose)
     for seat, amount in winners_with_amounts:
         seat.stack += amount
     game_state.status = GameStatus.HAND_COMPLETE

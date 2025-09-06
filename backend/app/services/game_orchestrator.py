@@ -58,9 +58,18 @@ class GameOrchestrator:
             if hand_manager._is_hand_over(self.game_state):
                 break
             
-            # ベッティングラウンドを実行
-            round_manager.run_betting_round(self.game_state, self._get_action_for_player)
+            # アクション可能なプレイヤー（ステータスがACTIVE）が2人以上いるか？
+            active_players_for_betting = [
+                s for s in self.game_state.table.seats if s.status == SeatStatus.ACTIVE
+            ]
             
+            if len(active_players_for_betting) >= 2:
+                # ベッティングラウンドを実行
+                round_manager.run_betting_round(self.game_state, self._get_action_for_player)
+            else:
+                print(f"Betting for {round_enum.name} skipped (not enough players to act).")
+
+
             # ベッティングの結果、ハンドが終了していないか再度チェック
             if hand_manager._is_hand_over(self.game_state):
                 break
