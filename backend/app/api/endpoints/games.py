@@ -38,7 +38,7 @@ class GameCreateRequest(BaseModel):
     players: List[PlayerCreate]
     small_blind: int = 10
     big_blind: int = 20
-    seat_count: int = Field(default=6, ge=2, le=9) # 2-9人の範囲で設定可能に
+    seat_count: int = Field(default=6, ge=2, le=9)
 
 class ActionPayload(BaseModel):
     player_id: str
@@ -71,12 +71,13 @@ def create_game(req: GameCreateRequest):
     games[game_id] = game_state
     
     hand_manager.start_new_hand(game_state)
-    message = "New hand started. "
+    # ▼▼▼ 変更点: メッセージをリストで管理 ▼▼▼
+    messages = ["New hand started"]
     
     if game_state.status == GameStatus.IN_PROGRESS:
-        message += _advance_game_until_human_action(game_state, games)
+        messages.extend(_advance_game_until_human_action(game_state, games))
 
-    return format_game_state_for_response(game_id, game_state, message)
+    return format_game_state_for_response(game_id, game_state, messages)
 
 
 @router.get("/{game_id}", response_model=GameStateResponse)
@@ -101,24 +102,24 @@ def player_action(game_id: str, action: ActionPayload):
     current_seat = game_state.table.seats[current_seat_idx]
     if not current_seat.player or current_seat.player.player_id != action.player_id:
         raise HTTPException(status_code=403, detail="It's not your turn.")
-
-    # TODO: アクションの正当性検証 (ValidActionに含まれているかなど)
     
     game_action = GameAction(player_id=action.player_id, action_type=action.action_type, amount=action.amount)
     action_service.process_action(game_state, game_action)
-    message = f"{current_seat.player.name} chose {action.action_type.name} {action.amount or ''}. "
+    
+    # ▼▼▼ 変更点: メッセージをリストで管理 ▼▼▼
+    messages = [f"{current_seat.player.name} chose {action.action_type.name} {action.amount or ''}"]
     
     if round_manager.is_betting_round_over(game_state):
-        message += _progress_to_next_stage(game_state)
+        messages.extend(_progress_to_next_stage(game_state))
     else:
         game_state.current_seat_index = round_manager.position_service.get_next_active_player_index(
             game_state, current_seat_idx
         )
     
     if game_state.status == GameStatus.IN_PROGRESS:
-        message += _advance_game_until_human_action(game_state, games)
+        messages.extend(_advance_game_until_human_action(game_state, games))
 
-    return format_game_state_for_response(game_id, game_state, message)
+    return format_game_state_for_response(game_id, game_state, messages)
 
 
 @router.post("/{game_id}/next_hand", response_model=GameStateResponse)
@@ -135,11 +136,11 @@ def start_next_hand(game_id: str):
 
     hand_manager.start_new_hand(game_state)
     if game_state.status == GameStatus.WAITING:
-        return format_game_state_for_response(game_id, game_state, "Waiting for more players.")
+        return format_game_state_for_response(game_id, game_state, ["Waiting for more players."])
 
-    message = "Started next hand. "
+    # ▼▼▼ 変更点: メッセージをリストで管理 ▼▼▼
+    messages = ["Started next hand"]
     if game_state.status == GameStatus.IN_PROGRESS:
-        message += _advance_game_until_human_action(game_state, games)
+        messages.extend(_advance_game_until_human_action(game_state, games))
     
-    return format_game_state_for_response(game_id, game_state, message)
-
+    return format_game_state_for_response(game_id, game_state, messages)

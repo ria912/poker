@@ -1,18 +1,19 @@
+// src/components/PokerCard.jsx
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
-// ★★★ 変更点1: rotationAngle prop を追加 ★★★
 const PokerCard = ({ card, height = 70, isHidden = false, rotationAngle = 0 }) => {
-    
+    const isSmall = height < 30;
+
     if (isHidden) {
         return (
             <Box
                 sx={{
                     width: height * 0.7,
                     height: height,
-                    borderRadius: 1.5,
+                    borderRadius: 1,
                     background: 'linear-gradient(135deg, #333, #666)',
-                    border: '2px solid #888'
+                    border: '1px solid #888'
                 }}
             />
         );
@@ -44,20 +45,14 @@ const PokerCard = ({ card, height = 70, isHidden = false, rotationAngle = 0 }) =
                 boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
                 position: 'relative',
                 userSelect: 'none',
+                overflow: isSmall ? 'hidden' : 'visible',
             }}
         >
-            {/* ★★★ 変更点2: 中身をBoxで囲み、逆回転を適用 ★★★ */}
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                transform: `rotate(${rotationAngle}deg)`
-            }}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transform: `rotate(${rotationAngle}deg)` }}>
+                <Typography variant={isSmall ? 'caption' : 'h5'} sx={{ fontWeight: 'bold', lineHeight: 1 }}>
                     {card.rank}
                 </Typography>
-                 <Typography variant="h5" sx={{ color: suitColor, lineHeight: 1 }}>
+                 <Typography variant={isSmall ? 'caption' : 'h5'} sx={{ color: suitColor, lineHeight: 1 }}>
                     {suitSymbol}
                 </Typography>
             </Box>
@@ -66,3 +61,4 @@ const PokerCard = ({ card, height = 70, isHidden = false, rotationAngle = 0 }) =
 };
 
 export default PokerCard;
+
