@@ -1,6 +1,8 @@
-from . import deck
-from . import table
-from . import player
-from . import game_state
-from . import enum
-from . import seat
+# server/app/models/__init__.py
+from sqlalchemy.orm import DeclarativeBase
+
+class Base(DeclarativeBase):
+    """
+    すべてのデータベースモデルが継承する基本クラス。
+    """
+    pass
