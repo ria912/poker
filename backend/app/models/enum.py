@@ -1,3 +1,4 @@
+# server/app/models/enums.py
 from enum import Enum
 
 class Position(str, Enum):
@@ -7,29 +8,7 @@ class Position(str, Enum):
     LJ = "LJ"
     HJ = "HJ"
     CO = "CO"
-
-
-class Round(str, Enum):
-    PREFLOP = "PREFLOP"
-    FLOP = "FLOP"
-    TURN = "TURN"
-    RIVER = "RIVER"
-    SHOWDOWN = "SHOWDOWN"
-
-
-class SeatStatus(str, Enum):
-    ACTIVE = "ACTIVE"      # アクション可能
-    FOLDED = "FOLDED"      # フォールド
-    ALL_IN = "ALL_IN"      # オールイン（以後アクション不可）
-    OUT = "OUT"            # テーブル不在（スタック0等）
-
-
-class GameStatus(str, Enum):
-    WAITING = "WAITING"        # 着席待ち/ハンド未開始
-    IN_PROGRESS = "IN_PROGRESS"        # 進行中
-    HAND_COMPLETE = "HAND_COMPLETE"  # ハンド終了（配当後）
-
-
+    
 class ActionType(str, Enum):
     FOLD = "FOLD"
     CHECK = "CHECK"
@@ -39,4 +18,22 @@ class ActionType(str, Enum):
     ALL_IN = "ALL_IN"
     POST_SB = "POST_SB"
     POST_BB = "POST_BB"
-    DEAL = "DEAL"  # デバッグ/履歴用（カード配布）　
+    DEAL = "DEAL"
+
+class Round(str, Enum):
+    PREFLOP = "PREFLOP"
+    FLOP = "FLOP"
+    TURN = "TURN"
+    RIVER = "RIVER"
+    SHOWDOWN = "SHOWDOWN"
+
+class SeatStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    FOLDED = "FOLDED"
+    ALL_IN = "ALL_IN"
+    OUT = "OUT"
+
+class GameStatus(str, Enum):
+    WAITING = "WAITING"
+    IN_PROGRESS = "IN_PROGRESS"
+    HAND_COMPLETE = "HAND_COMPLETE"
